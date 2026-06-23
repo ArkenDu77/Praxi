@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Praxi — Créer un compte</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/auth.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="auth-card">
+  <a href="/" class="auth-logo">Prax<span>i</span></a>
+  <p class="auth-title">Créer votre compte médecin</p>
+
+  <div class="alert alert-error" id="error"></div>
+
+  <form id="register-form" novalidate>
+    <div class="row">
+      <div class="field">
+        <label for="prenom">Prénom</label>
+        <input class="input" type="text" id="prenom" placeholder="Marie" required autocomplete="given-name" />
+      </div>
+      <div class="field">
+        <label for="nom">Nom</label>
+        <input class="input" type="text" id="nom" placeholder="Durand" required autocomplete="family-name" />
+      </div>
+    </div>
+    <div class="field">
+      <label for="email">Email professionnel</label>
+      <input class="input" type="email" id="email" placeholder="vous@cabinet.fr" required autocomplete="email" />
+    </div>
+    <div class="field">
+      <label for="password">Mot de passe</label>
+      <input class="input" type="password" id="password" placeholder="8 caractères minimum" required autocomplete="new-password" />
+      <p class="hint">8 caractères minimum.</p>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label for="specialite">Spécialité</label>
+        <select class="select" id="specialite" required>
+          <option value="" disabled selected>Choisir…</option>
+          <option>Médecine générale</option>
+          <option>Médecine interne</option>
+          <option>Cardiologie</option>
+          <option>Pédiatrie</option>
+          <option>Gynécologie</option>
+          <option>Psychiatrie</option>
+          <option>Rhumatologie</option>
+          <option>Gériatrie</option>
+          <option>Autre spécialité</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="ville">Ville d'exercice</label>
+        <input class="input" type="text" id="ville" placeholder="Lyon" required />
+      </div>
+    </div>
+    <div class="field">
+      <label for="rpps">Numéro RPPS <span style="color:var(--text-dim)">(optionnel)</span></label>
+      <input class="input" type="text" id="rpps" placeholder="11 chiffres" inputmode="numeric" autocomplete="off" />
+    </div>
+    <button type="submit" class="btn-submit" id="submit">
+      <span class="btn-label">Créer mon compte</span>
+    </button>
+  </form>
+
+  <p class="auth-foot">Déjà inscrit ? <a href="/login.html">Se connecter</a></p>
+  <a href="/" class="auth-back">← Retour à l'accueil</a>
+</div>
+
+<script>
+'use strict';
+if (localStorage.getItem('praxi_token')) location.replace('/app.html');
+
+const form  = document.getElementById('register-form');
+const btn   = document.getElementById('submit');
+const errEl = document.getElementById('error');
+
+function showError(msg) { errEl.textContent = msg; errEl.classList.add('show'); window.scrollTo(0,0); }
+function clearError()   { errEl.textContent = ''; errEl.classList.remove('show'); }
+function setLoading(on) {
+  btn.disabled = on;
+  btn.innerHTML = on
+    ? '<span class="spinner"></span><span class="btn-label">Création…</span>'
+    : '<span class="btn-label">Créer mon compte</span>';
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearError();
+  const payload = {
+    prenom:     document.getElementById('prenom').value.trim(),
+    nom:        document.getElementById('nom').value.trim(),
+    email:      document.getElementById('email').value.trim(),
+    password:   document.getElementById('password').value,
+    specialite: document.getElementById('specialite').value,
+    ville:      document.getElementById('ville').value.trim(),
+    rpps:       document.getElementById('rpps').value.trim()
+  };
+
+  if (!payload.prenom || !payload.nom || !payload.email || !payload.specialite || !payload.ville) {
+    showError('Merci de remplir tous les champs obligatoires.'); return;
+  }
+  if (payload.password.length < 8) {
+    showError('Le mot de passe doit contenir au moins 8 caractères.'); return;
+  }
+
+  setLoading(true);
+  try {
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Inscription impossible.');
+    localStorage.setItem('praxi_token', data.token);
+    localStorage.setItem('praxi_profil', JSON.stringify(data.user));
+    location.replace('/app.html');
+  } catch (err) {
+    showError(err.message);
+    setLoading(false);
+  }
+});
+</script>
+</body>
+</html>

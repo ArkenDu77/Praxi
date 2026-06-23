@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Praxi — Connexion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/auth.css">
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-glow"></div>
+
+<div class="auth-card">
+  <a href="/" class="auth-logo">Prax<span>i</span></a>
+  <p class="auth-title">Connexion à votre espace</p>
+
+  <div class="alert alert-error" id="error"></div>
+
+  <form id="login-form" novalidate>
+    <div class="field">
+      <label for="email">Email professionnel</label>
+      <input class="input" type="email" id="email" name="email" placeholder="vous@cabinet.fr" required autocomplete="email" />
+    </div>
+    <div class="field">
+      <label for="password">Mot de passe</label>
+      <input class="input" type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" />
+    </div>
+    <button type="submit" class="btn-submit" id="submit">
+      <span class="btn-label">Se connecter</span>
+    </button>
+  </form>
+
+  <p class="auth-foot">Pas encore de compte ? <a href="/register.html">Créer un compte</a></p>
+  <a href="/" class="auth-back">← Retour à l'accueil</a>
+</div>
+
+<script>
+'use strict';
+// Déjà connecté ? on saute la connexion.
+if (localStorage.getItem('praxi_token')) location.replace('/app.html');
+
+const form  = document.getElementById('login-form');
+const btn   = document.getElementById('submit');
+const errEl = document.getElementById('error');
+
+function showError(msg) { errEl.textContent = msg; errEl.classList.add('show'); }
+function clearError()   { errEl.textContent = ''; errEl.classList.remove('show'); }
+function setLoading(on) {
+  btn.disabled = on;
+  btn.innerHTML = on
+    ? '<span class="spinner"></span><span class="btn-label">Connexion…</span>'
+    : '<span class="btn-label">Se connecter</span>';
+}
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  clearError();
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  if (!email || !password) { showError('Renseignez votre email et votre mot de passe.'); return; }
+
+  setLoading(true);
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Connexion impossible.');
+    localStorage.setItem('praxi_token', data.token);
+    localStorage.setItem('praxi_profil', JSON.stringify(data.user));
+    location.replace('/app.html');
+  } catch (err) {
+    showError(err.message);
+    setLoading(false);
+  }
+});
+</script>
+</body>
+</html>

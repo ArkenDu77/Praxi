@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Praxi — L'assistant administratif des médecins libéraux</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080C10;
+  --bg-card:   #0D1520;
+  --bg-card2:  #0A1018;
+  --border:    #1A2535;
+  --border2:   #243040;
+  --text:      #EDF2F7;
+  --text-muted:#6B8299;
+  --text-dim:  #3D5166;
+  --accent:    #38BDF8;
+  --accent2:   #0EA5E9;
+  --accent-dim:rgba(56,189,248,0.10);
+  --accent-glow:rgba(56,189,248,0.22);
+  --highlight: #BAE6FD;
+  --gold:      #F0C060;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── NAV ─── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  padding: 18px 56px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(8,12,16,0.85);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid transparent;
+  transition: border-color .3s;
+}
+nav.scrolled { border-bottom-color: var(--border); }
+.nav-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 22px; letter-spacing: -.02em; color: var(--text);
+}
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 36px; list-style: none; }
+.nav-links a {
+  color: var(--text-muted); text-decoration: none;
+  font-size: 14px; font-weight: 400; transition: color .2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-cta {
+  background: var(--accent); color: #050A10;
+  border: none; padding: 9px 22px; border-radius: 7px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  text-decoration: none; transition: opacity .2s, box-shadow .2s;
+}
+.nav-cta:hover { opacity: .88; box-shadow: 0 4px 20px var(--accent-glow); }
+
+/* ─── HERO ─── */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 110px 48px 80px;
+  position: relative; overflow: hidden; text-align: center;
+}
+
+/* Grid background */
+.hero-grid {
+  position: absolute; inset: 0; z-index: 0;
+  background-image:
+    linear-gradient(rgba(56,189,248,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56,189,248,.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 30%, transparent 100%);
+}
+
+/* Glow */
+.hero-glow {
+  position: absolute; z-index: 0;
+  width: 700px; height: 400px;
+  top: 50%; left: 50%; transform: translate(-50%, -58%);
+  background: radial-gradient(ellipse, rgba(56,189,248,.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero > * { position: relative; z-index: 1; }
+
+/* ECG */
+.ecg-wrap {
+  width: 100%; max-width: 720px;
+  height: 52px; margin-bottom: 52px;
+}
+.ecg-line {
+  stroke-dasharray: 1400;
+  stroke-dashoffset: 1400;
+  animation: drawLine 2s cubic-bezier(.4,0,.2,1) .1s forwards;
+}
+@keyframes drawLine { to { stroke-dashoffset: 0; } }
+
+/* Badge */
+.hero-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(56,189,248,.08);
+  border: 1px solid rgba(56,189,248,.2);
+  border-radius: 40px; padding: 6px 16px;
+  font-size: 12px; font-weight: 500; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 32px;
+  animation: fadeUp .5s ease .1s both;
+}
+.badge-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent);
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: .5; transform: scale(.8); }
+}
+
+.hero-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(44px, 6.5vw, 82px);
+  line-height: 1.06; letter-spacing: -.035em;
+  color: var(--text); max-width: 860px;
+  margin-bottom: 28px;
+  animation: fadeUp .6s ease .2s both;
+}
+.hero-title em { font-style: italic; color: var(--highlight); }
+
+.hero-sub {
+  font-size: 18px; font-weight: 300; color: var(--text-muted);
+  max-width: 500px; line-height: 1.75; margin-bottom: 48px;
+  animation: fadeUp .6s ease .35s both;
+}
+
+.hero-actions {
+  display: flex; gap: 14px; align-items: center;
+  animation: fadeUp .6s ease .5s both;
+}
+.btn-primary {
+  background: var(--accent); color: #050A10;
+  padding: 14px 32px; border-radius: 8px;
+  font-size: 15px; font-weight: 600; text-decoration: none;
+  transition: opacity .2s, transform .2s, box-shadow .2s;
+}
+.btn-primary:hover {
+  opacity: .9; transform: translateY(-2px);
+  box-shadow: 0 10px 36px var(--accent-glow);
+}
+.btn-ghost {
+  color: var(--text-muted); padding: 14px 20px;
+  font-size: 15px; text-decoration: none;
+  display: flex; align-items: center; gap: 7px;
+  transition: color .2s;
+}
+.btn-ghost:hover { color: var(--text); }
+
+/* Trust strip */
+.hero-trust {
+  margin-top: 64px; display: flex; align-items: center; gap: 28px;
+  animation: fadeUp .6s ease .65s both;
+  flex-wrap: wrap; justify-content: center;
+}
+.trust-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--text-dim);
+}
+.trust-item svg { color: var(--accent); flex-shrink: 0; }
+.trust-sep { width: 1px; height: 14px; background: var(--border2); }
+
+/* Scroll indicator */
+.scroll-hint {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  animation: fadeUp .6s ease .9s both;
+}
+.scroll-line {
+  width: 1px; height: 36px;
+  background: linear-gradient(to bottom, var(--accent), transparent);
+  animation: scrollAnim 2s ease infinite;
+}
+@keyframes scrollAnim { 0%,100% { opacity:.3; } 50% { opacity:.9; } }
+.scroll-hint span {
+  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── STATS STRIP ─── */
+.stats-strip {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 48px 56px;
+  display: grid; grid-template-columns: repeat(4,1fr);
+}
+.stat-item {
+  padding: 0 32px; border-right: 1px solid var(--border);
+  text-align: center;
+}
+.stat-item:first-child { padding-left: 0; }
+.stat-item:last-child  { border-right: none; padding-right: 0; }
+.stat-num {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 46px; line-height: 1; color: var(--text); margin-bottom: 8px;
+}
+.stat-num span { color: var(--accent); }
+.stat-label { font-size: 13px; color: var(--text-muted); line-height: 1.45; }
+
+/* ─── SECTION BASE ─── */
+.section { padding: 96px 56px; max-width: 1200px; margin: 0 auto; }
+.section-full { padding: 96px 56px; }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+
+.eyebrow {
+  display: block; font-size: 11px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+}
+.section-h2 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(32px, 4vw, 52px);
+  line-height: 1.1; letter-spacing: -.025em;
+  color: var(--text); max-width: 640px; margin-bottom: 20px;
+}
+.section-p {
+  font-size: 17px; font-weight: 300; color: var(--text-muted);
+  max-width: 500px; line-height: 1.8;
+}
+
+/* ─── PROBLEM ─── */
+.problem-bg {
+  background: var(--bg-card2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.problem-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start;
+}
+.quotes { display: flex; flex-direction: column; gap: 20px; }
+.quote-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; padding: 24px 26px;
+  position: relative; transition: border-color .3s;
+}
+.quote-card:hover { border-color: rgba(56,189,248,.25); }
+.quote-card::before {
+  content: '"'; font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 56px; color: var(--accent); opacity: .12;
+  position: absolute; top: 6px; left: 18px; line-height: 1;
+}
+.quote-text {
+  font-size: 14.5px; font-weight: 300; font-style: italic;
+  color: var(--text); line-height: 1.7; padding-top: 6px;
+}
+.quote-author { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+
+/* ─── FEATURES ─── */
+.features-grid {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  gap: 1px; margin-top: 60px;
+  background: var(--border); border-radius: 12px; overflow: hidden;
+}
+.feat {
+  background: var(--bg-card); padding: 36px 32px;
+  transition: background .25s; position: relative;
+}
+.feat:hover { background: #0F1B2A; }
+.feat-icon {
+  width: 42px; height: 42px; border-radius: 9px;
+  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.18);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 22px; font-size: 19px;
+}
+.feat-title {
+  font-size: 16px; font-weight: 600; color: var(--text);
+  margin-bottom: 10px; line-height: 1.3;
+}
+.feat-desc { font-size: 13.5px; color: var(--text-muted); line-height: 1.7; font-weight: 300; }
+
+/* ─── WORKFLOW ─── */
+.workflow-bg {
+  background: var(--bg-card2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.workflow-header {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+  align-items: end; margin-bottom: 64px;
+}
+.steps {
+  display: grid; grid-template-columns: repeat(3,1fr);
+  position: relative;
+}
+.steps::before {
+  content: '';
+  position: absolute; top: 27px; left: 16.6%; right: 16.6%; height: 1px;
+  background: linear-gradient(to right, transparent, var(--border2), var(--accent), var(--border2), transparent);
+}
+.step { padding: 0 20px; text-align: center; }
+.step-num {
+  width: 54px; height: 54px; border-radius: 50%;
+  border: 1px solid var(--border2); background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 22px; color: var(--accent);
+  margin: 0 auto 22px; position: relative; z-index: 1;
+  transition: border-color .3s, background .3s;
+}
+.step:hover .step-num { border-color: var(--accent); background: var(--accent-dim); }
+.step-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.step-desc  { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
+
+/* ─── PRICING ─── */
+.pricing-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 60px; }
+.price-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 36px 30px;
+  transition: border-color .3s, transform .3s; position: relative;
+}
+.price-card:hover { border-color: var(--border2); transform: translateY(-3px); }
+.price-card.featured {
+  border-color: rgba(56,189,248,.4);
+  background: linear-gradient(160deg, #0D1520 60%, rgba(56,189,248,.04));
+}
+.price-badge {
+  position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: #050A10;
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; padding: 3px 14px; border-radius: 20px;
+}
+.price-tier {
+  font-size: 11px; font-weight: 500; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 16px;
+}
+.price-amount {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 50px; color: var(--text); line-height: 1; margin-bottom: 4px;
+}
+.price-amount sup { font-size: 22px; vertical-align: top; margin-top: 8px; font-family: Inter, sans-serif; font-weight: 300; }
+.price-period { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
+.price-divider { height: 1px; background: var(--border); margin: 20px 0; }
+.price-feats { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 28px; }
+.price-feats li {
+  font-size: 13.5px; color: var(--text-muted);
+  display: flex; align-items: flex-start; gap: 9px; line-height: 1.5;
+}
+.price-feats li::before { content: '→'; color: var(--accent); font-size: 11px; margin-top: 3px; flex-shrink: 0; }
+.price-feats li.on { color: var(--text); }
+.price-btn {
+  width: 100%; padding: 12px; border-radius: 7px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  text-align: center; text-decoration: none; display: block;
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--text-muted); transition: all .2s;
+}
+.price-btn:hover { border-color: var(--text-muted); color: var(--text); }
+.price-btn.on { background: var(--accent); border-color: var(--accent); color: #050A10; }
+.price-btn.on:hover { opacity: .88; box-shadow: 0 4px 24px var(--accent-glow); }
+
+/* ─── TESTIMONIALS ─── */
+.testi-bg {
+  background: var(--bg-card2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.testi-grid {
+  display: grid; grid-template-columns: repeat(2,1fr);
+  gap: 18px; margin-top: 52px;
+}
+.testi-card {
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: 12px; padding: 30px 32px; transition: border-color .3s;
+}
+.testi-card:hover { border-color: rgba(56,189,248,.2); }
+.testi-text {
+  font-size: 15.5px; font-weight: 300; font-style: italic;
+  color: var(--text); line-height: 1.75; margin-bottom: 22px;
+}
+.testi-author { display: flex; align-items: center; gap: 12px; }
+.author-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--accent); flex-shrink: 0;
+}
+.author-name { font-size: 13px; font-weight: 500; color: var(--text); }
+.author-role { font-size: 12px; color: var(--text-muted); }
+
+/* ─── WAITLIST FORM ─── */
+.waitlist-section {
+  padding: 110px 56px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.waitlist-section::before {
+  content: ''; position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 700px; height: 500px; pointer-events: none;
+  background: radial-gradient(ellipse, rgba(56,189,248,.07) 0%, transparent 70%);
+}
+.waitlist-inner { max-width: 560px; margin: 0 auto; position: relative; }
+.waitlist-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(36px,5vw,58px);
+  line-height: 1.1; letter-spacing: -.025em;
+  color: var(--text); margin-bottom: 20px;
+}
+.waitlist-sub {
+  font-size: 17px; font-weight: 300; color: var(--text-muted);
+  line-height: 1.7; margin-bottom: 44px;
+}
+
+.waitlist-form {
+  display: flex; flex-direction: column; gap: 12px;
+  max-width: 420px; margin: 0 auto;
+}
+.wf-row { display: flex; gap: 12px; }
+.wf-input {
+  flex: 1; background: var(--bg-card);
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 13px 16px; font-size: 14px;
+  color: var(--text); outline: none;
+  font-family: inherit; transition: border-color .2s;
+}
+.wf-input::placeholder { color: var(--text-dim); }
+.wf-input:focus { border-color: var(--accent); }
+.wf-select {
+  width: 100%; background: var(--bg-card);
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 13px 16px; font-size: 14px;
+  color: var(--text); outline: none;
+  font-family: inherit; transition: border-color .2s;
+  -webkit-appearance: none; cursor: pointer;
+}
+.wf-select:focus { border-color: var(--accent); }
+.wf-submit {
+  width: 100%; background: var(--accent); color: #050A10;
+  border: none; border-radius: 8px;
+  padding: 14px; font-size: 15px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+  transition: opacity .2s, box-shadow .2s;
+}
+.wf-submit:hover { opacity: .88; box-shadow: 0 6px 28px var(--accent-glow); }
+.wf-submit:disabled { opacity: .5; cursor: not-allowed; }
+
+.form-note {
+  font-size: 12px; color: var(--text-dim);
+  margin-top: 14px; line-height: 1.6;
+}
+
+.form-success {
+  display: none;
+  background: rgba(56,189,248,.08);
+  border: 1px solid rgba(56,189,248,.25);
+  border-radius: 10px; padding: 24px 28px;
+  text-align: center;
+}
+.form-success.visible { display: block; }
+.form-success p { font-size: 15px; color: var(--text); line-height: 1.6; }
+.form-success strong { color: var(--accent); }
+
+.counter {
+  font-size: 13px; color: var(--text-muted); margin-top: 20px;
+}
+.counter span { color: var(--accent); font-weight: 500; }
+
+/* ─── FOOTER ─── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 36px 56px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 18px; color: var(--text-muted);
+}
+.footer-logo span { color: var(--accent); }
+.footer-links { display: flex; gap: 28px; list-style: none; }
+.footer-links a {
+  font-size: 13px; color: var(--text-dim);
+  text-decoration: none; transition: color .2s;
+}
+.footer-links a:hover { color: var(--text-muted); }
+.footer-copy { font-size: 12px; color: var(--text-dim); }
+
+/* ─── REVEAL ─── */
+.reveal {
+  opacity: 0; transform: translateY(22px);
+  transition: opacity .65s ease, transform .65s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 920px) {
+  nav { padding: 16px 20px; }
+  .nav-links { display: none; }
+  .hero, .section, .section-full, .waitlist-section { padding-left: 20px; padding-right: 20px; }
+  .stats-strip { grid-template-columns: repeat(2,1fr); padding: 32px 20px; }
+  .stat-item { border-right: none; border-bottom: 1px solid var(--border); padding: 18px 0; }
+  .stat-item:nth-child(odd) { border-right: 1px solid var(--border); }
+  .problem-grid { grid-template-columns: 1fr; gap: 40px; }
+  .features-grid, .steps { grid-template-columns: 1fr; }
+  .steps::before { display: none; }
+  .workflow-header { grid-template-columns: 1fr; gap: 28px; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .testi-grid { grid-template-columns: 1fr; }
+  footer { flex-direction: column; gap: 20px; text-align: center; }
+  .footer-links { flex-wrap: wrap; justify-content: center; }
+  .wf-row { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition-duration: 0ms !important; }
+  .reveal { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="nav-logo">Prax<span>i</span></div>
+  <ul class="nav-links">
+    <li><a href="#probleme">Le problème</a></li>
+    <li><a href="#comment">Comment ça marche</a></li>
+    <li><a href="#tarifs">Tarifs</a></li>
+    <li><a href="/app.html">Accéder à l'app</a></li>
+  </ul>
+  <a href="#acces" class="nav-cta">Accès anticipé</a>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+
+  <!-- ECG -->
+  <div class="ecg-wrap">
+    <svg viewBox="0 0 720 52" fill="none" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+      <path class="ecg-line"
+        d="M0,26 L60,26 L80,26 L88,8 L96,44 L104,4 L114,48 L122,26 L180,26 L200,26 L208,8 L216,44 L224,4 L234,48 L242,26 L320,26 L336,26 L344,8 L352,44 L360,4 L370,48 L378,26 L460,26 L476,26 L484,8 L492,44 L500,4 L510,48 L518,26 L600,26 L616,26 L624,8 L632,44 L640,4 L650,48 L658,26 L720,26"
+        stroke="#38BDF8" stroke-width="1.5"
+        stroke-linecap="round" stroke-linejoin="round"
+        opacity="0.7"
+      />
+    </svg>
+  </div>
+
+  <div class="hero-badge">
+    <div class="badge-dot"></div>
+    Bêta fermée — places limitées
+  </div>
+
+  <h1 class="hero-title">
+    Vos comptes-rendus rédigés<br>
+    avant même que le patient<br>
+    <em>franchisse la porte.</em>
+  </h1>
+
+  <p class="hero-sub">
+    Praxi dicte vos lettres de liaison, comptes-rendus et dossiers MDPH à votre place. Conçu pour les médecins libéraux qui veulent récupérer leurs soirées.
+  </p>
+
+  <div class="hero-actions">
+    <a href="#acces" class="btn-primary">Rejoindre la bêta — gratuit</a>
+    <a href="#comment" class="btn-ghost">
+      Voir comment ça marche
+      <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+        <path d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+      </svg>
+    </a>
+  </div>
+
+  <div class="hero-trust">
+    <div class="trust-item">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+      Hébergement HDS certifié
+    </div>
+    <div class="trust-sep"></div>
+    <div class="trust-item">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><path d="M2 12h20"/>
+        <path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/>
+      </svg>
+      Données hébergées en France
+    </div>
+    <div class="trust-sep"></div>
+    <div class="trust-item">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+      Chiffrement bout en bout
+    </div>
+    <div class="trust-sep"></div>
+    <div class="trust-item">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      Sans engagement
+    </div>
+  </div>
+
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    <span>Défiler</span>
+  </div>
+</div>
+
+<!-- STATS -->
+<div class="stats-strip">
+  <div class="stat-item reveal">
+    <div class="stat-num">10<span>h</span></div>
+    <div class="stat-label">par semaine en tâches<br>administratives en moyenne</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">22<span>h</span></div>
+    <div class="stat-label">l'heure à laquelle les généralistes<br>finissent leurs comptes-rendus</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">44<span>%</span></div>
+    <div class="stat-label">des arrêts maladie liés à la<br>surcharge administrative (CARMF)</div>
+  </div>
+  <div class="stat-item reveal">
+    <div class="stat-num">3<span>min</span></div>
+    <div class="stat-label">c'est ce que Praxi vous demande<br>par dossier, pas plus</div>
+  </div>
+</div>
+
+<!-- PROBLÈME -->
+<div class="problem-bg" id="probleme">
+  <div class="section-full">
+    <div class="section-inner">
+      <div class="problem-grid">
+        <div>
+          <span class="eyebrow reveal">Le contexte</span>
+          <h2 class="section-h2 reveal">Ce n'est pas votre manière de travailler le problème. C'est le volume.</h2>
+          <p class="section-p reveal">Un médecin libéral consacre entre 10 et 15 heures par semaine à des tâches sans valeur médicale. Lettres de liaison, dossiers MDPH, mises en ALD — souvent rédigés le soir, après douze heures de consultations.</p>
+          <p class="section-p reveal" style="margin-top:20px">Praxi ne remplace pas votre jugement clinique. Il élimine la saisie répétitive.</p>
+        </div>
+        <div class="quotes">
+          <div class="quote-card reveal">
+            <p class="quote-text">Je finissais mes comptes-rendus à 22h30 minimum. Mes patients méritaient mieux, ma famille aussi.</p>
+            <p class="quote-author">Dr. M.L. — Médecine générale, Paris 15e</p>
+          </div>
+          <div class="quote-card reveal">
+            <p class="quote-text">Les formulaires MDPH sont un calvaire. 60 pages pour un renouvellement. Deux heures par dossier, non valorisées.</p>
+            <p class="quote-author">Dr. A.B. — Médecine générale, Lyon</p>
+          </div>
+          <div class="quote-card reveal">
+            <p class="quote-text">Doctolib m'envoie des PDF que je n'ai pas le temps d'ouvrir avant la consultation. Le gain de temps promis n'existe pas.</p>
+            <p class="quote-author">Dr. C.R. — Médecine interne, Bordeaux</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<div class="section">
+  <span class="eyebrow reveal">Ce que Praxi fait</span>
+  <h2 class="section-h2 reveal">Trois tâches éliminées, des heures récupérées chaque semaine.</h2>
+  <div class="features-grid">
+    <div class="feat reveal">
+      <div class="feat-icon">✉</div>
+      <h3 class="feat-title">Lettres de liaison & adressage</h3>
+      <p class="feat-desc">Dictez ou uploadez vos notes. Praxi rédige la lettre complète vers le spécialiste — antécédents, traitements, motif de recours — en moins de 30 secondes.</p>
+    </div>
+    <div class="feat reveal">
+      <div class="feat-icon">📋</div>
+      <h3 class="feat-title">Comptes-rendus de consultation</h3>
+      <p class="feat-desc">Parlez librement en fin de consultation. Praxi extrait les éléments cliniques et génère un compte-rendu structuré, prêt à valider, sans saisie manuelle.</p>
+    </div>
+    <div class="feat reveal">
+      <div class="feat-icon">📁</div>
+      <h3 class="feat-title">Dossiers MDPH & ALD</h3>
+      <p class="feat-desc">Le fardeau bureaucratique le plus lourd de la médecine de ville. Praxi pré-remplit les formulaires complexes à partir des données existantes du patient.</p>
+    </div>
+    <div class="feat reveal">
+      <div class="feat-icon">🔒</div>
+      <h3 class="feat-title">Sécurité médicale native</h3>
+      <p class="feat-desc">Infrastructure HDS certifiée, hébergée en France. Chiffrement AES-256 au repos, TLS 1.3 en transit. Conformité RGPD intégrée dès la conception.</p>
+    </div>
+    <div class="feat reveal">
+      <div class="feat-icon">⚡</div>
+      <h3 class="feat-title">Compatible avec votre logiciel</h3>
+      <p class="feat-desc">Praxi s'adapte à votre flux de travail. Compatible Weda, Doctolib, Crossway. Aucune rupture d'outil, aucune ressaisie. Vous validez, vous envoyez.</p>
+    </div>
+    <div class="feat reveal">
+      <div class="feat-icon">📊</div>
+      <h3 class="feat-title">Tableau de bord hebdomadaire</h3>
+      <p class="feat-desc">Visualisez le temps récupéré et l'équivalent financier en consultations supplémentaires. Le ROI de Praxi, mesuré semaine après semaine.</p>
+    </div>
+  </div>
+</div>
+
+<!-- WORKFLOW -->
+<div class="workflow-bg" id="comment">
+  <div class="section-full">
+    <div class="section-inner">
+      <div class="workflow-header">
+        <div>
+          <span class="eyebrow reveal">Comment ça marche</span>
+          <h2 class="section-h2 reveal">Trois étapes. Pas une de plus.</h2>
+        </div>
+        <p class="section-p reveal">Praxi s'intègre dans votre rythme, pas l'inverse. En fin de consultation, vous avez mieux à faire qu'apprendre un nouveau logiciel.</p>
+      </div>
+      <div class="steps">
+        <div class="step reveal">
+          <div class="step-num">1</div>
+          <h3 class="step-title">Dictez ou chargez</h3>
+          <p class="step-desc">Quelques mots dictés, un document uploadé, vos notes brutes. Praxi accepte tout format.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">2</div>
+          <h3 class="step-title">Praxi structure</h3>
+          <p class="step-desc">L'IA analyse, extrait les éléments pertinents et génère le document dans le format attendu.</p>
+        </div>
+        <div class="step reveal">
+          <div class="step-num">3</div>
+          <h3 class="step-title">Vous validez</h3>
+          <p class="step-desc">Relecture rapide, modification si besoin, envoi direct. Votre signature, votre responsabilité.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRICING -->
+<div class="section" id="tarifs">
+  <span class="eyebrow reveal">Tarifs</span>
+  <h2 class="section-h2 reveal">Un abonnement qui se rentabilise en trois consultations.</h2>
+  <p class="section-p reveal">À 26,50 € la consultation, Praxi se rembourse dès la première journée où vous gagnez du temps.</p>
+  <div class="pricing-grid">
+    <div class="price-card reveal">
+      <p class="price-tier">Découverte</p>
+      <div class="price-amount"><sup>€</sup>0</div>
+      <p class="price-period">30 jours, sans engagement</p>
+      <div class="price-divider"></div>
+      <ul class="price-feats">
+        <li class="on">50 documents générés</li>
+        <li class="on">Lettres de liaison</li>
+        <li class="on">Comptes-rendus</li>
+        <li>Dossiers MDPH & ALD</li>
+        <li>Intégration logiciel</li>
+        <li>Support prioritaire</li>
+      </ul>
+      <a href="#acces" class="price-btn">Commencer gratuitement</a>
+    </div>
+    <div class="price-card featured reveal">
+      <div class="price-badge">Le plus choisi</div>
+      <p class="price-tier">Praxi Pro</p>
+      <div class="price-amount"><sup>€</sup>89</div>
+      <p class="price-period">par mois, sans engagement</p>
+      <div class="price-divider"></div>
+      <ul class="price-feats">
+        <li class="on">Documents illimités</li>
+        <li class="on">Lettres de liaison</li>
+        <li class="on">Comptes-rendus</li>
+        <li class="on">Dossiers MDPH & ALD</li>
+        <li class="on">Intégration logiciel</li>
+        <li>Support prioritaire</li>
+      </ul>
+      <a href="#acces" class="price-btn on">Essai gratuit 30 jours</a>
+    </div>
+    <div class="price-card reveal">
+      <p class="price-tier">Praxi Groupe</p>
+      <div class="price-amount"><sup>€</sup>69</div>
+      <p class="price-period">par médecin / mois — à partir de 3</p>
+      <div class="price-divider"></div>
+      <ul class="price-feats">
+        <li class="on">Tout Praxi Pro</li>
+        <li class="on">Tableau de bord cabinet</li>
+        <li class="on">Intégration logiciel</li>
+        <li class="on">Support dédié</li>
+        <li class="on">Onboarding personnalisé</li>
+        <li class="on">Facturation groupée</li>
+      </ul>
+      <a href="#acces" class="price-btn">Nous contacter</a>
+    </div>
+  </div>
+</div>
+
+<!-- TESTIMONIALS -->
+<div class="testi-bg">
+  <div class="section-full">
+    <div class="section-inner">
+      <span class="eyebrow reveal">Bêta-testeurs</span>
+      <h2 class="section-h2 reveal">Ce que disent les médecins qui l'utilisent déjà.</h2>
+      <div class="testi-grid">
+        <div class="testi-card reveal">
+          <p class="testi-text">Je récupère facilement une heure par soir. Mes lettres d'adressage sont rédigées avant même que le patient soit sorti du cabinet.</p>
+          <div class="testi-author">
+            <div class="author-av">ML</div>
+            <div>
+              <p class="author-name">Dr. Marie L.</p>
+              <p class="author-role">Médecine générale — Reims</p>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card reveal">
+          <p class="testi-text">Le dossier MDPH qui me prenait deux heures, j'en ai fait un en 18 minutes. Sans secrétaire médical dédié.</p>
+          <div class="testi-author">
+            <div class="author-av">AP</div>
+            <div>
+              <p class="author-name">Dr. Antoine P.</p>
+              <p class="author-role">Médecine générale — Strasbourg</p>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card reveal">
+          <p class="testi-text">La qualité des lettres générées dépasse ce que je rédigeais moi-même en fin de journée, épuisé. C'est un constat un peu brutal, mais c'est vrai.</p>
+          <div class="testi-author">
+            <div class="author-av">SC</div>
+            <div>
+              <p class="author-name">Dr. Sophie C.</p>
+              <p class="author-role">Gériatrie libérale — Nantes</p>
+            </div>
+          </div>
+        </div>
+        <div class="testi-card reveal">
+          <p class="testi-text">Ce qui m'a convaincu, c'est la sécurité. HDS, souveraineté française, chiffrement bout en bout. Les données de mes patients, c'est sacré.</p>
+          <div class="testi-author">
+            <div class="author-av">JD</div>
+            <div>
+              <p class="author-name">Dr. Julien D.</p>
+              <p class="author-role">Médecine interne — Paris</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WAITLIST / BACKEND FORM -->
+<div class="waitlist-section" id="acces">
+  <div class="waitlist-inner">
+    <h2 class="waitlist-title reveal">Rejoignez la bêta fermée.</h2>
+    <p class="waitlist-sub reveal">Praxi est en accès anticipé pour un nombre limité de médecins. Inscription gratuite, sans engagement.</p>
+
+    <div id="form-wrap" class="reveal">
+      <form class="waitlist-form" id="waitlist-form">
+        <div class="wf-row">
+          <input class="wf-input" type="text" name="prenom" placeholder="Prénom" required autocomplete="given-name" />
+          <input class="wf-input" type="text" name="nom" placeholder="Nom" required autocomplete="family-name" />
+        </div>
+        <input class="wf-input" type="email" name="email" placeholder="Email professionnel" required autocomplete="email" />
+        <select class="wf-select" name="specialite" required>
+          <option value="" disabled selected>Spécialité</option>
+          <option>Médecine générale</option>
+          <option>Médecine interne</option>
+          <option>Cardiologie</option>
+          <option>Pédiatrie</option>
+          <option>Gynécologie</option>
+          <option>Psychiatrie</option>
+          <option>Rhumatologie</option>
+          <option>Gériatrie</option>
+          <option>Autre spécialité</option>
+        </select>
+        <input class="wf-input" type="text" name="ville" placeholder="Ville d'exercice" required />
+        <button type="submit" class="wf-submit" id="submit-btn">
+          Demander l'accès bêta
+        </button>
+      </form>
+      <p class="form-note">Données hébergées en France · Aucun démarchage · Résiliation à tout moment</p>
+    </div>
+
+    <div class="form-success" id="form-success">
+      <p>✓ Inscription confirmée, <strong id="success-name"></strong>.<br>
+      Vous recevrez un email dès que votre accès est activé.<br>
+      En attendant, votre place est réservée.</p>
+    </div>
+
+    <p class="counter reveal"><span id="counter-num">47</span> médecins inscrits sur la liste d'attente</p>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Prax<span>i</span></div>
+  <ul class="footer-links">
+    <li><a href="/mentions-legales.html">Mentions légales</a></li>
+    <li><a href="/politique-confidentialite.html">Confidentialité</a></li>
+    <li><a href="/cgu.html">CGU</a></li>
+    <li><a href="mailto:contact@praxi.fr">Contact</a></li>
+  </ul>
+  <p class="footer-copy">© 2025 Praxi</p>
+</footer>
+
+<script>
+// Nav scroll
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+// Scroll reveal
+const revealEls = document.querySelectorAll('.reveal');
+const ro = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('visible'); ro.unobserve(e.target); }
+  });
+}, { threshold: 0.08, rootMargin: '0px 0px -32px 0px' });
+revealEls.forEach(el => ro.observe(el));
+
+// Counter animation
+function animateCounter(el, target, duration) {
+  let start = 0, step = target / (duration / 16);
+  const tick = () => {
+    start = Math.min(start + step, target);
+    el.textContent = Math.round(start);
+    if (start < target) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+const counterEl = document.getElementById('counter-num');
+const counterObs = new IntersectionObserver(([e]) => {
+  if (e.isIntersecting) { animateCounter(counterEl, 47, 1200); counterObs.disconnect(); }
+}, { threshold: 0.5 });
+counterObs.observe(counterEl);
+
+// Waitlist form
+const form = document.getElementById('waitlist-form');
+const btn  = document.getElementById('submit-btn');
+const successEl = document.getElementById('form-success');
+const formWrap  = document.getElementById('form-wrap');
+const successName = document.getElementById('success-name');
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  btn.disabled = true;
+  btn.textContent = 'Envoi en cours…';
+
+  const data = Object.fromEntries(new FormData(form));
+
+  try {
+    const res = await fetch('/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+
+    if (res.ok) {
+      formWrap.style.display = 'none';
+      successEl.classList.add('visible');
+      successName.textContent = data.prenom;
+      // Update counter
+      const num = parseInt(counterEl.textContent) + 1;
+      counterEl.textContent = num;
+    } else {
+      throw new Error(json.error || 'Erreur serveur');
+    }
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Demander l\'accès bêta';
+    alert('Une erreur est survenue. Réessayez dans quelques instants.');
+  }
+});
+</script>
+</body>
+</html>

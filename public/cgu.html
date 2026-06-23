@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Praxi — Conditions Générales d'Utilisation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #080C10; --bg-card: #0D1520; --bg-card2: #0A1018;
+  --border: #1A2535; --border2: #243040;
+  --text: #EDF2F7; --text-muted: #6B8299; --text-dim: #3D5166;
+  --accent: #38BDF8; --accent-dim: rgba(56,189,248,0.10);
+  --warn: #F0C060;
+}
+
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+nav {
+  position: sticky; top: 0; z-index: 100;
+  padding: 16px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(8,12,16,0.9); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 22px; letter-spacing: -.02em;
+  color: var(--text); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-back {
+  font-size: 13px; color: var(--text-muted);
+  text-decoration: none; transition: color .2s;
+}
+.nav-back:hover { color: var(--text); }
+
+.legal { max-width: 760px; margin: 0 auto; padding: 72px 32px 120px; }
+.eyebrow {
+  display: block; font-size: 11px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+}
+h1 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(36px, 4.5vw, 52px);
+  line-height: 1.1; letter-spacing: -.025em;
+  color: var(--text); margin-bottom: 16px;
+}
+.updated { font-size: 13px; color: var(--text-dim); margin-bottom: 56px; }
+h2 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 26px; letter-spacing: -.015em;
+  color: var(--text); margin-top: 48px; margin-bottom: 14px;
+}
+h2 .num {
+  display: inline-block; min-width: 36px;
+  font-size: 18px; color: var(--accent);
+  font-family: 'Inter', sans-serif; font-weight: 500;
+  vertical-align: middle; margin-right: 6px;
+}
+p, li {
+  font-size: 15px; font-weight: 300;
+  color: var(--text-muted); line-height: 1.75;
+  margin-bottom: 14px;
+}
+p strong, li strong { color: var(--text); font-weight: 500; }
+ul { padding-left: 22px; }
+li { margin-bottom: 8px; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { opacity: .82; }
+
+.callout {
+  border: 1px solid rgba(240,192,96,.3);
+  background: rgba(240,192,96,.06);
+  border-left: 3px solid var(--warn);
+  border-radius: 8px; padding: 18px 22px; margin: 28px 0;
+}
+.callout-title {
+  font-size: 11px; font-weight: 600; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--warn); margin-bottom: 8px;
+}
+.callout p {
+  font-size: 14.5px; color: var(--text); margin-bottom: 0;
+}
+
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 17px; color: var(--text-muted);
+}
+.footer-logo span { color: var(--accent); }
+.footer-links { display: flex; gap: 24px; list-style: none; }
+.footer-links a { font-size: 13px; color: var(--text-dim); }
+.footer-links a:hover { color: var(--text-muted); }
+.footer-copy { font-size: 12px; color: var(--text-dim); }
+
+@media (max-width: 720px) {
+  nav { padding: 14px 20px; }
+  .legal { padding: 48px 20px 80px; }
+  footer { padding: 24px 20px; flex-direction: column; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0ms !important; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">Prax<span>i</span></a>
+  <a href="/" class="nav-back">← Retour à l'accueil</a>
+</nav>
+
+<main class="legal">
+  <span class="eyebrow">Conditions générales</span>
+  <h1>Conditions Générales d'Utilisation</h1>
+  <p class="updated">Dernière mise à jour : juin 2025</p>
+
+  <div class="callout">
+    <p class="callout-title">À retenir</p>
+    <p>Praxi est un outil d'aide à la rédaction médicale. Il ne se substitue jamais au jugement clinique du médecin, qui demeure seul responsable du contenu signé et transmis.</p>
+  </div>
+
+  <h2><span class="num">1.</span> Objet</h2>
+  <p>Les présentes Conditions Générales d'Utilisation (« CGU ») régissent l'accès et l'usage du service Praxi, plateforme d'assistance à la rédaction de documents médico-administratifs proposée par Praxi SAS (ci-après « l'Éditeur »).</p>
+  <p>L'inscription au service implique l'acceptation pleine et entière des présentes CGU.</p>
+
+  <h2><span class="num">2.</span> Public visé</h2>
+  <p>Le service est strictement réservé aux <strong>professionnels de santé en exercice</strong>, prioritairement les médecins libéraux inscrits à l'Ordre des Médecins. Tout utilisateur certifie disposer des qualifications requises et exercer dans un cadre légal au moment de son inscription.</p>
+
+  <h2><span class="num">3.</span> Nature du service</h2>
+  <p>Praxi est un <strong>outil d'aide à la rédaction</strong> reposant sur des modèles d'intelligence artificielle. Il produit des projets de documents (lettres de liaison, comptes-rendus de consultation, résumés de documents) à partir de notes fournies par l'utilisateur.</p>
+  <p>Praxi ne réalise <strong>aucun diagnostic</strong>, ne formule <strong>aucune prescription</strong>, n'effectue <strong>aucune interprétation clinique autonome</strong>. Le service est un assistant rédactionnel, non un dispositif médical.</p>
+
+  <h2><span class="num">4.</span> Non-substitution au jugement médical</h2>
+  <div class="callout">
+    <p class="callout-title">Clause essentielle</p>
+    <p>Le médecin utilisateur reste seul responsable de la pertinence clinique, de l'exactitude et de la conformité réglementaire des documents qu'il signe et transmet. Praxi ne saurait en aucun cas se substituer au jugement médical, à l'examen clinique, ni à la relation de confiance entre le médecin et son patient.</p>
+  </div>
+  <p>Chaque document produit par Praxi doit être <strong>relu, vérifié et validé</strong> par le médecin avant tout usage. La signature du document engage la responsabilité exclusive du praticien.</p>
+
+  <h2><span class="num">5.</span> Compte utilisateur</h2>
+  <p>L'utilisateur s'engage à fournir des informations exactes lors de son inscription et à les maintenir à jour. Il est seul responsable de la confidentialité de ses identifiants. Tout usage du compte est réputé effectué par son titulaire.</p>
+  <p>L'Éditeur se réserve le droit de suspendre tout compte en cas d'usage manifestement contraire aux présentes CGU ou à la déontologie médicale.</p>
+
+  <h2><span class="num">6.</span> Données patients</h2>
+  <p>Le médecin utilisateur s'engage à n'introduire dans Praxi que des données strictement nécessaires à la rédaction du document concerné, et à respecter le secret médical ainsi que ses obligations RGPD vis-à-vis de ses patients.</p>
+  <p>Les modalités de traitement des données sont détaillées dans la <a href="/politique-confidentialite.html">politique de confidentialité</a>.</p>
+
+  <h2><span class="num">7.</span> Propriété des contenus</h2>
+  <p>Les documents générés via Praxi appartiennent au médecin qui les produit. L'Éditeur ne revendique aucun droit sur ces contenus et s'interdit toute exploitation commerciale ou statistique nominative.</p>
+
+  <h2><span class="num">8.</span> Disponibilité et maintenance</h2>
+  <p>L'Éditeur s'efforce d'assurer la disponibilité du service 24h/24, 7j/7, sous réserve d'opérations de maintenance, d'incidents techniques ou de cas de force majeure. Aucune obligation de résultat n'est garantie en matière de disponibilité.</p>
+
+  <h2><span class="num">9.</span> Limitation de responsabilité</h2>
+  <p>L'Éditeur fournit le service en l'état. Compte tenu de la nature d'assistance rédactionnelle du service et de la responsabilité pleine et entière du médecin sur les documents qu'il signe, la responsabilité de l'Éditeur est strictement limitée aux dommages directs et prouvés résultant d'un manquement caractérisé à ses obligations contractuelles, dans la limite du montant des sommes effectivement versées par l'utilisateur au cours des douze mois précédant le fait générateur.</p>
+  <p>L'Éditeur ne saurait être tenu responsable de tout dommage indirect (perte de chance, atteinte à la réputation, perte de patientèle).</p>
+
+  <h2><span class="num">10.</span> Tarification et résiliation</h2>
+  <p>Les tarifs en vigueur sont communiqués sur la page <a href="/#tarifs">Tarifs</a>. L'utilisateur peut résilier son abonnement à tout moment depuis son espace, la résiliation prenant effet à la fin de la période en cours.</p>
+
+  <h2><span class="num">11.</span> Évolution des CGU</h2>
+  <p>L'Éditeur peut modifier les présentes CGU. Toute évolution substantielle sera notifiée par email avec un préavis raisonnable. La poursuite de l'utilisation après notification vaut acceptation.</p>
+
+  <h2><span class="num">12.</span> Droit applicable</h2>
+  <p>Les présentes CGU sont régies par le droit français. À défaut de résolution amiable, tout litige relèvera de la compétence exclusive des tribunaux du ressort de la Cour d'appel de Paris.</p>
+
+  <h2><span class="num">13.</span> Contact</h2>
+  <p>Pour toute question relative aux présentes CGU : <a href="mailto:contact@praxi.fr">contact@praxi.fr</a>.</p>
+</main>
+
+<footer>
+  <div class="footer-logo">Prax<span>i</span></div>
+  <ul class="footer-links">
+    <li><a href="/mentions-legales.html">Mentions légales</a></li>
+    <li><a href="/politique-confidentialite.html">Confidentialité</a></li>
+    <li><a href="/cgu.html">CGU</a></li>
+    <li><a href="mailto:contact@praxi.fr">Contact</a></li>
+  </ul>
+  <p class="footer-copy">© 2025 Praxi</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Praxi — Mentions légales</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #080C10; --bg-card: #0D1520; --bg-card2: #0A1018;
+  --border: #1A2535; --border2: #243040;
+  --text: #EDF2F7; --text-muted: #6B8299; --text-dim: #3D5166;
+  --accent: #38BDF8; --accent-dim: rgba(56,189,248,0.10);
+  --accent-glow: rgba(56,189,248,0.22);
+}
+
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 16px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* NAV */
+nav {
+  position: sticky; top: 0; z-index: 100;
+  padding: 16px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  background: rgba(8,12,16,0.9); backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 22px; letter-spacing: -.02em;
+  color: var(--text); text-decoration: none;
+}
+.nav-logo span { color: var(--accent); }
+.nav-back {
+  font-size: 13px; color: var(--text-muted);
+  text-decoration: none; transition: color .2s;
+}
+.nav-back:hover { color: var(--text); }
+
+/* LAYOUT */
+.legal {
+  max-width: 760px; margin: 0 auto;
+  padding: 72px 32px 120px;
+}
+.eyebrow {
+  display: block; font-size: 11px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+}
+h1 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: clamp(36px, 4.5vw, 52px);
+  line-height: 1.1; letter-spacing: -.025em;
+  color: var(--text); margin-bottom: 16px;
+}
+.updated {
+  font-size: 13px; color: var(--text-dim);
+  margin-bottom: 56px;
+}
+h2 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 26px; letter-spacing: -.015em;
+  color: var(--text); margin-top: 48px; margin-bottom: 18px;
+}
+h3 {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  margin-top: 28px; margin-bottom: 10px;
+  letter-spacing: -.005em;
+}
+p, li {
+  font-size: 15px; font-weight: 300;
+  color: var(--text-muted); line-height: 1.75;
+  margin-bottom: 14px;
+}
+p strong, li strong { color: var(--text); font-weight: 500; }
+ul { padding-left: 22px; }
+li { margin-bottom: 8px; }
+a { color: var(--accent); text-decoration: none; transition: opacity .2s; }
+a:hover { opacity: .82; }
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 24px 28px; margin: 28px 0;
+}
+.card p { margin-bottom: 8px; font-size: 14.5px; }
+.card p:last-child { margin-bottom: 0; }
+
+/* FOOTER */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 40px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 17px; color: var(--text-muted);
+}
+.footer-logo span { color: var(--accent); }
+.footer-links { display: flex; gap: 24px; list-style: none; }
+.footer-links a { font-size: 13px; color: var(--text-dim); }
+.footer-links a:hover { color: var(--text-muted); }
+.footer-copy { font-size: 12px; color: var(--text-dim); }
+
+@media (max-width: 720px) {
+  nav { padding: 14px 20px; }
+  .legal { padding: 48px 20px 80px; }
+  footer { padding: 24px 20px; flex-direction: column; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0ms !important; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">Prax<span>i</span></a>
+  <a href="/" class="nav-back">← Retour à l'accueil</a>
+</nav>
+
+<main class="legal">
+  <span class="eyebrow">Informations légales</span>
+  <h1>Mentions légales</h1>
+  <p class="updated">Dernière mise à jour : juin 2025</p>
+
+  <h2>Éditeur du service</h2>
+  <div class="card">
+    <p><strong>Praxi SAS</strong></p>
+    <p>Société par actions simplifiée au capital de 10 000 €</p>
+    <p>Siège social : [à compléter — adresse postale]</p>
+    <p>RCS Paris : [à compléter]</p>
+    <p>Numéro de TVA intracommunautaire : [à compléter]</p>
+    <p>Email : <a href="mailto:contact@praxi.fr">contact@praxi.fr</a></p>
+  </div>
+
+  <h2>Directeur de la publication</h2>
+  <p>Le directeur de la publication est le représentant légal de Praxi SAS. Toute demande relative au contenu publié sur le site peut être adressée par email à <a href="mailto:contact@praxi.fr">contact@praxi.fr</a>.</p>
+
+  <h2>Hébergement</h2>
+  <div class="card">
+    <p><strong>Hébergeur certifié HDS (Hébergeur de Données de Santé)</strong></p>
+    <p>OVHcloud SAS</p>
+    <p>2 rue Kellermann, 59100 Roubaix, France</p>
+    <p>Téléphone : 09 72 10 10 07</p>
+    <p>Certification HDS conforme au référentiel ASIP Santé. Données hébergées exclusivement sur le territoire français.</p>
+  </div>
+
+  <h2>Propriété intellectuelle</h2>
+  <p>L'ensemble des éléments composant le service Praxi — marque, logo, design, code source, interface — sont la propriété exclusive de Praxi SAS. Toute reproduction, représentation ou exploitation totale ou partielle sans autorisation écrite préalable est interdite.</p>
+  <p>Les documents médicaux générés via Praxi appartiennent au médecin qui les produit. Praxi ne revendique aucun droit sur le contenu rédigé par ses utilisateurs.</p>
+
+  <h2>Données personnelles</h2>
+  <p>Le traitement des données personnelles fait l'objet d'une <a href="/politique-confidentialite.html">politique de confidentialité</a> dédiée, conforme au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés.</p>
+
+  <h2>Signalement</h2>
+  <p>Pour signaler tout contenu illicite, manquement à la réglementation médicale ou problème de sécurité, contactez immédiatement <a href="mailto:contact@praxi.fr">contact@praxi.fr</a>.</p>
+
+  <h2>Droit applicable</h2>
+  <p>Les présentes mentions légales sont régies par le droit français. Tout litige relèvera de la compétence exclusive des tribunaux du ressort de la Cour d'appel de Paris, sous réserve des dispositions impératives applicables aux consommateurs.</p>
+</main>
+
+<footer>
+  <div class="footer-logo">Prax<span>i</span></div>
+  <ul class="footer-links">
+    <li><a href="/mentions-legales.html">Mentions légales</a></li>
+    <li><a href="/politique-confidentialite.html">Confidentialité</a></li>
+    <li><a href="/cgu.html">CGU</a></li>
+    <li><a href="mailto:contact@praxi.fr">Contact</a></li>
+  </ul>
+  <p class="footer-copy">© 2025 Praxi</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,1536 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Praxi — Application</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #080C10;
+  --bg-card:   #0D1520;
+  --bg-card2:  #0A1018;
+  --border:    #1A2535;
+  --border2:   #243040;
+  --text:      #EDF2F7;
+  --text-muted:#6B8299;
+  --text-dim:  #3D5166;
+  --accent:    #38BDF8;
+  --accent2:   #0EA5E9;
+  --accent-dim:rgba(56,189,248,0.10);
+  --accent-glow:rgba(56,189,248,0.22);
+  --highlight: #BAE6FD;
+  --danger:    #F87171;
+  --danger-dim:rgba(248,113,113,0.10);
+  --danger-glow:rgba(248,113,113,0.35);
+  --success:   #4ADE80;
+  --warning:   #F0C060;
+  --sidebar-w: 264px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+}
+
+/* ─── SIDEBAR ─── */
+.sidebar {
+  position: fixed; top: 0; left: 0; bottom: 0;
+  width: var(--sidebar-w);
+  background: var(--bg-card2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  padding: 22px 18px; z-index: 50;
+  overflow-y: auto;
+}
+.side-logo {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 24px; letter-spacing: -.02em; color: var(--text);
+  text-decoration: none; padding: 4px 8px; margin-bottom: 18px;
+}
+.side-logo span { color: var(--accent); }
+
+.side-user {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 10px; border-radius: 9px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  margin-bottom: 22px; cursor: pointer; transition: border-color .2s;
+}
+.side-user:hover { border-color: var(--border2); }
+.side-avatar {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.25);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: var(--accent);
+}
+.side-uinfo { flex: 1; min-width: 0; }
+.side-uname { font-size: 13.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.side-uspec { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.side-section {
+  font-size: 10.5px; font-weight: 500; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--text-dim);
+  padding: 0 10px; margin: 14px 0 8px;
+}
+.side-link {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; border-radius: 8px;
+  font-size: 13.5px; color: var(--text-muted); text-decoration: none;
+  cursor: pointer; transition: background .2s, color .2s; border: 1px solid transparent;
+  font-family: inherit; background: none; width: 100%; text-align: left;
+}
+.side-link svg { width: 16px; height: 16px; flex-shrink: 0; }
+.side-link:hover { background: var(--bg-card); color: var(--text); }
+.side-link.active {
+  background: var(--accent-dim); color: var(--accent);
+  border-color: rgba(56,189,248,.18);
+}
+
+.side-spacer { flex: 1; }
+.side-logout {
+  margin-top: 16px; color: var(--text-muted);
+  border-top: 1px solid var(--border); padding-top: 14px;
+}
+.side-logout:hover { color: var(--danger); background: var(--danger-dim); }
+
+/* ─── MAIN ─── */
+.main {
+  margin-left: var(--sidebar-w);
+  min-height: 100vh;
+  padding: 38px 48px 100px;
+  max-width: 1100px;
+}
+
+.page-title {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 32px; letter-spacing: -.025em; margin-bottom: 4px;
+}
+.page-sub {
+  font-size: 14.5px; color: var(--text-muted); font-weight: 300;
+  margin-bottom: 30px;
+}
+.page-actions {
+  display: flex; gap: 10px; align-items: center;
+  margin-top: -22px; margin-bottom: 28px; flex-wrap: wrap;
+}
+
+.view { display: none; }
+.view.active { display: block; animation: fade .35s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ─── FORM ─── */
+.field { margin-bottom: 18px; }
+.field-row { display: flex; gap: 14px; }
+.field-row .field { flex: 1; }
+.label {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; font-weight: 500;
+  letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 8px;
+}
+.label-opt { font-size: 10.5px; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.input, .textarea, .select {
+  width: 100%; background: var(--bg-card);
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 11px 14px; font-size: 14px; color: var(--text);
+  outline: none; font-family: inherit; transition: border-color .2s, box-shadow .2s;
+}
+.input::placeholder, .textarea::placeholder { color: var(--text-dim); }
+.input:focus, .textarea:focus, .select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(56,189,248,.08);
+}
+.textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
+.select {
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px;
+}
+
+/* champ avec micro */
+.with-mic { position: relative; }
+.with-mic .textarea { padding-right: 50px; }
+.mic-btn {
+  position: absolute; top: 10px; right: 10px;
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--bg-card2); border: 1px solid var(--border2);
+  color: var(--text-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .2s; font-family: inherit;
+}
+.mic-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.mic-btn:disabled { opacity: .45; cursor: not-allowed; }
+.mic-btn.listening {
+  background: var(--danger); border-color: var(--danger); color: #050A10;
+  animation: pulseMic 1.2s ease infinite;
+}
+@keyframes pulseMic {
+  0%, 100% { box-shadow: 0 0 0 0 var(--danger-glow); }
+  50%      { box-shadow: 0 0 0 8px transparent; }
+}
+
+/* dropzone */
+.dropzone {
+  border: 1.5px dashed var(--border2); border-radius: 10px;
+  padding: 36px 24px; text-align: center; cursor: pointer;
+  transition: border-color .2s, background .2s; background: var(--bg-card2);
+}
+.dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--accent-dim); }
+.dropzone svg { color: var(--text-muted); margin-bottom: 12px; }
+.dropzone-title { font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.dropzone-hint { font-size: 12px; color: var(--text-dim); }
+.file-info {
+  display: none; margin-top: 14px; padding: 11px 16px;
+  background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
+  font-size: 13px; color: var(--text-muted);
+  align-items: center; justify-content: space-between;
+}
+.file-info.show { display: flex; }
+.file-info b { color: var(--text); font-weight: 500; }
+.file-remove {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 20px; line-height: 1; padding: 0 4px;
+}
+.file-remove:hover { color: var(--danger); }
+
+/* ─── BOUTONS ─── */
+.actions { margin-top: 22px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  border-radius: 8px; padding: 11px 22px;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  font-family: inherit; border: 1px solid transparent;
+  transition: opacity .2s, transform .15s, box-shadow .2s, background .2s, border-color .2s, color .2s;
+}
+.btn-primary { background: var(--accent); color: #050A10; }
+.btn-primary:hover { opacity: .92; box-shadow: 0 6px 22px var(--accent-glow); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.btn-ghost { background: transparent; border-color: var(--border2); color: var(--text-muted); }
+.btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+.btn-ghost svg { width: 14px; height: 14px; }
+
+.spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(5,10,16,.3); border-top-color: #050A10;
+  animation: spin .7s linear infinite;
+}
+.spinner.dark { border: 2px solid rgba(56,189,248,.18); border-top-color: var(--accent); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── ALERTS ─── */
+.alert {
+  display: none; margin-top: 18px; padding: 12px 16px;
+  border-radius: 8px; font-size: 13.5px; line-height: 1.5;
+}
+.alert.show { display: block; }
+.alert-error { background: var(--danger-dim); border: 1px solid rgba(248,113,113,.3); color: #FCA5A5; }
+.alert-info  { background: var(--accent-dim); border: 1px solid rgba(56,189,248,.22); color: var(--highlight); }
+
+/* ─── RESULT ─── */
+.result { display: none; margin-top: 34px; }
+.result.show { display: block; animation: fade .3s ease; }
+.result-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; gap: 14px; flex-wrap: wrap;
+}
+.result-title {
+  font-size: 11px; font-weight: 500; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--accent);
+}
+.result-tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.tool-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-card); border: 1px solid var(--border2);
+  border-radius: 7px; padding: 6px 12px;
+  font-size: 12.5px; font-weight: 500; color: var(--text-muted);
+  cursor: pointer; font-family: inherit; transition: all .2s;
+}
+.tool-btn svg { width: 13px; height: 13px; }
+.tool-btn:hover { border-color: var(--accent); color: var(--accent); }
+.tool-btn.copied { border-color: var(--success); color: var(--success); }
+.tool-btn.saved  { border-color: var(--success); color: var(--success); }
+.result-body {
+  background: var(--bg-card2);
+  border: 1px solid var(--border);
+  border-radius: 10px; padding: 26px 30px;
+  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-size: 13.5px; line-height: 1.75; color: var(--text);
+  white-space: pre-wrap; word-wrap: break-word;
+}
+
+/* ─── HISTORIQUE ─── */
+.history-list { display: flex; flex-direction: column; gap: 10px; }
+.history-empty {
+  text-align: center; padding: 60px 20px; color: var(--text-muted);
+  border: 1px dashed var(--border2); border-radius: 12px;
+}
+.history-empty svg { width: 36px; height: 36px; margin-bottom: 12px; opacity: .6; }
+.hist-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 20px;
+  display: flex; align-items: center; gap: 16px;
+  cursor: pointer; transition: border-color .2s, background .2s;
+}
+.hist-item:hover { border-color: var(--accent); background: #0F1B2A; }
+.hist-icon {
+  width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
+  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.18);
+  display: flex; align-items: center; justify-content: center; color: var(--accent);
+}
+.hist-icon svg { width: 17px; height: 17px; }
+.hist-body { flex: 1; min-width: 0; }
+.hist-type { font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
+.hist-patient { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-date { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.hist-del {
+  background: none; border: none; color: var(--text-dim); cursor: pointer;
+  font-size: 18px; padding: 6px 8px; border-radius: 6px;
+  font-family: inherit; transition: color .2s, background .2s;
+}
+.hist-del:hover { color: var(--danger); background: var(--danger-dim); }
+
+/* ─── PROFIL ─── */
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 28px 30px; margin-bottom: 22px;
+}
+.card-title { font-size: 13px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
+.profile-save {
+  font-size: 12px; color: var(--success); display: none; align-items: center; gap: 6px;
+}
+.profile-save.show { display: inline-flex; animation: fade .3s ease; }
+
+/* ─── MODALES ─── */
+.modal-bg {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(4,7,11,.78); backdrop-filter: blur(6px);
+  display: none; align-items: center; justify-content: center; padding: 24px;
+}
+.modal-bg.show { display: flex; }
+.modal {
+  background: var(--bg-card); border: 1px solid var(--border2);
+  border-radius: 14px; padding: 32px; max-width: 460px; width: 100%;
+  animation: rise .25s ease both;
+}
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.modal h2 {
+  font-family: 'DM Serif Display', Georgia, serif;
+  font-size: 24px; letter-spacing: -.02em; margin-bottom: 8px;
+}
+.modal p.modal-desc { font-size: 13.5px; color: var(--text-muted); margin-bottom: 22px; font-weight: 300; }
+.modal-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
+
+.doctolib-flag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(240,192,96,.10); border: 1px solid rgba(240,192,96,.3);
+  color: var(--warning); border-radius: 20px;
+  padding: 4px 12px; font-size: 11px; font-weight: 500; margin-bottom: 14px;
+}
+.doctolib-loading {
+  padding: 30px; text-align: center; color: var(--text-muted);
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.doctolib-result {
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 9px; padding: 16px 18px; margin-top: 8px;
+}
+.doctolib-result dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 13px; }
+.doctolib-result dt { color: var(--text-muted); }
+.doctolib-result dd { color: var(--text); }
+
+/* ─── RESPONSIVE ─── */
+.menu-toggle {
+  display: none; position: fixed; top: 14px; left: 14px; z-index: 60;
+  width: 40px; height: 40px; border-radius: 8px;
+  background: var(--bg-card); border: 1px solid var(--border2);
+  color: var(--text); cursor: pointer; font-family: inherit;
+  align-items: center; justify-content: center;
+}
+.sidebar-overlay {
+  display: none; position: fixed; inset: 0; z-index: 40;
+  background: rgba(4,7,11,.6); backdrop-filter: blur(4px);
+}
+.sidebar-overlay.show { display: block; }
+
+@media (max-width: 880px) {
+  .menu-toggle { display: flex; }
+  .sidebar {
+    transform: translateX(-100%); transition: transform .3s ease;
+    width: 280px;
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.5); }
+  .main { margin-left: 0; padding: 70px 22px 80px; }
+  .field-row { flex-direction: column; gap: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition-duration: 0ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOGGLE MOBILE -->
+<button class="menu-toggle" id="menu-toggle" aria-label="Menu">
+  <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+    <path d="M4 6h16M4 12h16M4 18h16"/>
+  </svg>
+</button>
+<div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+<!-- ─── SIDEBAR ─── -->
+<aside class="sidebar" id="sidebar">
+  <a href="/" class="side-logo">Prax<span>i</span></a>
+
+  <div class="side-user" id="side-user" title="Modifier mon profil">
+    <div class="side-avatar" id="side-avatar">·</div>
+    <div class="side-uinfo">
+      <div class="side-uname" id="side-uname">Médecin</div>
+      <div class="side-uspec" id="side-uspec">—</div>
+    </div>
+  </div>
+
+  <div class="side-section">Rédaction</div>
+  <button class="side-link active" data-view="liaison">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8M3 8l9-5 9 5"/></svg>
+    Lettre de liaison
+  </button>
+  <button class="side-link" data-view="cr">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6M9 16h6"/></svg>
+    Compte-rendu
+  </button>
+  <button class="side-link" data-view="resume">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M9 8h6M5 19V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2z"/></svg>
+    Résumé de document
+  </button>
+
+  <div class="side-section">Mon espace</div>
+  <button class="side-link" data-view="history">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3M3.05 11a9 9 0 11.5 4M3 4v5h5"/></svg>
+    Historique <span id="history-count" style="margin-left:auto;font-size:11px;color:var(--text-dim)"></span>
+  </button>
+  <button class="side-link" data-view="profile">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+    Profil
+  </button>
+
+  <div class="side-spacer"></div>
+  <button class="side-link side-logout" id="logout">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+    Déconnexion
+  </button>
+</aside>
+
+<!-- ─── MAIN ─── -->
+<main class="main">
+
+  <!-- ── LIAISON ── -->
+  <section class="view active" id="view-liaison">
+    <h1 class="page-title">Lettre de liaison</h1>
+    <p class="page-sub">Adressez un patient à un confrère spécialiste à partir de vos notes.</p>
+    <div class="page-actions">
+      <button class="btn btn-ghost" id="open-doctolib-l">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
+        Importer depuis Doctolib
+      </button>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Nom du patient</label>
+        <input class="input" id="l-patient" placeholder="Ex. M. Dupont Jean" />
+      </div>
+      <div class="field" style="max-width:160px">
+        <label class="label">Âge</label>
+        <input class="input" id="l-age" placeholder="Ex. 54 ans" />
+      </div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Motif d'adressage</label>
+        <input class="input" id="l-motif" placeholder="Ex. avis cardiologique pour palpitations" />
+      </div>
+      <div class="field">
+        <label class="label">Spécialiste destinataire</label>
+        <select class="select" id="l-specialiste">
+          <option value="" disabled selected>Choisir…</option>
+          <option>Cardiologie</option>
+          <option>Dermatologie</option>
+          <option>Endocrinologie</option>
+          <option>Gastro-entérologie</option>
+          <option>Gynécologie</option>
+          <option>Neurologie</option>
+          <option>Ophtalmologie</option>
+          <option>ORL</option>
+          <option>Pneumologie</option>
+          <option>Psychiatrie</option>
+          <option>Rhumatologie</option>
+          <option>Urologie</option>
+          <option>Chirurgie orthopédique</option>
+          <option>Médecine interne</option>
+          <option>Autre spécialité</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <span>Notes cliniques</span>
+        <span class="label-opt">Dictez ou tapez librement</span>
+      </label>
+      <div class="with-mic">
+        <textarea class="textarea" id="l-notes" placeholder="Antécédents, traitements, examen, contexte…"></textarea>
+        <button type="button" class="mic-btn" data-mic="l-notes" title="Dictée vocale">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" data-gen="liaison">
+        <span class="btn-label">Générer la lettre</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="l-error"></div>
+
+    <div class="result" id="l-result">
+      <div class="result-head">
+        <span class="result-title">Lettre de liaison</span>
+        <div class="result-tools" data-result-tools="liaison"></div>
+      </div>
+      <div class="result-body" id="l-out"></div>
+    </div>
+  </section>
+
+  <!-- ── COMPTE-RENDU ── -->
+  <section class="view" id="view-cr">
+    <h1 class="page-title">Compte-rendu de consultation</h1>
+    <p class="page-sub">Transformez vos notes de consultation en compte-rendu structuré.</p>
+    <div class="page-actions">
+      <button class="btn btn-ghost" id="open-doctolib-c">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
+        Importer depuis Doctolib
+      </button>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Nom du patient</label>
+        <input class="input" id="c-patient" placeholder="Ex. Mme Martin Sophie" />
+      </div>
+      <div class="field" style="max-width:200px">
+        <label class="label">Date</label>
+        <input class="input" id="c-date" type="date" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <span>Notes brutes de consultation</span>
+        <span class="label-opt">Dictez en fin de consultation</span>
+      </label>
+      <div class="with-mic">
+        <textarea class="textarea" id="c-notes" placeholder="Motif, plaintes du patient, examen clinique, impression diagnostique, traitement…"></textarea>
+        <button type="button" class="mic-btn" data-mic="c-notes" title="Dictée vocale">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" data-gen="cr">
+        <span class="btn-label">Générer le compte-rendu</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="c-error"></div>
+
+    <div class="result" id="c-result">
+      <div class="result-head">
+        <span class="result-title">Compte-rendu de consultation</span>
+        <div class="result-tools" data-result-tools="cr"></div>
+      </div>
+      <div class="result-body" id="c-out"></div>
+    </div>
+  </section>
+
+  <!-- ── RÉSUMÉ ── -->
+  <section class="view" id="view-resume">
+    <h1 class="page-title">Résumé de document</h1>
+    <p class="page-sub">Analysez un document (.txt ou .pdf) : résumé, points clés, actions suggérées.</p>
+
+    <div class="field">
+      <label class="label">Document à analyser</label>
+      <div class="dropzone" id="dropzone">
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 16V4m0 0L8 8m4-4l4 4M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+        </svg>
+        <div class="dropzone-title">Glissez un fichier ici ou cliquez pour parcourir</div>
+        <div class="dropzone-hint">Formats acceptés : .txt, .pdf — le contenu reste sur votre poste</div>
+        <input type="file" id="file-input" accept=".txt,.pdf,text/plain,application/pdf" hidden />
+      </div>
+      <div class="file-info" id="file-info">
+        <span><b id="file-name"></b> <span id="file-meta"></span></span>
+        <button class="file-remove" id="file-remove" title="Retirer">×</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" data-gen="resume" disabled>
+        <span class="btn-label">Analyser le document</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="r-error"></div>
+
+    <div class="result" id="r-result">
+      <div class="result-head">
+        <span class="result-title">Analyse du document</span>
+        <div class="result-tools" data-result-tools="resume"></div>
+      </div>
+      <div class="result-body" id="r-out"></div>
+    </div>
+  </section>
+
+  <!-- ── HISTORIQUE ── -->
+  <section class="view" id="view-history">
+    <h1 class="page-title">Historique</h1>
+    <p class="page-sub">Vos 50 derniers documents générés, stockés localement sur votre appareil.</p>
+    <div id="history-container"></div>
+  </section>
+
+  <!-- ── PROFIL ── -->
+  <section class="view" id="view-profile">
+    <h1 class="page-title">Profil médecin</h1>
+    <p class="page-sub">Ces informations apparaissent en en-tête de chaque document généré.</p>
+
+    <div class="card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px">
+        <span class="card-title" style="margin:0">Identité &amp; cabinet</span>
+        <span class="profile-save" id="profile-save"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg> Profil mis à jour</span>
+      </div>
+      <form id="profile-form">
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Prénom</label>
+            <input class="input" id="p-prenom" />
+          </div>
+          <div class="field">
+            <label class="label">Nom</label>
+            <input class="input" id="p-nom" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Spécialité</label>
+            <select class="select" id="p-specialite">
+              <option>Médecine générale</option>
+              <option>Médecine interne</option>
+              <option>Cardiologie</option>
+              <option>Pédiatrie</option>
+              <option>Gynécologie</option>
+              <option>Psychiatrie</option>
+              <option>Rhumatologie</option>
+              <option>Gériatrie</option>
+              <option>Autre spécialité</option>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Ville</label>
+            <input class="input" id="p-ville" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">Adresse du cabinet</label>
+          <input class="input" id="p-adresse" placeholder="Ex. 3 rue de la Paix, 69001 Lyon" />
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Téléphone</label>
+            <input class="input" id="p-telephone" placeholder="04 72 00 00 00" />
+          </div>
+          <div class="field">
+            <label class="label">Email pro</label>
+            <input class="input" id="p-emailPro" type="email" />
+          </div>
+        </div>
+        <div class="field">
+          <label class="label">
+            <span>Numéro RPPS</span>
+            <span class="label-opt">11 chiffres — optionnel</span>
+          </label>
+          <input class="input" id="p-rpps" inputmode="numeric" />
+        </div>
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="profile-submit">
+            <span class="btn-label">Enregistrer</span>
+          </button>
+        </div>
+        <div class="alert alert-error" id="profile-error"></div>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<!-- ─── MODALE DOCTOLIB ─── -->
+<div class="modal-bg" id="modal-doctolib">
+  <div class="modal">
+    <div class="doctolib-flag">
+      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      Mode simulation — intégration Doctolib disponible en version Enterprise
+    </div>
+    <h2>Importer un patient</h2>
+    <p class="modal-desc">Recherchez un patient pour pré-remplir le formulaire actif.</p>
+
+    <div id="doctolib-search">
+      <div class="field">
+        <label class="label">Nom du patient</label>
+        <input class="input" id="dl-query" placeholder="Ex. Dupont Jean" />
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close-modal>Annuler</button>
+        <button class="btn btn-primary" id="dl-search-btn">
+          <span class="btn-label">Rechercher</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="doctolib-loading" class="doctolib-loading" style="display:none">
+      <div class="spinner dark"></div>
+      <div>Connexion à Doctolib…</div>
+    </div>
+
+    <div id="doctolib-found" style="display:none">
+      <div class="doctolib-result">
+        <dl>
+          <dt>Patient</dt>            <dd id="dl-name">—</dd>
+          <dt>Âge</dt>                <dd id="dl-age">—</dd>
+          <dt>Dernière consultation</dt><dd id="dl-last">—</dd>
+          <dt>Motif</dt>              <dd id="dl-motif">—</dd>
+        </dl>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-ghost" data-close-modal>Annuler</button>
+        <button class="btn btn-primary" id="dl-import-btn">
+          <span class="btn-label">Pré-remplir le formulaire</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- pdf.js + jsPDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  AUTH — JWT obligatoire, redirection vers /login.html sinon
+// ═══════════════════════════════════════════════════════════════════════
+const TOKEN_KEY  = 'praxi_token';
+const PROFIL_KEY = 'praxi_profil';
+
+const token = localStorage.getItem(TOKEN_KEY);
+if (!token) location.replace('/login.html');
+
+let me = JSON.parse(localStorage.getItem(PROFIL_KEY) || 'null');
+
+function api(path, opts = {}) {
+  const headers = Object.assign(
+    { 'Authorization': 'Bearer ' + token },
+    opts.method && opts.method !== 'GET' ? { 'Content-Type': 'application/json' } : {},
+    opts.headers || {}
+  );
+  return fetch(path, { ...opts, headers }).then(async res => {
+    if (res.status === 401) { logout(); throw new Error('Session expirée.'); }
+    let data = {};
+    try { data = await res.json(); } catch (_) {}
+    if (!res.ok) throw new Error(data.error || ('Erreur ' + res.status));
+    return data;
+  });
+}
+
+function logout() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(PROFIL_KEY);
+  location.replace('/login.html');
+}
+document.getElementById('logout').addEventListener('click', logout);
+
+// Vérifie le token et rafraîchit le profil au chargement
+api('/api/auth/me').then(({ user }) => {
+  me = user;
+  localStorage.setItem(PROFIL_KEY, JSON.stringify(user));
+  renderUser();
+  fillProfileForm();
+}).catch(() => {/* la fn api() gère déjà le 401 */});
+
+function initial(name) { return (name || '').trim().charAt(0).toUpperCase() || '·'; }
+function renderUser() {
+  if (!me) return;
+  document.getElementById('side-uname').textContent = 'Dr ' + (me.prenom || '');
+  document.getElementById('side-uspec').textContent = me.specialite || '—';
+  document.getElementById('side-avatar').textContent = initial(me.prenom);
+}
+renderUser();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  NAVIGATION sidebar
+// ═══════════════════════════════════════════════════════════════════════
+const sidebar  = document.getElementById('sidebar');
+const overlay  = document.getElementById('sidebar-overlay');
+document.getElementById('menu-toggle').addEventListener('click', () => {
+  sidebar.classList.add('open'); overlay.classList.add('show');
+});
+overlay.addEventListener('click', () => {
+  sidebar.classList.remove('open'); overlay.classList.remove('show');
+});
+document.getElementById('side-user').addEventListener('click', () => switchView('profile'));
+
+function switchView(name) {
+  document.querySelectorAll('.side-link[data-view]').forEach(b =>
+    b.classList.toggle('active', b.dataset.view === name));
+  document.querySelectorAll('.view').forEach(v =>
+    v.classList.toggle('active', v.id === 'view-' + name));
+  if (name === 'history') renderHistory();
+  sidebar.classList.remove('open'); overlay.classList.remove('show');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+document.querySelectorAll('.side-link[data-view]').forEach(b => {
+  b.addEventListener('click', () => switchView(b.dataset.view));
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════════════════
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function stripMarkdown(s) {
+  return s
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/\*(.+?)\*/g, '$1')
+    .replace(/#{1,6}\s?/g, '');
+}
+function showError(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.add('show');
+}
+function clearError(id) {
+  const el = document.getElementById(id);
+  el.textContent = ''; el.classList.remove('show');
+}
+function setLoading(btn, loading, label) {
+  if (loading) {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span><span class="btn-label">Génération en cours…</span>';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="btn-label">' + label + '</span>';
+  }
+}
+function slug(s) {
+  return (s || '').toString().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'document';
+}
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (isNaN(d)) return iso;
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) +
+    ' · ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  TEMPLATES par spécialité (champ "notes" du formulaire de liaison)
+// ═══════════════════════════════════════════════════════════════════════
+const TEMPLATES_LIAISON = {
+  'Cardiologie':
+    "Antécédents cardiovasculaires :\n" +
+    "Facteurs de risque (HTA, diabète, tabac, dyslipidémie, hérédité) :\n" +
+    "Symptômes (douleur thoracique, dyspnée, palpitations, syncope) :\n" +
+    "Traitement actuel :\n" +
+    "Examens déjà réalisés (ECG, biologie) :",
+  'Pneumologie':
+    "Symptômes respiratoires (toux, dyspnée, expectorations, sifflements) :\n" +
+    "Tabagisme (paquets-année) :\n" +
+    "Exposition professionnelle / environnementale :\n" +
+    "Antécédents pulmonaires :\n" +
+    "Traitement actuel :",
+  'Endocrinologie':
+    "Motif endocrinien (thyroïde, diabète, surpoids, autres) :\n" +
+    "Antécédents personnels et familiaux :\n" +
+    "Traitement actuel :\n" +
+    "Bilan biologique récent :",
+  'Gastro-entérologie':
+    "Symptômes digestifs (douleurs, transit, reflux, saignements) :\n" +
+    "Antécédents digestifs :\n" +
+    "Traitement actuel :\n" +
+    "Examens éventuels :",
+  'Neurologie':
+    "Symptômes neurologiques (céphalées, troubles sensitifs/moteurs, vertiges, troubles cognitifs) :\n" +
+    "Chronologie d'apparition :\n" +
+    "Antécédents neurologiques :\n" +
+    "Traitement actuel :",
+  'Rhumatologie':
+    "Topographie articulaire / rachidienne :\n" +
+    "Rythme des douleurs (mécanique / inflammatoire) :\n" +
+    "Retentissement fonctionnel :\n" +
+    "Antécédents rhumatologiques :\n" +
+    "Traitement actuel :",
+  'Dermatologie':
+    "Description des lésions (aspect, localisation, taille, couleur) :\n" +
+    "Évolution :\n" +
+    "Antécédents dermatologiques :\n" +
+    "Traitements déjà essayés :",
+  'Psychiatrie':
+    "Motif (humeur, anxiété, sommeil, idées suicidaires) :\n" +
+    "Contexte de vie :\n" +
+    "Antécédents psychiatriques personnels et familiaux :\n" +
+    "Traitement psychotrope actuel :",
+  'Gynécologie':
+    "Antécédents gynéco-obstétricaux :\n" +
+    "Cycle menstruel :\n" +
+    "Contraception / ménopause :\n" +
+    "Motif gynécologique :",
+  'Ophtalmologie':
+    "Symptômes visuels (baisse d'acuité, douleur, rougeur, vision déformée) :\n" +
+    "Antécédents ophtalmologiques :\n" +
+    "Correction actuelle :",
+  'ORL':
+    "Symptômes ORL (otalgie, rhinorrhée, dysphonie, vertiges) :\n" +
+    "Ancienneté :\n" +
+    "Antécédents ORL :",
+  'Urologie':
+    "Symptômes urinaires (pollakiurie, brûlures, hématurie, troubles mictionnels) :\n" +
+    "Antécédents urologiques :\n" +
+    "Traitement actuel :",
+  'Chirurgie orthopédique':
+    "Localisation et mécanisme :\n" +
+    "Douleur et retentissement fonctionnel :\n" +
+    "Antécédents orthopédiques :\n" +
+    "Examens d'imagerie réalisés :",
+  'Médecine interne':
+    "Synthèse clinique :\n" +
+    "Hypothèses diagnostiques :\n" +
+    "Antécédents pertinents :\n" +
+    "Traitement actuel :\n" +
+    "Examens déjà réalisés :"
+};
+
+document.getElementById('l-specialiste').addEventListener('change', e => {
+  const spec = e.target.value;
+  const tpl  = TEMPLATES_LIAISON[spec];
+  const notes = document.getElementById('l-notes');
+  if (tpl) {
+    notes.placeholder = tpl;
+    // Si le champ est vide, on insère le canevas pour aider à la rédaction.
+    if (!notes.value.trim()) notes.value = tpl;
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  GÉNÉRATION (appel API)
+// ═══════════════════════════════════════════════════════════════════════
+const GEN = {
+  liaison: {
+    btnLabel: 'Générer la lettre',
+    endpoint: 'liaison',
+    errId: 'l-error', resId: 'l-result', outId: 'l-out',
+    label: 'Lettre de liaison',
+    getPatient: () => document.getElementById('l-patient').value.trim(),
+    build: () => {
+      const notes = document.getElementById('l-notes').value.trim();
+      const motif = document.getElementById('l-motif').value.trim();
+      if (!notes && !motif) return { err: 'Renseignez au moins le motif ou les notes cliniques.' };
+      return { payload: {
+        patient:     document.getElementById('l-patient').value,
+        age:         document.getElementById('l-age').value,
+        motif,
+        specialiste: document.getElementById('l-specialiste').value,
+        notes
+      }};
+    }
+  },
+  cr: {
+    btnLabel: 'Générer le compte-rendu',
+    endpoint: 'compte-rendu',
+    errId: 'c-error', resId: 'c-result', outId: 'c-out',
+    label: 'Compte-rendu de consultation',
+    getPatient: () => document.getElementById('c-patient').value.trim(),
+    build: () => {
+      const notes = document.getElementById('c-notes').value.trim();
+      if (!notes) return { err: 'Renseignez les notes de consultation.' };
+      return { payload: {
+        patient: document.getElementById('c-patient').value,
+        date:    document.getElementById('c-date').value,
+        notes
+      }};
+    }
+  },
+  resume: {
+    btnLabel: 'Analyser le document',
+    endpoint: 'resume',
+    errId: 'r-error', resId: 'r-result', outId: 'r-out',
+    label: 'Analyse de document',
+    getPatient: () => (fileName.textContent || '').replace(/\.(pdf|txt)$/i, '').trim() || 'Document',
+    build: () => {
+      if (!docText) return { err: 'Chargez d\'abord un document .txt ou .pdf.' };
+      return { payload: { text: docText } };
+    }
+  }
+};
+
+function renderResult(el, text) {
+  const clean = stripMarkdown(text).trim();
+  el.dataset.plain = clean;
+  el.innerHTML = escapeHtml(clean).replace(/\n/g, '<br>');
+}
+
+document.querySelectorAll('[data-gen]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const key = btn.dataset.gen;
+    const cfg = GEN[key];
+    clearError(cfg.errId);
+    document.getElementById(cfg.resId).classList.remove('show');
+
+    const built = cfg.build();
+    if (built.err) { showError(cfg.errId, built.err); return; }
+
+    setLoading(btn, true);
+    try {
+      const data = await api('/api/generate/' + cfg.endpoint, {
+        method: 'POST', body: JSON.stringify(built.payload)
+      });
+      const out = data.document || '';
+      const outEl = document.getElementById(cfg.outId);
+      renderResult(outEl, out);
+      renderTools(key);
+      document.getElementById(cfg.resId).classList.add('show');
+      document.getElementById(cfg.resId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (err) {
+      showError(cfg.errId, err.message);
+    } finally {
+      setLoading(btn, false, cfg.btnLabel);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  OUTILS DE RÉSULTAT (Copier / .txt / PDF / Sauvegarder)
+// ═══════════════════════════════════════════════════════════════════════
+function renderTools(key) {
+  const cfg = GEN[key];
+  const host = document.querySelector('[data-result-tools="' + key + '"]');
+  host.innerHTML = '';
+
+  const copyBtn = mkTool('Copier',
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>');
+  copyBtn.addEventListener('click', () => copyResult(copyBtn, cfg.outId));
+
+  const txtBtn = mkTool('.txt',
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 16V4m0 12l-4-4m4 4l4-4M4 20h16"/></svg>');
+  txtBtn.addEventListener('click', () => downloadTxt(cfg, key));
+
+  const pdfBtn = mkTool('PDF',
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/></svg>');
+  pdfBtn.addEventListener('click', () => downloadPdf(cfg, key));
+
+  const saveBtn = mkTool('Sauvegarder',
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>');
+  saveBtn.addEventListener('click', () => saveToHistory(saveBtn, cfg, key));
+
+  host.append(copyBtn, txtBtn, pdfBtn, saveBtn);
+}
+function mkTool(label, svg) {
+  const b = document.createElement('button');
+  b.className = 'tool-btn';
+  b.innerHTML = svg + '<span>' + label + '</span>';
+  return b;
+}
+
+async function copyResult(btn, outId) {
+  const el = document.getElementById(outId);
+  const text = el.dataset.plain || el.textContent;
+  if (!text) return;
+  try { await navigator.clipboard.writeText(text); }
+  catch (_) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (_) {}
+    document.body.removeChild(ta);
+  }
+  const label = btn.querySelector('span');
+  const orig  = label.textContent;
+  label.textContent = '✓ Copié';
+  btn.classList.add('copied');
+  setTimeout(() => { label.textContent = orig; btn.classList.remove('copied'); }, 1600);
+}
+
+function fileBaseName(cfg, key) {
+  const labelSlug = key === 'cr' ? 'compte-rendu' : key === 'liaison' ? 'lettre-liaison' : 'analyse-document';
+  const patient   = slug(cfg.getPatient());
+  const stamp     = new Date().toISOString().slice(0, 10);
+  return labelSlug + '_' + patient + '_' + stamp;
+}
+
+function downloadTxt(cfg, key) {
+  const el = document.getElementById(cfg.outId);
+  const text = el.dataset.plain || el.textContent;
+  if (!text) return;
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fileBaseName(cfg, key) + '.txt';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ─── PDF (jsPDF) ───
+function downloadPdf(cfg, key) {
+  const el = document.getElementById(cfg.outId);
+  const text = el.dataset.plain || el.textContent;
+  if (!text || !window.jspdf) return;
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const M = 18;             // marge
+  const headerY = M;
+
+  // En-tête : Dr [nom], spécialité, date
+  doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(20, 30, 45);
+  doc.text('Dr ' + ((me && me.prenom) || '') + ' ' + ((me && me.nom) || ''), M, headerY);
+
+  doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(95, 110, 125);
+  let y = headerY + 5;
+  if (me && me.specialite) { doc.text(me.specialite, M, y); y += 4.6; }
+  if (me && me.adresse)    { doc.text(me.adresse, M, y); y += 4.6; }
+  const contact = [];
+  if (me && me.telephone) contact.push('Tél. ' + me.telephone);
+  if (me && me.emailPro)  contact.push(me.emailPro);
+  if (contact.length) { doc.text(contact.join(' · '), M, y); y += 4.6; }
+  if (me && me.rpps) { doc.text('RPPS ' + me.rpps, M, y); y += 4.6; }
+
+  const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  doc.setFontSize(10).setTextColor(95, 110, 125);
+  doc.text(dateStr, W - M, headerY, { align: 'right' });
+
+  // Trait séparateur
+  y += 2;
+  doc.setDrawColor(220, 230, 240).setLineWidth(0.2);
+  doc.line(M, y, W - M, y);
+  y += 7;
+
+  // Corps : largeur disponible, wrap correct des sauts de ligne
+  doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(20, 30, 45);
+  const maxW   = W - 2 * M;
+  const lineH  = 5.4;
+  const lines  = doc.splitTextToSize(text, maxW);
+  const footerH = 12;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (y + lineH > H - footerH) {
+      addFooter(doc, W, H, M);
+      doc.addPage();
+      y = M;
+    }
+    doc.text(lines[i], M, y);
+    y += lineH;
+  }
+  addFooter(doc, W, H, M);
+
+  doc.save(fileBaseName(cfg, key) + '.pdf');
+}
+function addFooter(doc, W, H, M) {
+  doc.setDrawColor(220, 230, 240).setLineWidth(0.2);
+  doc.line(M, H - 12, W - M, H - 12);
+  doc.setFont('helvetica', 'italic').setFontSize(9).setTextColor(140, 150, 165);
+  doc.text('Généré par Praxi', W / 2, H - 7, { align: 'center' });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  HISTORIQUE LOCAL (50 max, FIFO)
+// ═══════════════════════════════════════════════════════════════════════
+const HIST_KEY = 'praxi_history';
+const HIST_MAX = 50;
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); }
+  catch { return []; }
+}
+function persistHistory(list) {
+  localStorage.setItem(HIST_KEY, JSON.stringify(list));
+  updateHistoryCount();
+}
+function updateHistoryCount() {
+  const n = loadHistory().length;
+  document.getElementById('history-count').textContent = n ? n : '';
+}
+updateHistoryCount();
+
+function saveToHistory(btn, cfg, key) {
+  const el = document.getElementById(cfg.outId);
+  const text = el.dataset.plain || el.textContent;
+  if (!text) return;
+
+  const list = loadHistory();
+  const entry = {
+    id:      Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+    type:    key,                          // 'liaison' | 'cr' | 'resume'
+    typeLabel: cfg.label,
+    patient: cfg.getPatient() || 'Patient',
+    date:    new Date().toISOString().slice(0, 10),
+    contenu: text,
+    createdAt: new Date().toISOString()
+  };
+  list.unshift(entry);
+  while (list.length > HIST_MAX) list.pop();  // FIFO sur le plus ancien
+  persistHistory(list);
+
+  const label = btn.querySelector('span');
+  const orig  = label.textContent;
+  label.textContent = '✓ Sauvegardé';
+  btn.classList.add('saved');
+  setTimeout(() => { label.textContent = orig; btn.classList.remove('saved'); }, 1600);
+}
+
+function renderHistory() {
+  const container = document.getElementById('history-container');
+  const list = loadHistory();
+
+  if (!list.length) {
+    container.innerHTML =
+      '<div class="history-empty">' +
+        '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/></svg>' +
+        '<div style="margin-bottom:6px">Aucun document sauvegardé pour l\'instant.</div>' +
+        '<div style="font-size:13px;color:var(--text-dim)">Cliquez sur « Sauvegarder » après une génération.</div>' +
+      '</div>';
+    return;
+  }
+
+  const icons = {
+    liaison: '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8M3 8l9-5 9 5"/></svg>',
+    cr:      '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
+    resume:  '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M9 8h6M5 19V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2z"/></svg>'
+  };
+
+  container.innerHTML = '<div class="history-list">' + list.map(it =>
+    '<div class="hist-item" data-id="' + it.id + '">' +
+      '<div class="hist-icon">' + (icons[it.type] || icons.cr) + '</div>' +
+      '<div class="hist-body">' +
+        '<div class="hist-type">' + escapeHtml(it.typeLabel || it.type) + '</div>' +
+        '<div class="hist-patient">' + escapeHtml(it.patient || '—') + '</div>' +
+        '<div class="hist-date">' + escapeHtml(fmtDate(it.createdAt)) + '</div>' +
+      '</div>' +
+      '<button class="hist-del" data-del="' + it.id + '" title="Supprimer">×</button>' +
+    '</div>'
+  ).join('') + '</div>';
+
+  container.querySelectorAll('.hist-item').forEach(item => {
+    item.addEventListener('click', e => {
+      if (e.target.closest('[data-del]')) return;
+      reopenHistory(item.dataset.id);
+    });
+  });
+  container.querySelectorAll('[data-del]').forEach(b => {
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = b.dataset.del;
+      persistHistory(loadHistory().filter(x => x.id !== id));
+      renderHistory();
+    });
+  });
+}
+
+function reopenHistory(id) {
+  const it = loadHistory().find(x => x.id === id);
+  if (!it) return;
+  const cfg = GEN[it.type];
+  if (!cfg) return;
+  switchView(it.type === 'cr' ? 'cr' : it.type);
+  const outEl = document.getElementById(cfg.outId);
+  renderResult(outEl, it.contenu);
+  renderTools(it.type);
+  document.getElementById(cfg.resId).classList.add('show');
+  setTimeout(() => {
+    document.getElementById(cfg.resId).scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 50);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  UPLOAD + LECTURE PDF (onglet résumé)
+// ═══════════════════════════════════════════════════════════════════════
+let docText = '';
+const dropzone   = document.getElementById('dropzone');
+const fileInput  = document.getElementById('file-input');
+const fileInfo   = document.getElementById('file-info');
+const fileName   = document.getElementById('file-name');
+const fileMeta   = document.getElementById('file-meta');
+const resumeBtn  = document.querySelector('[data-gen="resume"]');
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault(); dropzone.classList.remove('drag');
+  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFile(fileInput.files[0]);
+});
+document.getElementById('file-remove').addEventListener('click', resetFile);
+
+function resetFile() {
+  docText = ''; fileInput.value = '';
+  fileInfo.classList.remove('show'); resumeBtn.disabled = true;
+  clearError('r-error');
+}
+
+async function handleFile(file) {
+  clearError('r-error');
+  document.getElementById('r-result').classList.remove('show');
+  const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+  const isTxt = /\.txt$/i.test(file.name) || file.type === 'text/plain';
+  if (!isPdf && !isTxt) {
+    showError('r-error', 'Format non pris en charge. Utilisez un fichier .txt ou .pdf.');
+    return;
+  }
+  fileName.textContent = file.name;
+  fileMeta.textContent = '· lecture en cours…';
+  fileInfo.classList.add('show'); resumeBtn.disabled = true;
+  try {
+    docText = isPdf ? await readPdf(file) : await file.text();
+    docText = docText.trim();
+    if (!docText) throw new Error('Aucun texte exploitable trouvé dans le fichier.');
+    fileMeta.textContent = '· ' + docText.length.toLocaleString('fr-FR') + ' caractères';
+    resumeBtn.disabled = false;
+  } catch (err) {
+    fileInfo.classList.remove('show');
+    showError('r-error', err.message || 'Impossible de lire le fichier.');
+    resetFile();
+  }
+}
+async function readPdf(file) {
+  if (!window.pdfjsLib) throw new Error('Lecteur PDF non disponible (vérifiez votre connexion).');
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let out = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    out += content.items.map(it => it.str).join(' ') + '\n';
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  DICTÉE VOCALE (Web Speech API)
+// ═══════════════════════════════════════════════════════════════════════
+const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+let activeRec = null;       // { rec, btn, target, baseText }
+
+document.querySelectorAll('[data-mic]').forEach(btn => {
+  btn.addEventListener('click', () => toggleMic(btn));
+});
+
+function toggleMic(btn) {
+  if (!SpeechRec) {
+    const fieldId = btn.dataset.mic.includes('l-') ? 'l-error' : 'c-error';
+    showError(fieldId, 'La dictée vocale n\'est pas supportée par votre navigateur. Essayez Chrome ou Edge.');
+    return;
+  }
+  if (activeRec && activeRec.btn === btn) { activeRec.rec.stop(); return; }
+  if (activeRec) activeRec.rec.stop();
+
+  const target = document.getElementById(btn.dataset.mic);
+  const rec = new SpeechRec();
+  rec.lang = 'fr-FR';
+  rec.continuous = true;
+  rec.interimResults = true;
+
+  let baseText = target.value;
+  if (baseText && !/\s$/.test(baseText)) baseText += ' ';
+
+  rec.onresult = (e) => {
+    let finalT = '', interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      const r = e.results[i];
+      if (r.isFinal) finalT += r[0].transcript;
+      else           interim += r[0].transcript;
+    }
+    if (finalT) {
+      baseText += finalT;
+      if (!/\s$/.test(baseText)) baseText += ' ';
+    }
+    target.value = baseText + interim;
+  };
+  rec.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      const fieldId = btn.dataset.mic.includes('l-') ? 'l-error' : 'c-error';
+      showError(fieldId, 'Accès au micro refusé. Autorisez le micro dans les réglages de votre navigateur.');
+    }
+  };
+  rec.onend = () => {
+    btn.classList.remove('listening');
+    activeRec = null;
+  };
+
+  rec.start();
+  btn.classList.add('listening');
+  activeRec = { rec, btn, target, baseText };
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PROFIL — formulaire
+// ═══════════════════════════════════════════════════════════════════════
+const profileForm  = document.getElementById('profile-form');
+const profileBtn   = document.getElementById('profile-submit');
+const profileSaved = document.getElementById('profile-save');
+
+function fillProfileForm() {
+  if (!me) return;
+  document.getElementById('p-prenom').value     = me.prenom    || '';
+  document.getElementById('p-nom').value        = me.nom       || '';
+  document.getElementById('p-specialite').value = me.specialite || 'Médecine générale';
+  document.getElementById('p-ville').value      = me.ville     || '';
+  document.getElementById('p-adresse').value    = me.adresse   || '';
+  document.getElementById('p-telephone').value  = me.telephone || '';
+  document.getElementById('p-emailPro').value   = me.emailPro  || me.email || '';
+  document.getElementById('p-rpps').value       = me.rpps      || '';
+}
+fillProfileForm();
+
+profileForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  clearError('profile-error');
+  profileSaved.classList.remove('show');
+  const payload = {
+    prenom:     document.getElementById('p-prenom').value.trim(),
+    nom:        document.getElementById('p-nom').value.trim(),
+    specialite: document.getElementById('p-specialite').value,
+    ville:      document.getElementById('p-ville').value.trim(),
+    adresse:    document.getElementById('p-adresse').value.trim(),
+    telephone:  document.getElementById('p-telephone').value.trim(),
+    emailPro:   document.getElementById('p-emailPro').value.trim(),
+    rpps:       document.getElementById('p-rpps').value.trim()
+  };
+  if (!payload.prenom || !payload.nom) {
+    showError('profile-error', 'Le prénom et le nom sont obligatoires.'); return;
+  }
+  profileBtn.disabled = true;
+  profileBtn.innerHTML = '<span class="spinner"></span><span class="btn-label">Enregistrement…</span>';
+  try {
+    const data = await api('/api/auth/profile', { method: 'PATCH', body: JSON.stringify(payload) });
+    me = data.user;
+    localStorage.setItem(PROFIL_KEY, JSON.stringify(me));
+    renderUser();
+    profileSaved.classList.add('show');
+    setTimeout(() => profileSaved.classList.remove('show'), 2500);
+  } catch (err) {
+    showError('profile-error', err.message);
+  } finally {
+    profileBtn.disabled = false;
+    profileBtn.innerHTML = '<span class="btn-label">Enregistrer</span>';
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  MODALE DOCTOLIB (simulation)
+// ═══════════════════════════════════════════════════════════════════════
+const modalDl = document.getElementById('modal-doctolib');
+let dlTargetView = 'liaison';   // 'liaison' | 'cr'
+let dlResult = null;
+
+document.getElementById('open-doctolib-l').addEventListener('click', () => openDoctolib('liaison'));
+document.getElementById('open-doctolib-c').addEventListener('click', () => openDoctolib('cr'));
+document.querySelectorAll('[data-close-modal]').forEach(b =>
+  b.addEventListener('click', closeDoctolib));
+modalDl.addEventListener('click', e => { if (e.target === modalDl) closeDoctolib(); });
+
+function openDoctolib(view) {
+  dlTargetView = view; dlResult = null;
+  document.getElementById('dl-query').value = '';
+  document.getElementById('doctolib-search').style.display    = '';
+  document.getElementById('doctolib-loading').style.display   = 'none';
+  document.getElementById('doctolib-found').style.display     = 'none';
+  modalDl.classList.add('show');
+  setTimeout(() => document.getElementById('dl-query').focus(), 80);
+}
+function closeDoctolib() { modalDl.classList.remove('show'); }
+
+document.getElementById('dl-search-btn').addEventListener('click', () => {
+  const q = document.getElementById('dl-query').value.trim();
+  if (!q) { document.getElementById('dl-query').focus(); return; }
+  document.getElementById('doctolib-search').style.display  = 'none';
+  document.getElementById('doctolib-loading').style.display = 'flex';
+  setTimeout(() => {
+    dlResult = mockPatient(q);
+    document.getElementById('dl-name').textContent  = dlResult.patient;
+    document.getElementById('dl-age').textContent   = dlResult.age + ' ans';
+    document.getElementById('dl-last').textContent  = dlResult.lastConsultation;
+    document.getElementById('dl-motif').textContent = dlResult.motif;
+    document.getElementById('doctolib-loading').style.display = 'none';
+    document.getElementById('doctolib-found').style.display   = '';
+  }, 1500);
+});
+
+document.getElementById('dl-import-btn').addEventListener('click', () => {
+  if (!dlResult) return;
+  if (dlTargetView === 'liaison') {
+    document.getElementById('l-patient').value = dlResult.patient;
+    document.getElementById('l-age').value     = dlResult.age + ' ans';
+    if (!document.getElementById('l-motif').value) document.getElementById('l-motif').value = dlResult.motif;
+  } else {
+    document.getElementById('c-patient').value = dlResult.patient;
+    document.getElementById('c-date').value    = new Date().toISOString().slice(0, 10);
+  }
+  closeDoctolib();
+  switchView(dlTargetView);
+});
+
+// Données fictives mais cohérentes (déterministes à partir du nom)
+function mockPatient(name) {
+  const motifs = [
+    'Renouvellement traitement antihypertenseur',
+    'Bilan annuel diabète type 2',
+    'Suivi post-opératoire genou',
+    'Toux persistante depuis 3 semaines',
+    'Lombalgie chronique',
+    'Asthénie inexpliquée',
+    'Suivi cardiologique',
+    'Bilan lipidique'
+  ];
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  const age   = 28 + (h % 55);
+  const motif = motifs[h % motifs.length];
+  const lastD = new Date(Date.now() - (15 + (h % 180)) * 86400000);
+  return {
+    patient: name.replace(/\b\w/g, c => c.toUpperCase()),
+    age,
+    lastConsultation: lastD.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }),
+    motif
+  };
+}
+</script>
+</body>
+</html>
