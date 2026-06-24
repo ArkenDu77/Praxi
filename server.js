@@ -24,13 +24,18 @@ const anthropic = process.env.ANTHROPIC_API_KEY
 const AI_MODEL = 'claude-sonnet-4-6';
 
 // ── SMTP (Nodemailer — Gmail App Password) ──
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-const APP_URL   = process.env.APP_URL   || 'http://localhost:3001';
+// On nettoie les identifiants : les variables d'env (surtout sur Railway) peuvent
+// contenir des espaces ou un retour à la ligne parasite. Un App Password Gmail est
+// composé de 16 caractères sans espace : on retire donc tout blanc interne.
+const SMTP_USER = (process.env.SMTP_USER || '').trim();
+const SMTP_PASS = (process.env.SMTP_PASS || '').replace(/\s+/g, '');
+const APP_URL   = (process.env.APP_URL   || 'http://localhost:3001').trim().replace(/\/+$/, '');
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com', port: 587, secure: false,
-  auth: { user: SMTP_USER, pass: SMTP_PASS }
+  auth: { user: SMTP_USER, pass: SMTP_PASS },
+  // Évite que la requête reste bloquée si le port SMTP est filtré par l'hébergeur.
+  connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 15000
 });
 
 function emailLayout(title, bodyHtml) {
@@ -74,7 +79,13 @@ async function sendPasswordResetEmail(email, prenom, token) {
 }
 
 // ── STOCKAGE JSON (MVP — migre vers SQLite sur VPS) ──
-const DB_PATH = path.join(__dirname, 'waitlist.json');
+// DATA_DIR permet de pointer vers un volume persistant (ex. Railway : monte un
+// volume sur /data puis définis DATA_DIR=/data). Sans volume, le système de
+// fichiers de l'hébergeur est éphémère : comptes et tokens disparaissent à chaque
+// redéploiement / redémarrage. Par défaut : dossier du projet (comportement local).
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
+const DB_PATH = path.join(DATA_DIR, 'waitlist.json');
 
 function readDB() {
   try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')); }
@@ -85,7 +96,7 @@ function writeDB(data) {
 }
 
 // ── STOCKAGE UTILISATEURS (médecins) ──
-const USERS_PATH = path.join(__dirname, 'users.json');
+const USERS_PATH = path.join(DATA_DIR, 'users.json');
 
 function readUsers() {
   try { return JSON.parse(fs.readFileSync(USERS_PATH, 'utf8')); }
@@ -102,6 +113,42 @@ function publicUser(u) {
   if (!u) return null;
   const { passwordHash, emailVerificationCode, emailVerificationExpiry, resetToken, resetTokenExpiry, ...rest } = u;
   return rest;
+}
+
+// ── TOKEN DE RÉINITIALISATION SANS ÉTAT ──
+// Le token est signé (HMAC) et auto-suffisant : il ne dépend d'aucune écriture sur
+// disque. La clé de signature inclut le hash du mot de passe ACTUEL ; dès que le mot
+// de passe change, les anciens tokens deviennent invalides (usage unique garanti).
+// Cela règle le « lien invalide ou expiré » dû au stockage éphémère / multi-instance.
+function resetSignature(id, exp, passwordHash) {
+  return crypto
+    .createHmac('sha256', JWT_SECRET + ':' + (passwordHash || ''))
+    .update(`${id}.${exp}`)
+    .digest('hex');
+}
+function makeResetToken(user) {
+  const exp = Date.now() + 60 * 60 * 1000; // valable 1 heure
+  const sig = resetSignature(user.id, exp, user.passwordHash);
+  return Buffer.from(`${user.id}.${exp}.${sig}`).toString('base64url');
+}
+function verifyResetToken(token) {
+  let decoded;
+  try { decoded = Buffer.from(token, 'base64url').toString('utf8'); }
+  catch { return { error: 'invalid' }; }
+  const parts = decoded.split('.');
+  if (parts.length !== 3) return { error: 'invalid' };
+  const id  = parseInt(parts[0], 10);
+  const exp = parseInt(parts[1], 10);
+  const sig = parts[2];
+  if (!id || !exp || !sig) return { error: 'invalid' };
+  if (Date.now() > exp)    return { error: 'expired' };
+  const user = getUserById(id);
+  if (!user) return { error: 'invalid' };
+  const expected = resetSignature(id, exp, user.passwordHash);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return { error: 'invalid' };
+  return { user };
 }
 
 // ── MIDDLEWARE ──
@@ -595,17 +642,22 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
 
 // POST /api/auth/forgot-password — génère un token de réinitialisation et l'envoie par email
 app.post('/api/auth/forgot-password', async (req, res) => {
-  console.log('[auth] forgot-password :', s(req.body.email, 200).toLowerCase());
   const email = s(req.body.email, 200).toLowerCase();
+  console.log('[auth] forgot-password :', email);
 
-  const db  = readUsers();
-  const idx = db.users.findIndex(u => u.email === email);
-  if (idx !== -1) {
-    const token = crypto.randomBytes(32).toString('hex');
-    db.users[idx].resetToken       = token;
-    db.users[idx].resetTokenExpiry = Date.now() + 60 * 60 * 1000;
-    writeUsers(db);
-    try { await sendPasswordResetEmail(email, db.users[idx].prenom, token); } catch (_) {}
+  const user = readUsers().users.find(u => u.email === email);
+  if (user) {
+    // Token sans état : aucune écriture sur disque (robuste au stockage éphémère).
+    const token = makeResetToken(user);
+    try {
+      await sendPasswordResetEmail(email, user.prenom, token);
+      console.log('[auth] email de réinitialisation envoyé à', email);
+    } catch (err) {
+      // On loggue l'erreur réelle (visible dans les logs Railway) au lieu de la masquer.
+      console.error('[auth] ÉCHEC envoi email réinitialisation :', err && err.message);
+    }
+  } else {
+    console.log('[auth] forgot-password : aucun compte pour cet email (aucun envoi)');
   }
   // Réponse identique que l'email existe ou non (évite l'énumération)
   res.json({ ok: true });
@@ -621,19 +673,22 @@ app.post('/api/auth/reset-password', async (req, res) => {
   if (password.length < 8) return res.status(400).json({ error: 'Mot de passe : 8 caractères minimum.' });
 
   console.log('[auth] reset-password : token', token.slice(0, 12) + '… (' + token.length + ' chars)');
+
+  const { user, error } = verifyResetToken(token);
+  if (error === 'expired') return res.status(400).json({ error: 'Lien expiré. Faites une nouvelle demande.' });
+  if (error || !user)      return res.status(400).json({ error: 'Lien invalide ou expiré.' });
+
   const db  = readUsers();
-  const idx = db.users.findIndex(u => u.resetToken === token);
+  const idx = db.users.findIndex(u => u.id === user.id);
   if (idx === -1) return res.status(400).json({ error: 'Lien invalide ou expiré.' });
 
-  if (Date.now() > db.users[idx].resetTokenExpiry) {
-    return res.status(400).json({ error: 'Lien expiré. Faites une nouvelle demande.' });
-  }
-
+  // Changer le hash invalide automatiquement le token (signature liée à l'ancien hash).
   db.users[idx].passwordHash = await bcrypt.hash(password, 10);
-  delete db.users[idx].resetToken;
+  delete db.users[idx].resetToken;        // nettoyage d'éventuels anciens tokens stockés
   delete db.users[idx].resetTokenExpiry;
   writeUsers(db);
 
+  console.log('[auth] mot de passe réinitialisé pour', user.email);
   res.json({ ok: true });
 });
 
@@ -649,5 +704,15 @@ app.listen(PORT, () => {
   console.log(`  → Admin : x-admin-token: ${ADMIN_TOKEN}`);
   console.log(`  → Data  : waitlist.json · users.json`);
   console.log(`  → Auth  : JWT (${JWT_EXPIRES_IN})${process.env.JWT_SECRET ? '' : ' — ⚠ JWT_SECRET par défaut'}`);
-  console.log(`  → IA    : ${anthropic ? `activée (${AI_MODEL})` : 'désactivée — ANTHROPIC_API_KEY manquante'}\n`);
+  console.log(`  → IA    : ${anthropic ? `activée (${AI_MODEL})` : 'désactivée — ANTHROPIC_API_KEY manquante'}`);
+  console.log(`  → Data  : ${DATA_DIR}${process.env.DATA_DIR ? '' : ' — ⚠ stockage éphémère (définis DATA_DIR + volume pour persister)'}`);
+
+  // Vérifie la connexion SMTP au démarrage : le résultat apparaît dans les logs Railway.
+  if (SMTP_USER && SMTP_PASS) {
+    transporter.verify()
+      .then(() => console.log(`  → SMTP  : connecté (${SMTP_USER})\n`))
+      .catch(err => console.error(`  → SMTP  : ÉCHEC — ${err && err.message}\n`));
+  } else {
+    console.log('  → SMTP  : désactivé — SMTP_USER / SMTP_PASS manquants\n');
+  }
 });
