@@ -42,8 +42,11 @@ nav {
 .nav-back {
   font-size: 13px; color: var(--text-muted);
   text-decoration: none; transition: color .2s;
+  display: flex; align-items: center; gap: 6px;
 }
 .nav-back:hover { color: var(--text); }
+.nav-back svg { width: 14px; height: 14px; transition: transform 0.2s ease; flex-shrink: 0; }
+.nav-back:hover svg { transform: translateX(-3px); }
 
 /* LAYOUT */
 .legal {
@@ -124,7 +127,7 @@ footer {
 
 <nav>
   <a href="/" class="nav-logo">Prax<span>i</span></a>
-  <a href="/" class="nav-back">← Retour à l'accueil</a>
+  <a href="/" class="nav-back"><i data-lucide="arrow-left"></i> Retour à l'accueil</a>
 </nav>
 
 <main class="legal">
@@ -179,5 +182,7 @@ footer {
   <p class="footer-copy">© 2025 Praxi</p>
 </footer>
 
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>

@@ -185,10 +185,13 @@ body {
 .auth-foot a { color: var(--accent); text-decoration: none; }
 .auth-foot a:hover { text-decoration: underline; }
 .auth-back {
-  display: block; text-align: center; margin-top: 18px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 18px;
   font-size: 12.5px; color: var(--text-dim); text-decoration: none;
 }
 .auth-back:hover { color: var(--text-muted); }
+.auth-back svg { width: 14px; height: 14px; transition: transform 0.2s ease; flex-shrink: 0; }
+.auth-back:hover svg { transform: translateX(-3px); }
 
 @media (max-width: 480px) {
   .auth-card { padding: 32px 24px; }

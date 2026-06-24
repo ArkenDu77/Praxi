@@ -64,9 +64,11 @@
   </form>
 
   <p class="auth-foot">Déjà inscrit ? <a href="/login.html">Se connecter</a></p>
-  <a href="/" class="auth-back">← Retour à l'accueil</a>
+  <a href="/" class="auth-back"><i data-lucide="arrow-left"></i> Retour à l'accueil</a>
 </div>
 
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
 <script>
 'use strict';
 if (localStorage.getItem('praxi_token')) location.replace('/app.html');

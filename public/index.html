@@ -276,8 +276,11 @@ nav.scrolled { border-bottom-color: var(--border); }
   width: 42px; height: 42px; border-radius: 9px;
   background: var(--accent-dim); border: 1px solid rgba(56,189,248,.18);
   display: flex; align-items: center; justify-content: center;
-  margin-bottom: 22px; font-size: 19px;
+  margin-bottom: 22px;
 }
+.feat-icon svg { width: 20px; height: 20px; color: var(--accent); transition: transform 0.2s ease; }
+.feat:hover .feat-icon svg { transform: scale(1.15); }
+.feat-zap:hover .feat-icon svg { transform: scale(1.1) rotate(-10deg); }
 .feat-title {
   font-size: 16px; font-weight: 600; color: var(--text);
   margin-bottom: 10px; line-height: 1.3;
@@ -772,32 +775,32 @@ footer {
   <h2 class="section-h2 reveal">Trois tâches éliminées, des heures récupérées chaque semaine.</h2>
   <div class="features-grid">
     <div class="feat reveal">
-      <div class="feat-icon">✉</div>
+      <div class="feat-icon"><i data-lucide="mail"></i></div>
       <h3 class="feat-title">Lettres de liaison & adressage</h3>
       <p class="feat-desc">Dictez ou uploadez vos notes. Praxi rédige la lettre complète vers le spécialiste — antécédents, traitements, motif de recours — en moins de 30 secondes.</p>
     </div>
     <div class="feat reveal">
-      <div class="feat-icon">📋</div>
+      <div class="feat-icon"><i data-lucide="file-text"></i></div>
       <h3 class="feat-title">Comptes-rendus de consultation</h3>
       <p class="feat-desc">Parlez librement en fin de consultation. Praxi extrait les éléments cliniques et génère un compte-rendu structuré, prêt à valider, sans saisie manuelle.</p>
     </div>
     <div class="feat reveal">
-      <div class="feat-icon">📁</div>
+      <div class="feat-icon"><i data-lucide="folder-open"></i></div>
       <h3 class="feat-title">Dossiers MDPH & ALD</h3>
       <p class="feat-desc">Le fardeau bureaucratique le plus lourd de la médecine de ville. Praxi pré-remplit les formulaires complexes à partir des données existantes du patient.</p>
     </div>
     <div class="feat reveal">
-      <div class="feat-icon">🔒</div>
+      <div class="feat-icon"><i data-lucide="shield"></i></div>
       <h3 class="feat-title">Sécurité médicale native</h3>
       <p class="feat-desc">Infrastructure HDS certifiée, hébergée en France. Chiffrement AES-256 au repos, TLS 1.3 en transit. Conformité RGPD intégrée dès la conception.</p>
     </div>
-    <div class="feat reveal">
-      <div class="feat-icon">⚡</div>
+    <div class="feat reveal feat-zap">
+      <div class="feat-icon"><i data-lucide="zap"></i></div>
       <h3 class="feat-title">Compatible avec votre logiciel</h3>
       <p class="feat-desc">Praxi s'adapte à votre flux de travail. Compatible Weda, Doctolib, Crossway. Aucune rupture d'outil, aucune ressaisie. Vous validez, vous envoyez.</p>
     </div>
     <div class="feat reveal">
-      <div class="feat-icon">📊</div>
+      <div class="feat-icon"><i data-lucide="bar-chart-2"></i></div>
       <h3 class="feat-title">Tableau de bord hebdomadaire</h3>
       <p class="feat-desc">Visualisez le temps récupéré et l'équivalent financier en consultations supplémentaires. Le ROI de Praxi, mesuré semaine après semaine.</p>
     </div>
@@ -977,7 +980,7 @@ footer {
     </div>
 
     <div class="form-success" id="form-success">
-      <p>✓ Inscription confirmée, <strong id="success-name"></strong>.<br>
+      <p><i data-lucide="check-circle" style="width:18px;height:18px;color:var(--accent);vertical-align:middle;margin-right:6px;"></i>Inscription confirmée, <strong id="success-name"></strong>.<br>
       Vous recevrez un email dès que votre accès est activé.<br>
       En attendant, votre place est réservée.</p>
     </div>
@@ -1093,5 +1096,7 @@ form.addEventListener('submit', async (e) => {
   }
 });
 </script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<script>lucide.createIcons();</script>
 </body>
 </html>
