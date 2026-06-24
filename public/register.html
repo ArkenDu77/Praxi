@@ -41,18 +41,12 @@
     </div>
     <div class="field">
       <label>Spécialité(s)</label>
-      <div class="spec-multi" id="specialite">
-        <label class="spec-opt"><input type="checkbox" value="Médecine générale" /><span>Médecine générale</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Médecine interne" /><span>Médecine interne</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Cardiologie" /><span>Cardiologie</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Pédiatrie" /><span>Pédiatrie</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Gynécologie" /><span>Gynécologie</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Psychiatrie" /><span>Psychiatrie</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Rhumatologie" /><span>Rhumatologie</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Gériatrie" /><span>Gériatrie</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Médecin algologue" /><span>Médecin algologue</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Médecin anesthésiste réanimateur" /><span>Médecin anesthésiste réanimateur</span></label>
-        <label class="spec-opt"><input type="checkbox" value="Autre spécialité" /><span>Autre spécialité</span></label>
+      <div class="ms" id="specialite" data-placeholder="Choisir une ou plusieurs spécialités…">
+        <div class="ms-trigger" role="button" tabindex="0" aria-haspopup="listbox" aria-expanded="false">
+          <span class="ms-value"></span>
+          <svg class="ms-caret" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="ms-panel" role="listbox" aria-multiselectable="true"></div>
       </div>
       <p class="hint">Vous pouvez en sélectionner plusieurs.</p>
     </div>
@@ -80,6 +74,79 @@ if (localStorage.getItem('praxi_token')) location.replace('/app.html');
 const form  = document.getElementById('register-form');
 const btn   = document.getElementById('submit');
 const errEl = document.getElementById('error');
+
+// ── Menu déroulant multi-spécialités ──
+const SPECIALITES = [
+  'Médecine générale', 'Médecine interne', 'Cardiologie', 'Pédiatrie',
+  'Gynécologie', 'Psychiatrie', 'Rhumatologie', 'Gériatrie',
+  'Médecin algologue', 'Médecin anesthésiste réanimateur', 'Autre spécialité'
+];
+
+function initMultiSelect(root, options) {
+  const trigger = root.querySelector('.ms-trigger');
+  const valueEl = root.querySelector('.ms-value');
+  const panel   = root.querySelector('.ms-panel');
+  const placeholder = root.dataset.placeholder || 'Choisir…';
+  const CHECK = '<span class="ms-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg></span>';
+
+  options.forEach(name => {
+    const opt = document.createElement('label');
+    opt.className = 'ms-opt'; opt.setAttribute('role', 'option');
+    const input = document.createElement('input');
+    input.type = 'checkbox'; input.value = name;
+    const label = document.createElement('span');
+    label.className = 'ms-label'; label.textContent = name;
+    opt.appendChild(input);
+    opt.insertAdjacentHTML('beforeend', CHECK);
+    opt.appendChild(label);
+    panel.appendChild(opt);
+  });
+
+  function render() {
+    const checked = Array.from(panel.querySelectorAll('input:checked'));
+    valueEl.innerHTML = '';
+    if (!checked.length) {
+      const p = document.createElement('span');
+      p.className = 'ms-placeholder'; p.textContent = placeholder;
+      valueEl.appendChild(p);
+      return;
+    }
+    checked.forEach(box => {
+      const chip = document.createElement('span');
+      chip.className = 'ms-chip';
+      const txt = document.createElement('span');
+      txt.textContent = box.value;
+      const x = document.createElement('button');
+      x.type = 'button'; x.className = 'ms-chip-x'; x.innerHTML = '&times;';
+      x.setAttribute('aria-label', 'Retirer ' + box.value);
+      x.addEventListener('click', e => {
+        e.stopPropagation();
+        box.checked = false;
+        box.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      chip.appendChild(txt); chip.appendChild(x);
+      valueEl.appendChild(chip);
+    });
+  }
+
+  const open  = () => { root.classList.add('open');  trigger.setAttribute('aria-expanded', 'true');  };
+  const close = () => { root.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); };
+  const toggle = () => root.classList.contains('open') ? close() : open();
+
+  trigger.addEventListener('click', toggle);
+  trigger.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+    else if (e.key === 'Escape') close();
+  });
+  root.addEventListener('change', render);
+  document.addEventListener('click', e => { if (!root.contains(e.target)) close(); });
+
+  root.refresh = render;
+  render();
+  return root;
+}
+
+initMultiSelect(document.getElementById('specialite'), SPECIALITES);
 
 function showError(msg) { errEl.textContent = msg; errEl.classList.add('show'); window.scrollTo(0,0); }
 function clearError()   { errEl.textContent = ''; errEl.classList.remove('show'); }

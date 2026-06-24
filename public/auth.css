@@ -89,22 +89,70 @@ body {
 }
 .hint { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; }
 
-/* Sélection multiple de spécialités (cases à cocher) */
-.spec-multi {
-  display: flex; flex-direction: column; gap: 2px;
+/* ── Sélecteur multi-spécialités (menu déroulant animé) ── */
+.ms { position: relative; }
+.ms-trigger {
+  width: 100%; display: flex; align-items: center; gap: 10px;
   background: var(--bg-card2); border: 1px solid var(--border2);
-  border-radius: 8px; padding: 6px; max-height: 180px; overflow-y: auto;
+  border-radius: 8px; padding: 9px 14px; min-height: 46px;
+  font-family: inherit; font-size: 14px; color: var(--text);
+  cursor: pointer; transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.spec-opt {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px; border-radius: 6px; cursor: pointer;
-  font-size: 13.5px; font-weight: 400; color: var(--text);
-  letter-spacing: 0; text-transform: none; margin: 0;
+.ms-trigger:hover { border-color: var(--border); }
+.ms.open .ms-trigger,
+.ms-trigger:focus-visible {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
+}
+.ms-value { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
+.ms-placeholder { color: var(--text-dim); }
+.ms-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.32);
+  color: var(--accent); border-radius: 999px;
+  padding: 3px 5px 3px 11px; font-size: 12.5px; line-height: 1.4;
+  animation: chip-in .2s cubic-bezier(.2,.7,.2,1) both;
+}
+@keyframes chip-in { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
+.ms-chip-x {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%; border: none;
+  background: rgba(56,189,248,.18); color: var(--accent);
+  font-size: 13px; line-height: 1; cursor: pointer; padding: 0;
+  transition: background .15s, transform .15s;
+}
+.ms-chip-x:hover { background: var(--accent); color: #050A10; transform: scale(1.12); }
+.ms-caret { flex: none; color: var(--text-muted); transition: transform .28s cubic-bezier(.2,.7,.2,1); }
+.ms.open .ms-caret { transform: rotate(180deg); color: var(--accent); }
+.ms-panel {
+  position: absolute; z-index: 40; top: calc(100% + 7px); left: 0; right: 0;
+  background: var(--bg-card); border: 1px solid var(--border2);
+  border-radius: 11px; padding: 6px; max-height: 282px; overflow-y: auto;
+  box-shadow: 0 22px 48px rgba(0,0,0,.5);
+  opacity: 0; transform: translateY(-10px) scale(.985); transform-origin: top center;
+  visibility: hidden; pointer-events: none;
+  transition: opacity .22s ease, transform .22s cubic-bezier(.2,.7,.2,1), visibility .22s;
+}
+.ms.open .ms-panel { opacity: 1; transform: none; visibility: visible; pointer-events: auto; }
+.ms-opt {
+  display: flex; align-items: center; gap: 11px;
+  padding: 10px 11px; border-radius: 7px; cursor: pointer;
+  font-size: 13.5px; color: var(--text); user-select: none;
   transition: background .15s;
 }
-.spec-opt:hover { background: var(--accent-dim); }
-.spec-opt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; flex: none; }
-.spec-opt:has(input:checked) { background: var(--accent-dim); color: var(--text); }
+.ms-opt:hover { background: var(--accent-dim); }
+.ms-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
+.ms-check {
+  flex: none; width: 19px; height: 19px; border-radius: 6px;
+  border: 1.5px solid var(--border2); background: var(--bg-card2);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .18s, border-color .18s;
+}
+.ms-check svg { width: 11px; height: 11px; stroke: #050A10; opacity: 0; transform: scale(.4); transition: opacity .18s, transform .18s cubic-bezier(.2,.7,.2,1); }
+.ms-opt input:checked + .ms-check { background: var(--accent); border-color: var(--accent); }
+.ms-opt input:checked + .ms-check svg { opacity: 1; transform: none; }
+.ms-opt input:focus-visible + .ms-check { box-shadow: 0 0 0 3px var(--accent-dim); }
+.ms-panel::-webkit-scrollbar { width: 8px; }
+.ms-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 8px; }
 
 .btn-submit {
   width: 100%; background: var(--accent); color: #050A10;
