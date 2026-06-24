@@ -263,6 +263,7 @@ function signToken(user) {
 
 // POST /api/auth/register
 app.post('/api/auth/register', async (req, res) => {
+  console.log('[auth] register :', s(req.body.email, 200).toLowerCase());
   const prenom     = s(req.body.prenom);
   const nom        = s(req.body.nom);
   const email      = s(req.body.email, 200).toLowerCase();
@@ -305,6 +306,7 @@ app.post('/api/auth/register', async (req, res) => {
 
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
+  console.log('[auth] login :', s(req.body.email, 200).toLowerCase());
   const email    = s(req.body.email, 200).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   if (!email || !password) {
@@ -593,6 +595,7 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
 
 // POST /api/auth/forgot-password — génère un token de réinitialisation et l'envoie par email
 app.post('/api/auth/forgot-password', async (req, res) => {
+  console.log('[auth] forgot-password :', s(req.body.email, 200).toLowerCase());
   const email = s(req.body.email, 200).toLowerCase();
 
   const db  = readUsers();
@@ -617,13 +620,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
   if (!token)              return res.status(400).json({ error: 'Token manquant.' });
   if (password.length < 8) return res.status(400).json({ error: 'Mot de passe : 8 caractères minimum.' });
 
+  console.log('[auth] reset-password : token', token.slice(0, 12) + '… (' + token.length + ' chars)');
   const db  = readUsers();
-  console.log('[reset-pw] token reçu :', token.slice(0, 12) + '… (longueur ' + token.length + ')');
-  console.log('[reset-pw] tokens stockés :', db.users.map(u => u.resetToken
-    ? { id: u.id, début: u.resetToken.slice(0, 12) + '…', expiré: Date.now() > u.resetTokenExpiry }
-    : null
-  ).filter(Boolean));
-
   const idx = db.users.findIndex(u => u.resetToken === token);
   if (idx === -1) return res.status(400).json({ error: 'Lien invalide ou expiré.' });
 
