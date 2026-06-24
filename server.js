@@ -423,6 +423,7 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
   const motif       = txt(req.body.motif, 1000);
   const specialiste = s(req.body.specialiste, 100);
   const notes       = txt(req.body.notes);
+  const complement  = txt(req.body.complement, 2000);
 
   if (!notes && !motif) {
     return res.status(400).json({ error: 'Renseignez au moins le motif ou les notes cliniques.' });
@@ -440,14 +441,17 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
     "d'astérisques (* ou **), pas de dièses (#), pas de tirets de liste. N'emploie aucune liste à " +
     "puces. Les éventuels titres (objet, etc.) s'écrivent en majuscules sans aucun caractère de " +
     "formatage, et les sections sont séparées par des sauts de ligne. " +
-    "N'écris jamais de champ vide entre crochets comme [date] ou [nom] : si une information manque, " +
-    "omets-la proprement et reformule la phrase. N'ajoute aucun commentaire hors de la lettre.";
+    "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
+    "Si une information est absente, omets simplement cette section ou cette phrase — n'écris JAMAIS " +
+    "'Non renseigné', 'Non précisé', 'À compléter' ou équivalent. " +
+    "N'ajoute aucun commentaire hors de la lettre.";
 
   const user =
-    `Spécialiste destinataire : ${specialiste || 'Non précisé'}\n` +
-    `Patient : ${patient || 'Non précisé'}${age ? `, ${age}` : ''}\n` +
-    `Motif d'adressage : ${motif || 'Non précisé'}\n\n` +
-    `Notes cliniques du médecin :\n${notes || '(aucune)'}\n`;
+    (specialiste ? `Spécialiste destinataire : ${specialiste}\n` : '') +
+    (patient ? `Patient : ${patient}${age ? `, ${age}` : ''}\n` : '') +
+    (motif ? `Motif d'adressage : ${motif}\n` : '') +
+    `\nNotes cliniques du médecin :\n${notes || '(aucune)'}\n` +
+    (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '');
 
   try {
     const document = await generateDocument({ system, user, maxTokens: 1500 });
@@ -459,9 +463,10 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
 
 // POST /api/generate/compte-rendu — compte-rendu de consultation structuré
 app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
-  const patient = txt(req.body.patient, 500);
-  const date    = s(req.body.date, 40);
-  const notes   = txt(req.body.notes);
+  const patient    = txt(req.body.patient, 500);
+  const date       = s(req.body.date, 40);
+  const notes      = txt(req.body.notes);
+  const complement = txt(req.body.complement, 2000);
 
   if (!notes) {
     return res.status(400).json({ error: 'Renseignez les notes de consultation.' });
@@ -477,17 +482,19 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
     "majuscules suivi de deux-points : MOTIF DE CONSULTATION :, ANTÉCÉDENTS MENTIONNÉS :, " +
     "EXAMEN CLINIQUE :, DIAGNOSTIC / IMPRESSION CLINIQUE :, CONDUITE À TENIR :. " +
     "Sous chaque titre, écris le contenu en prose (phrases continues), jamais sous forme de liste. " +
-    "Ne jamais inventer d'informations. Si une section n'est pas mentionnée dans les notes, écris " +
-    "'Non renseigné' sous le titre correspondant. " +
+    "Ne jamais inventer d'informations. Si une information est absente, omets entièrement la section " +
+    "correspondante (n'écris ni son titre ni son contenu) — n'écris JAMAIS 'Non renseigné', " +
+    "'Non précisé', 'À compléter' ou équivalent. " +
     "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques (* ou **), pas de dièses (#), pas de " +
     "tirets de liste ni de puces. Sépare les sections par des sauts de ligne. " +
-    "N'écris jamais de champ vide entre crochets comme [date] ou [nom] : si une information manque, " +
-    "omets-la proprement. N'ajoute aucun commentaire hors du compte-rendu.";
+    "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
+    "N'ajoute aucun commentaire hors du compte-rendu.";
 
   const user =
-    `Patient : ${patient || 'Non précisé'}\n` +
-    `Date de consultation : ${date || 'Non précisée'}\n\n` +
-    `Notes brutes de consultation :\n${notes}\n`;
+    (patient ? `Patient : ${patient}\n` : '') +
+    (date ? `Date de consultation : ${date}\n` : '') +
+    `\nNotes brutes de consultation :\n${notes}\n` +
+    (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '');
 
   try {
     const document = await generateDocument({ system, user, maxTokens: 1800 });
@@ -499,7 +506,8 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
 
 // POST /api/generate/resume — analyse / résumé d'un document
 app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
-  const document = txt(req.body.text);
+  const document   = txt(req.body.text);
+  const complement = txt(req.body.complement, 2000);
 
   if (!document) {
     return res.status(400).json({ error: 'Aucun texte de document à analyser.' });
@@ -515,10 +523,12 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
     "Sois concis et factuel. N'invente rien qui ne figure pas dans le document. " +
     "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques (* ou **), pas de dièses (#), pas de " +
     "tirets de liste. Sépare les sections par des sauts de ligne. " +
-    "N'écris jamais de champ vide entre crochets comme [date] ou [nom] : si une information manque, " +
-    "omets-la proprement.";
+    "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
+    "Si une information est absente, omets simplement la ligne ou la section concernée — n'écris " +
+    "JAMAIS 'Non renseigné', 'Non précisé', 'À compléter' ou équivalent.";
 
-  const user = `Document médical à analyser :\n\n${document}\n`;
+  const user = `Document médical à analyser :\n\n${document}\n` +
+    (complement ? `\nÉléments additionnels à intégrer / actions retenues par le médecin : ${complement}\n` : '');
 
   try {
     const result = await generateDocument({ system, user, maxTokens: 1500 });
