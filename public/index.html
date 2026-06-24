@@ -508,10 +508,63 @@ footer {
 }
 .reveal.visible { opacity: 1; transform: translateY(0); }
 
+/* ─── MENU MOBILE (hamburger) ─── */
+.nav-burger {
+  display: none;
+  background: transparent; border: 1px solid var(--border2);
+  border-radius: 8px; width: 38px; height: 38px;
+  cursor: pointer; padding: 0;
+  align-items: center; justify-content: center;
+  transition: border-color .2s, background .2s;
+}
+.nav-burger:hover { border-color: var(--accent); }
+.nav-burger svg { color: var(--text); transition: transform .25s ease; }
+.nav-burger.open svg { transform: rotate(90deg); }
+
+/* Panneau mobile */
+.mobile-menu {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 190;
+  background: rgba(8,12,16,0.96);
+  backdrop-filter: blur(18px);
+  padding: 88px 24px 32px;
+  flex-direction: column;
+  overflow-y: auto;
+}
+.mobile-menu.open { display: flex; }
+.mobile-menu ul {
+  list-style: none; display: flex; flex-direction: column;
+  gap: 4px; margin-bottom: 28px;
+}
+.mobile-menu a.m-link {
+  display: block; padding: 16px 8px;
+  font-size: 17px; color: var(--text);
+  text-decoration: none; font-weight: 400;
+  border-bottom: 1px solid var(--border);
+  transition: color .2s, padding-left .2s;
+}
+.mobile-menu a.m-link:hover, .mobile-menu a.m-link:focus {
+  color: var(--accent); padding-left: 14px;
+}
+.mobile-menu .m-actions {
+  display: flex; flex-direction: column; gap: 12px; margin-top: 8px;
+}
+.mobile-menu .m-actions .btn-primary,
+.mobile-menu .m-actions .nav-cta {
+  width: 100%; text-align: center; padding: 15px;
+  font-size: 15px; border-radius: 8px;
+}
+
+/* CTA mobiles dédiés (cachés en desktop) */
+.hero-mobile-cta, .bottom-mobile-cta-wrap { display: none; }
+
 /* ─── RESPONSIVE ─── */
 @media (max-width: 920px) {
   nav { padding: 16px 20px; }
-  .nav-links { display: none; }
+  .nav-links, nav > .nav-cta { display: none; }
+  .nav-burger { display: inline-flex; }
+
   .hero, .section, .section-full, .waitlist-section { padding-left: 20px; padding-right: 20px; }
   .stats-strip { grid-template-columns: repeat(2,1fr); padding: 32px 20px; }
   .stat-item { border-right: none; border-bottom: 1px solid var(--border); padding: 18px 0; }
@@ -525,6 +578,27 @@ footer {
   footer { flex-direction: column; gap: 20px; text-align: center; }
   .footer-links { flex-wrap: wrap; justify-content: center; }
   .wf-row { flex-direction: column; }
+
+  /* CTA mobiles visibles */
+  .hero-mobile-cta {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; margin-top: 16px; width: 100%; max-width: 360px;
+    padding: 16px 28px; font-size: 15.5px;
+  }
+  .bottom-mobile-cta-wrap {
+    display: block; padding: 56px 20px 24px; text-align: center;
+    border-top: 1px solid var(--border);
+    background: var(--bg-card2);
+  }
+  .bottom-mobile-cta-wrap p {
+    font-size: 14px; color: var(--text-muted);
+    margin-bottom: 18px; line-height: 1.6;
+  }
+  .bottom-mobile-cta-wrap .btn-primary {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 8px; width: 100%; max-width: 360px;
+    padding: 16px 28px; font-size: 15.5px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -545,7 +619,30 @@ footer {
     <li><a href="/app.html">Accéder à l'app</a></li>
   </ul>
   <a href="#acces" class="nav-cta">Accès anticipé</a>
+  <button class="nav-burger" id="nav-burger" aria-label="Ouvrir le menu" aria-controls="mobile-menu" aria-expanded="false">
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/>
+    </svg>
+  </button>
 </nav>
+
+<!-- MENU MOBILE -->
+<div class="mobile-menu" id="mobile-menu" role="dialog" aria-modal="true" aria-label="Navigation mobile">
+  <ul>
+    <li><a class="m-link" href="#probleme">Le problème</a></li>
+    <li><a class="m-link" href="#comment">Comment ça marche</a></li>
+    <li><a class="m-link" href="#tarifs">Tarifs</a></li>
+    <li><a class="m-link" href="/login.html">Se connecter</a></li>
+    <li><a class="m-link" href="/register.html">Créer un compte</a></li>
+    <li><a class="m-link" href="/mentions-legales.html">Mentions légales</a></li>
+    <li><a class="m-link" href="/cgu.html">CGU</a></li>
+    <li><a class="m-link" href="/politique-confidentialite.html">Confidentialité</a></li>
+  </ul>
+  <div class="m-actions">
+    <a href="/login.html" class="btn-primary">Accéder à l'application</a>
+    <a href="#acces" class="nav-cta">Accès anticipé</a>
+  </div>
+</div>
 
 <!-- HERO -->
 <div class="hero">
@@ -588,6 +685,14 @@ footer {
       </svg>
     </a>
   </div>
+
+  <!-- CTA mobile : accès direct à l'app -->
+  <a href="/login.html" class="btn-primary hero-mobile-cta">
+    Accéder à l'application
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+      <path stroke-linecap="round" d="M5 12h14m-6-6l6 6-6 6"/>
+    </svg>
+  </a>
 
   <div class="hero-trust">
     <div class="trust-item">
@@ -896,6 +1001,17 @@ footer {
   </div>
 </div>
 
+<!-- CTA mobile avant footer -->
+<div class="bottom-mobile-cta-wrap">
+  <p>Vous avez déjà un compte ou souhaitez essayer Praxi ?</p>
+  <a href="/login.html" class="btn-primary">
+    Accéder à l'application
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4">
+      <path stroke-linecap="round" d="M5 12h14m-6-6l6 6-6 6"/>
+    </svg>
+  </a>
+</div>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-logo">Prax<span>i</span></div>
@@ -914,6 +1030,19 @@ const nav = document.getElementById('nav');
 window.addEventListener('scroll', () => {
   nav.classList.toggle('scrolled', window.scrollY > 40);
 }, { passive: true });
+
+// Menu mobile
+const burger      = document.getElementById('nav-burger');
+const mobileMenu  = document.getElementById('mobile-menu');
+function setMobileMenu(open) {
+  burger.classList.toggle('open', open);
+  burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  mobileMenu.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+burger.addEventListener('click', () => setMobileMenu(!mobileMenu.classList.contains('open')));
+mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => setMobileMenu(false)));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setMobileMenu(false); });
 
 // Scroll reveal
 const revealEls = document.querySelectorAll('.reveal');
