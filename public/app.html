@@ -156,6 +156,22 @@ body {
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px;
 }
 
+/* Sélection multiple de spécialités (cases à cocher) */
+.spec-multi {
+  display: flex; flex-direction: column; gap: 2px;
+  background: var(--bg-card); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 6px; max-height: 220px; overflow-y: auto;
+}
+.spec-opt {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px; border-radius: 6px; cursor: pointer;
+  font-size: 14px; color: var(--text); margin: 0;
+  transition: background .15s;
+}
+.spec-opt:hover { background: rgba(56,189,248,.08); }
+.spec-opt input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; flex: none; }
+.spec-opt:has(input:checked) { background: rgba(56,189,248,.10); }
+
 /* champ avec micro */
 .with-mic { position: relative; }
 .with-mic .textarea { padding-right: 50px; }
@@ -627,25 +643,25 @@ body {
             <input class="input" id="p-nom" />
           </div>
         </div>
-        <div class="field-row">
-          <div class="field">
-            <label class="label">Spécialité</label>
-            <select class="select" id="p-specialite">
-              <option>Médecine générale</option>
-              <option>Médecine interne</option>
-              <option>Cardiologie</option>
-              <option>Pédiatrie</option>
-              <option>Gynécologie</option>
-              <option>Psychiatrie</option>
-              <option>Rhumatologie</option>
-              <option>Gériatrie</option>
-              <option>Autre spécialité</option>
-            </select>
+        <div class="field">
+          <label class="label"><span>Spécialité(s)</span><span class="label-opt">Plusieurs choix possibles</span></label>
+          <div class="spec-multi" id="p-specialite">
+            <label class="spec-opt"><input type="checkbox" value="Médecine générale" /><span>Médecine générale</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Médecine interne" /><span>Médecine interne</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Cardiologie" /><span>Cardiologie</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Pédiatrie" /><span>Pédiatrie</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Gynécologie" /><span>Gynécologie</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Psychiatrie" /><span>Psychiatrie</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Rhumatologie" /><span>Rhumatologie</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Gériatrie" /><span>Gériatrie</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Médecin algologue" /><span>Médecin algologue</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Médecin anesthésiste réanimateur" /><span>Médecin anesthésiste réanimateur</span></label>
+            <label class="spec-opt"><input type="checkbox" value="Autre spécialité" /><span>Autre spécialité</span></label>
           </div>
-          <div class="field">
-            <label class="label">Ville</label>
-            <input class="input" id="p-ville" />
-          </div>
+        </div>
+        <div class="field">
+          <label class="label">Ville</label>
+          <input class="input" id="p-ville" />
         </div>
         <div class="field">
           <label class="label">Adresse du cabinet</label>
@@ -1406,11 +1422,20 @@ const profileForm  = document.getElementById('profile-form');
 const profileBtn   = document.getElementById('profile-submit');
 const profileSaved = document.getElementById('profile-save');
 
+function getSpecialites() {
+  if (!me) return [];
+  if (Array.isArray(me.specialites) && me.specialites.length) return me.specialites;
+  if (me.specialite) return me.specialite.split(',').map(x => x.trim()).filter(Boolean);
+  return [];
+}
 function fillProfileForm() {
   if (!me) return;
   document.getElementById('p-prenom').value     = me.prenom    || '';
   document.getElementById('p-nom').value        = me.nom       || '';
-  document.getElementById('p-specialite').value = me.specialite || 'Médecine générale';
+  const specs = getSpecialites();
+  document.querySelectorAll('#p-specialite input[type="checkbox"]').forEach(c => {
+    c.checked = specs.includes(c.value);
+  });
   document.getElementById('p-ville').value      = me.ville     || '';
   document.getElementById('p-adresse').value    = me.adresse   || '';
   document.getElementById('p-telephone').value  = me.telephone || '';
@@ -1423,11 +1448,14 @@ profileForm.addEventListener('submit', async e => {
   e.preventDefault();
   clearError('profile-error');
   profileSaved.classList.remove('show');
+  const specialites = Array.from(
+    document.querySelectorAll('#p-specialite input[type="checkbox"]:checked')
+  ).map(c => c.value);
   const payload = {
-    prenom:     document.getElementById('p-prenom').value.trim(),
-    nom:        document.getElementById('p-nom').value.trim(),
-    specialite: document.getElementById('p-specialite').value,
-    ville:      document.getElementById('p-ville').value.trim(),
+    prenom:      document.getElementById('p-prenom').value.trim(),
+    nom:         document.getElementById('p-nom').value.trim(),
+    specialites,
+    ville:       document.getElementById('p-ville').value.trim(),
     adresse:    document.getElementById('p-adresse').value.trim(),
     telephone:  document.getElementById('p-telephone').value.trim(),
     emailPro:   document.getElementById('p-emailPro').value.trim(),

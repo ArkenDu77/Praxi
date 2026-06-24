@@ -72,9 +72,29 @@ function rateLimit(ip, max = 3) {
 const EMAIL_RE   = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SPECIALITES = [
   'Médecine générale','Médecine interne','Cardiologie','Pédiatrie',
-  'Gynécologie','Psychiatrie','Rhumatologie','Gériatrie','Autre spécialité'
+  'Gynécologie','Psychiatrie','Rhumatologie','Gériatrie',
+  'Médecin algologue','Médecin anesthésiste réanimateur','Autre spécialité'
 ];
 const s = (v, max = 100) => typeof v === 'string' ? v.trim().slice(0, max).replace(/[<>]/g,'') : '';
+
+// Récupère la liste des spécialités d'un compte.
+// Accepte un tableau `specialites` (multi-sélection) ou une chaîne `specialite`
+// (compat ascendante, éventuellement séparée par des virgules).
+function parseSpecialites(body) {
+  let list = [];
+  if (Array.isArray(body.specialites)) {
+    list = body.specialites;
+  } else if (typeof body.specialite === 'string') {
+    list = body.specialite.split(',');
+  }
+  const seen = new Set();
+  const out = [];
+  for (const item of list) {
+    const v = s(item);
+    if (v && !seen.has(v)) { seen.add(v); out.push(v); }
+  }
+  return out;
+}
 
 // ── ROUTES ──
 
@@ -194,17 +214,18 @@ app.post('/api/auth/register', async (req, res) => {
   const prenom     = s(req.body.prenom);
   const nom        = s(req.body.nom);
   const email      = s(req.body.email, 200).toLowerCase();
-  const password   = typeof req.body.password === 'string' ? req.body.password : '';
-  const specialite = s(req.body.specialite);
-  const ville      = s(req.body.ville);
-  const rpps       = s(req.body.rpps, 20);
+  const password    = typeof req.body.password === 'string' ? req.body.password : '';
+  const specialites = parseSpecialites(req.body);
+  const specialite  = specialites.join(', ');
+  const ville       = s(req.body.ville);
+  const rpps        = s(req.body.rpps, 20);
 
   const errors = [];
   if (!prenom)               errors.push('Prénom requis');
   if (!nom)                  errors.push('Nom requis');
   if (!EMAIL_RE.test(email)) errors.push('Email invalide');
   if (password.length < 8)   errors.push('Mot de passe : 8 caractères minimum');
-  if (!specialite)           errors.push('Spécialité requise');
+  if (!specialites.length)   errors.push('Spécialité requise');
   if (!ville)                errors.push('Ville requise');
   if (errors.length) return res.status(400).json({ error: errors.join(', ') });
 
@@ -217,7 +238,7 @@ app.post('/api/auth/register', async (req, res) => {
   const user = {
     id: db.nextId++,
     prenom, nom, email, passwordHash,
-    specialite, ville, rpps,
+    specialite, specialites, ville, rpps,
     adresse: '', telephone: '', emailPro: email,
     createdAt: new Date().toISOString()
   };
@@ -262,7 +283,11 @@ app.patch('/api/auth/profile', authenticateJWT, (req, res) => {
   // Champs modifiables (l'email de connexion reste fixe)
   if ('prenom' in req.body)     u.prenom     = s(req.body.prenom);
   if ('nom' in req.body)        u.nom        = s(req.body.nom);
-  if ('specialite' in req.body) u.specialite = s(req.body.specialite);
+  if ('specialites' in req.body || 'specialite' in req.body) {
+    const list   = parseSpecialites(req.body);
+    u.specialites = list;
+    u.specialite  = list.join(', ');
+  }
   if ('ville' in req.body)      u.ville      = s(req.body.ville);
   if ('adresse' in req.body)    u.adresse    = s(req.body.adresse, 200);
   if ('telephone' in req.body)  u.telephone  = s(req.body.telephone, 30);
@@ -323,6 +348,34 @@ function adaptationSpecialite(specialite) {
     'Médecine interne':       "Le destinataire est interniste : présente une synthèse globale et les hypothèses diagnostiques."
   };
   return map[specialite] || '';
+}
+
+// Adaptation du compte-rendu selon la (les) spécialité(s) du médecin rédacteur.
+// Certaines spécialités attendent une structuration ou des éléments spécifiques.
+function adaptationRedacteur(user) {
+  if (!user) return '';
+  const list = (Array.isArray(user.specialites) && user.specialites.length)
+    ? user.specialites
+    : (user.specialite ? user.specialite.split(',').map(x => x.trim()).filter(Boolean) : []);
+  const map = {
+    'Médecin algologue':
+      "Le rédacteur est médecin algologue (médecine de la douleur) : structure le compte-rendu " +
+      "autour de l'évaluation de la douleur (mécanisme nociceptif / neuropathique / mixte, intensité " +
+      "type EVA ou EN, topographie et irradiation, ancienneté, retentissement sur le sommeil, " +
+      "l'humeur, l'autonomie et la qualité de vie), des traitements antalgiques déjà essayés avec " +
+      "leur efficacité et leur tolérance, et de la stratégie thérapeutique proposée (paliers " +
+      "antalgiques OMS, co-antalgiques, traitements adjuvants, techniques interventionnelles ou prise " +
+      "en charge pluridisciplinaire éventuelles).",
+    'Médecin anesthésiste réanimateur':
+      "Le rédacteur est médecin anesthésiste-réanimateur : en contexte de consultation " +
+      "pré-anesthésique, mets en avant le score ASA, les antécédents médico-chirurgicaux et " +
+      "anesthésiques, les allergies, les traitements en cours (notamment anticoagulants et " +
+      "antiagrégants), les critères d'intubation difficile, l'évaluation des voies aériennes, le jeûne " +
+      "et les consignes péri-opératoires ; en contexte de réanimation, détaille l'état " +
+      "hémodynamique, respiratoire et neurologique, les défaillances d'organe et les thérapeutiques " +
+      "de suppléance."
+  };
+  return list.map(sp => map[sp]).filter(Boolean).join(' ');
 }
 
 // Appel commun à l'API Anthropic. Renvoie le texte généré ou lève une erreur.
@@ -414,10 +467,12 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
     return res.status(400).json({ error: 'Renseignez les notes de consultation.' });
   }
 
+  const adaptRedacteur = adaptationRedacteur(req.user);
   const system =
     "Tu es un assistant médical pour médecins libéraux français. À partir de notes brutes, rédige un " +
     "compte-rendu de consultation structuré. " +
     enteteConsigne(req.user) +
+    (adaptRedacteur ? adaptRedacteur + " " : "") +
     "Après l'en-tête, organise le compte-rendu avec ces sections, dans cet ordre, chaque titre en " +
     "majuscules suivi de deux-points : MOTIF DE CONSULTATION :, ANTÉCÉDENTS MENTIONNÉS :, " +
     "EXAMEN CLINIQUE :, DIAGNOSTIC / IMPRESSION CLINIQUE :, CONDUITE À TENIR :. " +

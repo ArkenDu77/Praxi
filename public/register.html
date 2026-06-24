@@ -39,26 +39,26 @@
       <input class="input" type="password" id="password" placeholder="8 caractères minimum" required autocomplete="new-password" />
       <p class="hint">8 caractères minimum.</p>
     </div>
-    <div class="row">
-      <div class="field">
-        <label for="specialite">Spécialité</label>
-        <select class="select" id="specialite" required>
-          <option value="" disabled selected>Choisir…</option>
-          <option>Médecine générale</option>
-          <option>Médecine interne</option>
-          <option>Cardiologie</option>
-          <option>Pédiatrie</option>
-          <option>Gynécologie</option>
-          <option>Psychiatrie</option>
-          <option>Rhumatologie</option>
-          <option>Gériatrie</option>
-          <option>Autre spécialité</option>
-        </select>
+    <div class="field">
+      <label>Spécialité(s)</label>
+      <div class="spec-multi" id="specialite">
+        <label class="spec-opt"><input type="checkbox" value="Médecine générale" /><span>Médecine générale</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Médecine interne" /><span>Médecine interne</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Cardiologie" /><span>Cardiologie</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Pédiatrie" /><span>Pédiatrie</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Gynécologie" /><span>Gynécologie</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Psychiatrie" /><span>Psychiatrie</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Rhumatologie" /><span>Rhumatologie</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Gériatrie" /><span>Gériatrie</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Médecin algologue" /><span>Médecin algologue</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Médecin anesthésiste réanimateur" /><span>Médecin anesthésiste réanimateur</span></label>
+        <label class="spec-opt"><input type="checkbox" value="Autre spécialité" /><span>Autre spécialité</span></label>
       </div>
-      <div class="field">
-        <label for="ville">Ville d'exercice</label>
-        <input class="input" type="text" id="ville" placeholder="Lyon" required />
-      </div>
+      <p class="hint">Vous pouvez en sélectionner plusieurs.</p>
+    </div>
+    <div class="field">
+      <label for="ville">Ville d'exercice</label>
+      <input class="input" type="text" id="ville" placeholder="Lyon" required />
     </div>
     <div class="field">
       <label for="rpps">Numéro RPPS <span style="color:var(--text-dim)">(optionnel)</span></label>
@@ -93,18 +93,21 @@ function setLoading(on) {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   clearError();
+  const specialites = Array.from(
+    document.querySelectorAll('#specialite input[type="checkbox"]:checked')
+  ).map(c => c.value);
   const payload = {
-    prenom:     document.getElementById('prenom').value.trim(),
-    nom:        document.getElementById('nom').value.trim(),
-    email:      document.getElementById('email').value.trim(),
-    password:   document.getElementById('password').value,
-    specialite: document.getElementById('specialite').value,
-    ville:      document.getElementById('ville').value.trim(),
-    rpps:       document.getElementById('rpps').value.trim()
+    prenom:      document.getElementById('prenom').value.trim(),
+    nom:         document.getElementById('nom').value.trim(),
+    email:       document.getElementById('email').value.trim(),
+    password:    document.getElementById('password').value,
+    specialites,
+    ville:       document.getElementById('ville').value.trim(),
+    rpps:        document.getElementById('rpps').value.trim()
   };
 
-  if (!payload.prenom || !payload.nom || !payload.email || !payload.specialite || !payload.ville) {
-    showError('Merci de remplir tous les champs obligatoires.'); return;
+  if (!payload.prenom || !payload.nom || !payload.email || !specialites.length || !payload.ville) {
+    showError('Merci de remplir tous les champs obligatoires (au moins une spécialité).'); return;
   }
   if (payload.password.length < 8) {
     showError('Le mot de passe doit contenir au moins 8 caractères.'); return;
