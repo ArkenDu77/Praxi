@@ -191,9 +191,7 @@ form.addEventListener('submit', async (e) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Inscription impossible.');
-    localStorage.setItem('praxi_token', data.token);
-    localStorage.setItem('praxi_profil', JSON.stringify(data.user));
-    location.replace('/app.html');
+    location.replace('/verify-email.html?email=' + encodeURIComponent(payload.email));
   } catch (err) {
     showError(err.message);
     setLoading(false);
