@@ -150,6 +150,11 @@ body {
   box-shadow: 0 0 0 3px rgba(56,189,248,.08);
 }
 .textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
+.anon-hint {
+  font-size: 11.5px; color: var(--text-dim);
+  margin-top: 7px; display: flex; align-items: center; gap: 5px;
+  user-select: none; pointer-events: none;
+}
 .select {
   -webkit-appearance: none; appearance: none; cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -559,6 +564,7 @@ body {
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
         </button>
       </div>
+      <p class="anon-hint">🔒 Les données identifiantes sont anonymisées avant envoi</p>
     </div>
 
     <div class="actions">
@@ -610,6 +616,7 @@ body {
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
         </button>
       </div>
+      <p class="anon-hint">🔒 Les données identifiantes sont anonymisées avant envoi</p>
     </div>
 
     <div class="actions">
@@ -1007,6 +1014,102 @@ document.getElementById('l-specialiste').addEventListener('change', e => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════
+//  PSEUDONYMISATION côté client (avant envoi API)
+// ═══════════════════════════════════════════════════════════════════════
+function pseudonymize(text, patient, age) {
+  const substitutions = new Map();
+  let anon = text;
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // ── Nom du patient ──
+  if (patient && patient.trim()) {
+    const raw = patient.trim();
+    const cleanName = raw.replace(/^(M\.|Mme\.?|Mme|Dr\.?|Pr\.?)\s+/i, '').trim();
+    const parts = cleanName.split(/\s+/).filter(p => p.length > 0);
+    const titles = ['M\\.', 'Mme\\.?', 'Mme', 'Dr\\.?', 'Pr\\.?'];
+    const patterns = new Set();
+
+    // Nom avec titres (original et inversé)
+    titles.forEach(t => {
+      patterns.add(t + '\\s+' + esc(cleanName));
+      if (parts.length >= 2) patterns.add(t + '\\s+' + esc([...parts].reverse().join(' ')));
+    });
+    // Nom original, sans titre, inversé
+    patterns.add(esc(raw));
+    patterns.add(esc(cleanName));
+    if (parts.length >= 2) patterns.add(esc([...parts].reverse().join(' ')));
+    // Parties individuelles (≥ 4 chars) avec word boundary
+    parts.forEach(p => { if (p.length >= 4) patterns.add('\\b' + esc(p) + '\\b'); });
+
+    // Trier du plus long au plus court pour éviter les correspondances partielles
+    Array.from(patterns)
+      .sort((a, b) => b.length - a.length)
+      .forEach(pat => {
+        anon = anon.replace(new RegExp(pat, 'gi'), () => {
+          if (!substitutions.has('__patient__')) substitutions.set('__patient__', raw);
+          return 'le patient';
+        });
+      });
+  }
+
+  // ── Âge exact → tranche de 5 ans ──
+  if (age && age.trim()) {
+    const m = age.trim().match(/^(\d+)/);
+    if (m) {
+      const n = parseInt(m[1], 10);
+      const lo = Math.floor(n / 5) * 5;
+      anon = anon.replace(new RegExp('\\b' + n + '\\s*ans\\b', 'gi'), match => {
+        if (!substitutions.has('__age__')) substitutions.set('__age__', match);
+        return `entre ${lo} et ${lo + 5} ans`;
+      });
+    }
+  }
+
+  // ── Dates de naissance ──
+  anon = anon.replace(/né[e]?\s+le\s+(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/gi, (match, d) => {
+    substitutions.set('__dob__', match);
+    const year = parseInt(d.split(/[\/\-]/).pop(), 10);
+    return `né dans les années ${Math.floor(year / 10) * 10}`;
+  });
+  anon = anon.replace(/né[e]?\s+en\s+(\d{4})/gi, (match, y) => {
+    substitutions.set('__doby__', match);
+    return `né dans les années ${Math.floor(parseInt(y, 10) / 10) * 10}`;
+  });
+
+  // ── NIR / numéro de sécu (13 chiffres consécutifs) ──
+  anon = anon.replace(/\b(\d{13})\b/g, match => {
+    substitutions.set('__nir__', match);
+    return '[numéro retiré]';
+  });
+
+  // ── Adresses (numéro + type de voie + libellé) ──
+  anon = anon.replace(
+    /\b\d+[a-z]?\s+(?:rue|avenue|av\.?|boulevard|bd\.?|allée|place|impasse|chemin|voie|route|passage|cité|résidence|cours)\s+[^,\n]{3,50}(?:,\s*\d{5}\s+[^\n,]{2,30})?/gi,
+    match => {
+      substitutions.set('__addr__', match);
+      return '[adresse retirée]';
+    }
+  );
+
+  return { anonymizedText: anon, substitutions };
+}
+
+function resubstitute(text, substitutions, patient) {
+  let out = text;
+  // Restaurer le nom du patient ("le patient" / "la patiente")
+  if (patient && patient.trim()) {
+    out = out.replace(/\bla patiente\b/gi, patient.trim());
+    out = out.replace(/\ble patient\b/gi, patient.trim());
+  }
+  // Restaurer NIR et adresse depuis la Map
+  for (const [k, v] of substitutions) {
+    if (k === '__nir__')   out = out.split('[numéro retiré]').join(v);
+    if (k === '__addr__')  out = out.split('[adresse retirée]').join(v);
+  }
+  return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 //  GÉNÉRATION (appel API)
 // ═══════════════════════════════════════════════════════════════════════
 const GEN = {
@@ -1076,10 +1179,36 @@ document.querySelectorAll('[data-gen]').forEach(btn => {
 
     setLoading(btn, true);
     try {
+      let payload = Object.assign({}, built.payload);
+      let subs = null;
+      let patientOrig = '';
+
+      // Pseudonymisation des notes (liaison + compte-rendu uniquement)
+      if (key === 'liaison' || key === 'cr') {
+        patientOrig = payload.patient || '';
+        const ageOrig = key === 'liaison' ? (payload.age || '') : '';
+        const { anonymizedText, substitutions } = pseudonymize(payload.notes || '', patientOrig, ageOrig);
+        subs = substitutions;
+        payload.notes = anonymizedText;
+        if (patientOrig) payload.patient = 'le patient';
+        if (ageOrig) {
+          const m = ageOrig.match(/^(\d+)/);
+          if (m) {
+            const n = parseInt(m[1], 10);
+            const lo = Math.floor(n / 5) * 5;
+            payload.age = `entre ${lo} et ${lo + 5} ans`;
+          }
+        }
+      }
+
       const data = await api('/api/generate/' + cfg.endpoint, {
-        method: 'POST', body: JSON.stringify(built.payload)
+        method: 'POST', body: JSON.stringify(payload)
       });
-      const out = data.document || '';
+
+      // Re-substitution : restaure le nom du patient + NIR/adresse dans le document reçu
+      let out = data.document || '';
+      if (subs) out = resubstitute(out, subs, patientOrig);
+
       const outEl = document.getElementById(cfg.outId);
       renderResult(outEl, out);
       renderTools(key);
