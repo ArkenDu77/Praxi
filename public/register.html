@@ -191,7 +191,7 @@ form.addEventListener('submit', async (e) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Inscription impossible.');
-    location.replace('/verify-email.html?email=' + encodeURIComponent(payload.email));
+    location.replace('/login.html?registered=1');
   } catch (err) {
     showError(err.message);
     setLoading(false);

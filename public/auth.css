@@ -177,7 +177,8 @@ body {
   border-radius: 8px; font-size: 13.5px; line-height: 1.5;
 }
 .alert.show { display: block; }
-.alert-error { background: var(--danger-dim); border: 1px solid rgba(248,113,113,.3); color: #FCA5A5; }
+.alert-error   { background: var(--danger-dim); border: 1px solid rgba(248,113,113,.3); color: #FCA5A5; }
+.alert-success { background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.28); color: #86EFAC; }
 
 .auth-foot {
   text-align: center; font-size: 13.5px; color: var(--text-muted); margin-top: 24px;

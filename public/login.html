@@ -17,6 +17,7 @@
   <a href="/" class="auth-logo">Prax<span>i</span></a>
   <p class="auth-title">Connexion à votre espace</p>
 
+  <div class="alert alert-success" id="registered-banner"></div>
   <div class="alert alert-error" id="error"></div>
 
   <form id="login-form" novalidate>
@@ -42,8 +43,15 @@
 <script>lucide.createIcons();</script>
 <script>
 'use strict';
-// Déjà connecté ? on saute la connexion.
 if (localStorage.getItem('praxi_token')) location.replace('/app.html');
+
+// Bannière post-inscription
+if (new URLSearchParams(location.search).get('registered') === '1') {
+  const b = document.getElementById('registered-banner');
+  b.textContent = 'Compte créé ! Connectez-vous pour accéder à votre espace.';
+  b.classList.add('show');
+  history.replaceState(null, '', '/login.html');
+}
 
 const form  = document.getElementById('login-form');
 const btn   = document.getElementById('submit');

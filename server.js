@@ -53,24 +53,6 @@ function emailLayout(title, bodyHtml) {
 </body></html>`;
 }
 
-async function sendVerificationEmail(email, prenom, code) {
-  if (!SMTP_USER || !SMTP_PASS) return;
-  const body = `
-    <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#EDF2F7;">Bonjour Dr ${prenom},</p>
-    <p style="margin:0 0 24px;font-size:14.5px;color:#6B8299;line-height:1.65;">Pour activer votre compte Praxi, saisissez le code ci-dessous dans la page de vérification.</p>
-    <div style="text-align:center;margin:28px 0;">
-      <span style="display:inline-block;background:#0A1018;border:1px solid #243040;border-radius:10px;padding:18px 36px;font-size:32px;font-weight:700;letter-spacing:.18em;color:#38BDF8;font-family:monospace;">${code}</span>
-    </div>
-    <p style="margin:0 0 8px;font-size:13px;color:#3D5166;text-align:center;">Ce code est valable 15 minutes.</p>
-    <p style="margin:24px 0 0;font-size:13px;color:#3D5166;">Si vous n'avez pas créé de compte Praxi, ignorez cet email.</p>`;
-  await transporter.sendMail({
-    from: `"Praxi" <${SMTP_USER}>`,
-    to: email,
-    subject: `${code} — Votre code de vérification Praxi`,
-    html: emailLayout('Vérification de votre adresse email', body)
-  });
-}
-
 async function sendPasswordResetEmail(email, prenom, token) {
   if (!SMTP_USER || !SMTP_PASS) return;
   const url  = `${APP_URL}/reset-password.html?token=${token}`;
@@ -305,23 +287,20 @@ app.post('/api/auth/register', async (req, res) => {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
-  const verificationCode = String(Math.floor(100000 + Math.random() * 900000));
   const user = {
     id: db.nextId++,
     prenom, nom, email, passwordHash,
     specialite, specialites, ville, rpps,
     adresse: '', telephone: '', emailPro: email,
-    status: 'pending',
-    emailVerificationCode:   verificationCode,
-    emailVerificationExpiry: Date.now() + 15 * 60 * 1000,
+    status: 'verified',
     createdAt: new Date().toISOString()
   };
   db.users.push(user);
   writeUsers(db);
 
   console.log(`[auth] nouveau médecin : Dr ${prenom} ${nom} — ${specialite}`);
-  try { await sendVerificationEmail(email, prenom, verificationCode); } catch (_) {}
-  res.status(201).json({ ok: true, email });
+  const token = signToken(user);
+  res.status(201).json({ token, user: publicUser(user) });
 });
 
 // POST /api/auth/login
@@ -337,14 +316,6 @@ app.post('/api/auth/login', async (req, res) => {
   // Message identique pour éviter l'énumération des comptes
   const ok = user && await bcrypt.compare(password, user.passwordHash);
   if (!ok) return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
-
-  if (user.status === 'pending') {
-    return res.status(403).json({
-      error: 'Compte non vérifié. Consultez votre email pour le code de confirmation.',
-      needVerification: true,
-      email: user.email
-    });
-  }
 
   const token = signToken(user);
   res.json({ token, user: publicUser(user) });
@@ -620,54 +591,6 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
   }
 });
 
-// POST /api/auth/verify-email — vérifie le code à 6 chiffres
-app.post('/api/auth/verify-email', async (req, res) => {
-  const email = s(req.body.email, 200).toLowerCase();
-  const code  = s(req.body.code, 10);
-
-  const db  = readUsers();
-  const idx = db.users.findIndex(u => u.email === email);
-  if (idx === -1) return res.status(400).json({ error: 'Code incorrect.' });
-
-  const user = db.users[idx];
-  if (user.status === 'verified') {
-    const token = signToken(user);
-    return res.json({ token, user: publicUser(user) });
-  }
-  if (!user.emailVerificationCode || user.emailVerificationCode !== code) {
-    return res.status(400).json({ error: 'Code incorrect.' });
-  }
-  if (Date.now() > user.emailVerificationExpiry) {
-    return res.status(400).json({ error: 'Code expiré. Demandez-en un nouveau.' });
-  }
-
-  user.status = 'verified';
-  delete user.emailVerificationCode;
-  delete user.emailVerificationExpiry;
-  db.users[idx] = user;
-  writeUsers(db);
-
-  const token = signToken(user);
-  res.json({ token, user: publicUser(user) });
-});
-
-// POST /api/auth/resend-verification — renvoie un nouveau code
-app.post('/api/auth/resend-verification', async (req, res) => {
-  const email = s(req.body.email, 200).toLowerCase();
-
-  const db  = readUsers();
-  const idx = db.users.findIndex(u => u.email === email);
-  if (idx === -1 || db.users[idx].status === 'verified') return res.json({ ok: true });
-
-  const code = String(Math.floor(100000 + Math.random() * 900000));
-  db.users[idx].emailVerificationCode    = code;
-  db.users[idx].emailVerificationExpiry  = Date.now() + 15 * 60 * 1000;
-  writeUsers(db);
-
-  try { await sendVerificationEmail(email, db.users[idx].prenom, code); } catch (_) {}
-  res.json({ ok: true });
-});
-
 // POST /api/auth/forgot-password — génère un token de réinitialisation et l'envoie par email
 app.post('/api/auth/forgot-password', async (req, res) => {
   const email = s(req.body.email, 200).toLowerCase();
@@ -687,13 +610,20 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 
 // POST /api/auth/reset-password — applique le nouveau mot de passe via token
 app.post('/api/auth/reset-password', async (req, res) => {
-  const token    = s(req.body.token, 100);
+  // Extraction directe : pas de s() pour éviter toute troncature ou altération du token
+  const token    = typeof req.body.token === 'string' ? req.body.token.trim() : '';
   const password = typeof req.body.password === 'string' ? req.body.password : '';
 
   if (!token)              return res.status(400).json({ error: 'Token manquant.' });
   if (password.length < 8) return res.status(400).json({ error: 'Mot de passe : 8 caractères minimum.' });
 
   const db  = readUsers();
+  console.log('[reset-pw] token reçu :', token.slice(0, 12) + '… (longueur ' + token.length + ')');
+  console.log('[reset-pw] tokens stockés :', db.users.map(u => u.resetToken
+    ? { id: u.id, début: u.resetToken.slice(0, 12) + '…', expiré: Date.now() > u.resetTokenExpiry }
+    : null
+  ).filter(Boolean));
+
   const idx = db.users.findIndex(u => u.resetToken === token);
   if (idx === -1) return res.status(400).json({ error: 'Lien invalide ou expiré.' });
 
