@@ -71,13 +71,13 @@ nav.scrolled { border-bottom-color: var(--border); }
 
 /* ─── HERO ─── */
 .hero {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: flex-start;
-  padding-top: 16px;
-  padding-right: 48px;
-  padding-bottom: 40px;
-  padding-left: 48px;
-  position: relative; overflow: hidden; text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 96px 48px 56px;
+  position: relative;
+  overflow: hidden;
+  text-align: center;
 }
 
 /* Grid background */
@@ -99,7 +99,7 @@ nav.scrolled { border-bottom-color: var(--border); }
   pointer-events: none;
 }
 
-.hero > * { position: relative; z-index: 1; }
+.hero > *:not(.hero-grid):not(.hero-glow) { position: relative; z-index: 1; }
 
 /* ECG */
 .ecg-wrap {
@@ -108,10 +108,13 @@ nav.scrolled { border-bottom-color: var(--border); }
 }
 .ecg-line {
   stroke-dasharray: 1;
-  stroke-dashoffset: 1;
-  animation: drawLine 2s cubic-bezier(.4,0,.2,1) .1s forwards;
+  stroke-dashoffset: 0;
+  animation: drawLine 2s cubic-bezier(.4,0,.2,1) 0.1s both;
 }
-@keyframes drawLine { to { stroke-dashoffset: 0; } }
+@keyframes drawLine {
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+}
 
 /* Badge */
 .hero-badge {
@@ -184,23 +187,6 @@ nav.scrolled { border-bottom-color: var(--border); }
 }
 .trust-item svg { color: var(--accent); flex-shrink: 0; }
 .trust-sep { width: 1px; height: 14px; background: var(--border2); }
-
-/* Scroll indicator */
-.scroll-hint {
-  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
-  display: flex; flex-direction: column; align-items: center; gap: 8px;
-  animation: fadeUp .6s ease .9s both;
-}
-.scroll-line {
-  width: 1px; height: 36px;
-  background: linear-gradient(to bottom, var(--accent), transparent);
-  animation: scrollAnim 2s ease infinite;
-}
-@keyframes scrollAnim { 0%,100% { opacity:.3; } 50% { opacity:.9; } }
-.scroll-hint span {
-  font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-  color: var(--text-dim);
-}
 
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }
@@ -728,10 +714,6 @@ footer {
     </div>
   </div>
 
-  <div class="scroll-hint">
-    <div class="scroll-line"></div>
-    <span>Défiler</span>
-  </div>
 </div>
 
 <!-- STATS -->
