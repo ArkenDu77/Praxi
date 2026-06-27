@@ -584,21 +584,52 @@ body {
         <label class="label">Spécialiste destinataire</label>
         <select class="select" id="l-specialiste">
           <option value="" disabled selected>Choisir…</option>
-          <option>Cardiologie</option>
-          <option>Dermatologie</option>
-          <option>Endocrinologie</option>
-          <option>Gastro-entérologie</option>
-          <option>Gynécologie</option>
-          <option>Neurologie</option>
-          <option>Ophtalmologie</option>
+          <option>Médecin généraliste</option>
+          <option>Algologue</option>
+          <option>Allergologue</option>
+          <option>Anatomopathologiste</option>
+          <option>Anesthésiste-réanimateur</option>
+          <option>Angiologue</option>
+          <option>Cancérologue</option>
+          <option>Cardiologue</option>
+          <option>Chirurgien cardiaque</option>
+          <option>Chirurgien digestif</option>
+          <option>Chirurgien orthopédiste</option>
+          <option>Chirurgien plasticien</option>
+          <option>Chirurgien thoracique</option>
+          <option>Chirurgien urologue</option>
+          <option>Chirurgien vasculaire</option>
+          <option>Dermatologue</option>
+          <option>Diabétologue</option>
+          <option>Endocrinologue</option>
+          <option>Gastro-entérologue</option>
+          <option>Gériatre</option>
+          <option>Gynécologue</option>
+          <option>Hématologue</option>
+          <option>Hépatologue</option>
+          <option>Infectiologue</option>
+          <option>Interniste</option>
+          <option>Médecin du sport</option>
+          <option>Médecin du travail</option>
+          <option>Médecin nucléaire</option>
+          <option>Médecin physique et réadaptation</option>
+          <option>Néphrologue</option>
+          <option>Neurologue</option>
+          <option>Neurochirurgien</option>
+          <option>Oncologue</option>
+          <option>Ophtalmologue</option>
           <option>ORL</option>
-          <option>Pneumologie</option>
-          <option>Psychiatrie</option>
-          <option>Rhumatologie</option>
-          <option>Urologie</option>
-          <option>Chirurgie orthopédique</option>
-          <option>Médecine interne</option>
-          <option>Autre spécialité</option>
+          <option>Orthoptiste</option>
+          <option>Pédiatre</option>
+          <option>Pharmacologue</option>
+          <option>Pneumologue</option>
+          <option>Psychiatre</option>
+          <option>Radiologue</option>
+          <option>Radiothérapeute</option>
+          <option>Rhumatologue</option>
+          <option>Stomatologue</option>
+          <option>Urgentiste</option>
+          <option>Urologue</option>
         </select>
       </div>
     </div>
@@ -985,55 +1016,66 @@ function fmtDate(iso) {
 //  TEMPLATES par spécialité (champ "notes" du formulaire de liaison)
 // ═══════════════════════════════════════════════════════════════════════
 const TEMPLATES_LIAISON = {
-  'Cardiologie':
+  'Cardiologue':
     "Antécédents cardiovasculaires :\n" +
     "Facteurs de risque (HTA, diabète, tabac, dyslipidémie, hérédité) :\n" +
     "Symptômes (douleur thoracique, dyspnée, palpitations, syncope) :\n" +
     "Traitement actuel :\n" +
     "Examens déjà réalisés (ECG, biologie) :",
-  'Pneumologie':
+  'Pneumologue':
     "Symptômes respiratoires (toux, dyspnée, expectorations, sifflements) :\n" +
     "Tabagisme (paquets-année) :\n" +
     "Exposition professionnelle / environnementale :\n" +
     "Antécédents pulmonaires :\n" +
     "Traitement actuel :",
-  'Endocrinologie':
+  'Endocrinologue':
     "Motif endocrinien (thyroïde, diabète, surpoids, autres) :\n" +
     "Antécédents personnels et familiaux :\n" +
     "Traitement actuel :\n" +
     "Bilan biologique récent :",
-  'Gastro-entérologie':
+  'Diabétologue':
+    "Type de diabète et ancienneté :\n" +
+    "HbA1c récente et objectif :\n" +
+    "Traitement antidiabétique actuel :\n" +
+    "Complications connues (rétinopathie, néphropathie, neuropathie) :\n" +
+    "Motif de l'adressage :",
+  'Gastro-entérologue':
     "Symptômes digestifs (douleurs, transit, reflux, saignements) :\n" +
     "Antécédents digestifs :\n" +
     "Traitement actuel :\n" +
     "Examens éventuels :",
-  'Neurologie':
+  'Hépatologue':
+    "Motif hépatologique :\n" +
+    "Bilan hépatique récent :\n" +
+    "Facteurs de risque (alcool, surpoids, hépatites virales) :\n" +
+    "Traitement actuel :",
+  'Neurologue':
     "Symptômes neurologiques (céphalées, troubles sensitifs/moteurs, vertiges, troubles cognitifs) :\n" +
     "Chronologie d'apparition :\n" +
     "Antécédents neurologiques :\n" +
     "Traitement actuel :",
-  'Rhumatologie':
+  'Rhumatologue':
     "Topographie articulaire / rachidienne :\n" +
     "Rythme des douleurs (mécanique / inflammatoire) :\n" +
     "Retentissement fonctionnel :\n" +
     "Antécédents rhumatologiques :\n" +
     "Traitement actuel :",
-  'Dermatologie':
+  'Dermatologue':
     "Description des lésions (aspect, localisation, taille, couleur) :\n" +
     "Évolution :\n" +
     "Antécédents dermatologiques :\n" +
     "Traitements déjà essayés :",
-  'Psychiatrie':
+  'Psychiatre':
     "Motif (humeur, anxiété, sommeil, idées suicidaires) :\n" +
     "Contexte de vie :\n" +
     "Antécédents psychiatriques personnels et familiaux :\n" +
     "Traitement psychotrope actuel :",
-  'Gynécologie':
+  'Gynécologue':
     "Antécédents gynéco-obstétricaux :\n" +
     "Cycle menstruel :\n" +
     "Contraception / ménopause :\n" +
     "Motif gynécologique :",
-  'Ophtalmologie':
+  'Ophtalmologue':
     "Symptômes visuels (baisse d'acuité, douleur, rougeur, vision déformée) :\n" +
     "Antécédents ophtalmologiques :\n" +
     "Correction actuelle :",
@@ -1041,21 +1083,53 @@ const TEMPLATES_LIAISON = {
     "Symptômes ORL (otalgie, rhinorrhée, dysphonie, vertiges) :\n" +
     "Ancienneté :\n" +
     "Antécédents ORL :",
-  'Urologie':
+  'Urologue':
     "Symptômes urinaires (pollakiurie, brûlures, hématurie, troubles mictionnels) :\n" +
     "Antécédents urologiques :\n" +
     "Traitement actuel :",
-  'Chirurgie orthopédique':
+  'Chirurgien orthopédiste':
     "Localisation et mécanisme :\n" +
     "Douleur et retentissement fonctionnel :\n" +
     "Antécédents orthopédiques :\n" +
     "Examens d'imagerie réalisés :",
-  'Médecine interne':
+  'Interniste':
     "Synthèse clinique :\n" +
     "Hypothèses diagnostiques :\n" +
     "Antécédents pertinents :\n" +
     "Traitement actuel :\n" +
-    "Examens déjà réalisés :"
+    "Examens déjà réalisés :",
+  'Néphrologue':
+    "Fonction rénale (créatinine, DFG) :\n" +
+    "Protéinurie / hématurie :\n" +
+    "Antécédents néphrologiques :\n" +
+    "Traitement actuel (néphrotoxiques) :",
+  'Hématologue':
+    "Motif hématologique :\n" +
+    "NFS et bilan récent :\n" +
+    "Antécédents hématologiques / familiaux :\n" +
+    "Traitement actuel :",
+  'Oncologue':
+    "Type de cancer, stade et date du diagnostic :\n" +
+    "Traitements déjà effectués (chirurgie, chimio, radiothérapie) :\n" +
+    "Dernier bilan d'évaluation :\n" +
+    "Motif de l'adressage :",
+  'Infectiologue':
+    "Tableau infectieux (fièvre, foyer identifié) :\n" +
+    "Immunodépression (VIH, traitement immunosuppresseur, splénectomie) :\n" +
+    "Antibiothérapie en cours / récente :\n" +
+    "Bilan microbiologique réalisé :",
+  'Anesthésiste-réanimateur':
+    "Intervention programmée :\n" +
+    "Antécédents anesthésiques et chirurgicaux :\n" +
+    "Traitements en cours (anticoagulants, antiagrégants) :\n" +
+    "Allergies :\n" +
+    "Score ASA estimé :",
+  'Algologue':
+    "Type de douleur (nociceptive / neuropathique / mixte) :\n" +
+    "Intensité (EVA/EN) et topographie :\n" +
+    "Ancienneté et évolution :\n" +
+    "Retentissement (sommeil, humeur, autonomie) :\n" +
+    "Traitements antalgiques essayés et efficacité :"
 };
 
 document.getElementById('l-specialiste').addEventListener('change', e => {
@@ -1152,10 +1226,14 @@ function pseudonymize(text, patient, age) {
 
 function resubstitute(text, substitutions, patient) {
   let out = text;
-  // Restaurer le nom du patient ("le patient" / "la patiente")
   if (patient && patient.trim()) {
-    out = out.replace(/\bla patiente\b/gi, patient.trim());
-    out = out.replace(/\ble patient\b/gi, patient.trim());
+    const name = patient.trim();
+    // Cas défensif : "Monsieur le patient" / "Madame la patiente" etc. → nom complet
+    // (l'IA écrit parfois un titre seul suivi de la référence anonymisée)
+    out = out.replace(/\b(?:M\.|Mme\.?|Monsieur|Madame)\s+(?:le patient|la patiente)\b/gi, name);
+    // Références directes anonymisées → nom réel
+    out = out.replace(/\bla patiente\b/gi, name);
+    out = out.replace(/\ble patient\b/gi, name);
   }
   // Restaurer NIR et adresse depuis la Map
   for (const [k, v] of substitutions) {
@@ -1780,9 +1858,18 @@ function getSpecialites() {
 
 // ── Menu déroulant multi-spécialités ──
 const SPECIALITES = [
-  'Médecine générale', 'Médecine interne', 'Cardiologie', 'Pédiatrie',
-  'Gynécologie', 'Psychiatrie', 'Rhumatologie', 'Gériatrie',
-  'Médecin algologue', 'Médecin anesthésiste réanimateur', 'Autre spécialité'
+  'Médecin généraliste','Algologue','Allergologue','Anatomopathologiste',
+  'Anesthésiste-réanimateur','Angiologue','Cancérologue','Cardiologue',
+  'Chirurgien cardiaque','Chirurgien digestif','Chirurgien orthopédiste',
+  'Chirurgien plasticien','Chirurgien thoracique','Chirurgien urologue',
+  'Chirurgien vasculaire','Dermatologue','Diabétologue','Endocrinologue',
+  'Gastro-entérologue','Gériatre','Gynécologue','Hématologue','Hépatologue',
+  'Infectiologue','Interniste','Médecin du sport','Médecin du travail',
+  'Médecin nucléaire','Médecin physique et réadaptation','Néphrologue',
+  'Neurologue','Neurochirurgien','Oncologue','Ophtalmologue','ORL',
+  'Orthoptiste','Pédiatre','Pharmacologue','Pneumologue','Psychiatre',
+  'Radiologue','Radiothérapeute','Rhumatologue','Stomatologue','Urgentiste',
+  'Urologue'
 ];
 
 function initMultiSelect(root, options) {

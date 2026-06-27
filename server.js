@@ -170,9 +170,18 @@ function rateLimit(ip, max = 3) {
 // ── VALIDATION ──
 const EMAIL_RE   = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SPECIALITES = [
-  'Médecine générale','Médecine interne','Cardiologie','Pédiatrie',
-  'Gynécologie','Psychiatrie','Rhumatologie','Gériatrie',
-  'Médecin algologue','Médecin anesthésiste réanimateur','Autre spécialité'
+  'Médecin généraliste','Algologue','Allergologue','Anatomopathologiste',
+  'Anesthésiste-réanimateur','Angiologue','Cancérologue','Cardiologue',
+  'Chirurgien cardiaque','Chirurgien digestif','Chirurgien orthopédiste',
+  'Chirurgien plasticien','Chirurgien thoracique','Chirurgien urologue',
+  'Chirurgien vasculaire','Dermatologue','Diabétologue','Endocrinologue',
+  'Gastro-entérologue','Gériatre','Gynécologue','Hématologue','Hépatologue',
+  'Infectiologue','Interniste','Médecin du sport','Médecin du travail',
+  'Médecin nucléaire','Médecin physique et réadaptation','Néphrologue',
+  'Neurologue','Neurochirurgien','Oncologue','Ophtalmologue','ORL',
+  'Orthoptiste','Pédiatre','Pharmacologue','Pneumologue','Psychiatre',
+  'Radiologue','Radiothérapeute','Rhumatologue','Stomatologue','Urgentiste',
+  'Urologue'
 ];
 const s = (v, max = 100) => typeof v === 'string' ? v.trim().slice(0, max).replace(/[<>]/g,'') : '';
 
@@ -302,7 +311,7 @@ function authenticateJWT(req, res, next) {
 
 function signToken(user) {
   return jwt.sign(
-    { id: user.id, email: user.email, prenom: user.prenom },
+    { id: user.id, email: user.email, prenom: user.prenom, specialite: user.specialite || '' },
     JWT_SECRET,
     { expiresIn: JWT_EXPIRES_IN }
   );
@@ -431,55 +440,6 @@ function enteteConsigne(user) {
   );
 }
 
-// Adaptation légère du ton / des éléments attendus selon la spécialité destinataire.
-function adaptationSpecialite(specialite) {
-  const map = {
-    'Cardiologie':            "Le destinataire est cardiologue : mets en avant les facteurs de risque cardiovasculaire, les symptômes cardiologiques, le traitement cardiotrope et les éventuels examens (ECG, biologie) déjà réalisés.",
-    'Pneumologie':            "Le destinataire est pneumologue : insiste sur les symptômes respiratoires, le tabagisme, l'exposition professionnelle et les explorations fonctionnelles respiratoires éventuelles.",
-    'Endocrinologie':         "Le destinataire est endocrinologue : précise les éléments métaboliques (poids, glycémie, bilan thyroïdien) et les traitements en cours.",
-    'Neurologie':             "Le destinataire est neurologue : détaille la sémiologie neurologique, la chronologie des symptômes et les antécédents pertinents.",
-    'Gastro-entérologie':     "Le destinataire est gastro-entérologue : précise les symptômes digestifs, le transit, et les antécédents digestifs.",
-    'Rhumatologie':           "Le destinataire est rhumatologue : décris la topographie articulaire, le rythme des douleurs et le retentissement fonctionnel.",
-    'Dermatologie':           "Le destinataire est dermatologue : décris précisément les lésions cutanées (aspect, localisation, évolution).",
-    'Psychiatrie':            "Le destinataire est psychiatre : reste factuel et nuancé sur le plan symptomatique et le contexte, sans jugement.",
-    'Gynécologie':            "Le destinataire est gynécologue : précise les antécédents gynéco-obstétricaux pertinents.",
-    'Ophtalmologie':          "Le destinataire est ophtalmologue : précise les symptômes visuels et leur évolution.",
-    'ORL':                    "Le destinataire est ORL : précise les symptômes ORL et leur ancienneté.",
-    'Urologie':               "Le destinataire est urologue : précise les symptômes urinaires et les antécédents pertinents.",
-    'Chirurgie orthopédique': "Le destinataire est chirurgien orthopédiste : précise le mécanisme, la localisation et le retentissement fonctionnel.",
-    'Médecine interne':       "Le destinataire est interniste : présente une synthèse globale et les hypothèses diagnostiques."
-  };
-  return map[specialite] || '';
-}
-
-// Adaptation du compte-rendu selon la (les) spécialité(s) du médecin rédacteur.
-// Certaines spécialités attendent une structuration ou des éléments spécifiques.
-function adaptationRedacteur(user) {
-  if (!user) return '';
-  const list = (Array.isArray(user.specialites) && user.specialites.length)
-    ? user.specialites
-    : (user.specialite ? user.specialite.split(',').map(x => x.trim()).filter(Boolean) : []);
-  const map = {
-    'Médecin algologue':
-      "Le rédacteur est médecin algologue (médecine de la douleur) : structure le compte-rendu " +
-      "autour de l'évaluation de la douleur (mécanisme nociceptif / neuropathique / mixte, intensité " +
-      "type EVA ou EN, topographie et irradiation, ancienneté, retentissement sur le sommeil, " +
-      "l'humeur, l'autonomie et la qualité de vie), des traitements antalgiques déjà essayés avec " +
-      "leur efficacité et leur tolérance, et de la stratégie thérapeutique proposée (paliers " +
-      "antalgiques OMS, co-antalgiques, traitements adjuvants, techniques interventionnelles ou prise " +
-      "en charge pluridisciplinaire éventuelles).",
-    'Médecin anesthésiste réanimateur':
-      "Le rédacteur est médecin anesthésiste-réanimateur : en contexte de consultation " +
-      "pré-anesthésique, mets en avant le score ASA, les antécédents médico-chirurgicaux et " +
-      "anesthésiques, les allergies, les traitements en cours (notamment anticoagulants et " +
-      "antiagrégants), les critères d'intubation difficile, l'évaluation des voies aériennes, le jeûne " +
-      "et les consignes péri-opératoires ; en contexte de réanimation, détaille l'état " +
-      "hémodynamique, respiratoire et neurologique, les défaillances d'organe et les thérapeutiques " +
-      "de suppléance."
-  };
-  return list.map(sp => map[sp]).filter(Boolean).join(' ');
-}
-
 // Appel commun à l'API Anthropic. Renvoie le texte généré ou lève une erreur.
 async function generateDocument({ system, user, maxTokens = 2000 }) {
   if (!anthropic) {
@@ -531,20 +491,27 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
     return res.status(400).json({ error: 'Renseignez au moins le motif ou les notes cliniques.' });
   }
 
-  const adapt = adaptationSpecialite(specialiste);
+  const specialiteRedacteur = (req.user && req.user.specialite) || 'médecine générale';
   const system =
-    "Tu es un assistant médical pour médecins libéraux français. Rédige une lettre de liaison " +
-    "professionnelle et concise destinée à un confrère spécialiste, comme un médecin l'écrirait " +
-    "réellement. La lettre doit être formelle, en français médical correct, sans inventer " +
-    "d'informations non fournies. " +
+    `Tu es un médecin expert en ${specialiteRedacteur}, exerçant en libéral en France. ` +
+    "Tu rédiges une lettre de liaison confraternelle destinée à un confrère spécialiste, " +
+    "comme tu l'écrirais toi-même dans ta pratique quotidienne. " +
+    "Enrichis la lettre avec tes connaissances cliniques : évoque les éléments sémiologiques " +
+    "pertinents pour la spécialité du destinataire, les comorbidités à signaler, les traitements " +
+    "en cours et leur tolérance, les examens déjà réalisés et leurs résultats. " +
+    "N'invente aucune information absente des notes — mais valorise et structure ce qui est fourni " +
+    "avec la précision d'un médecin expérimenté. " +
+    "RÈGLE ABSOLUE SUR LE NOM DU PATIENT : utilise toujours le prénom et/ou nom exact fourni. " +
+    "N'écris JAMAIS 'Monsieur' ou 'Madame' seul sans faire suivre immédiatement du nom complet. " +
+    "N'écris JAMAIS 'le patient' ou 'la patiente' dans la lettre — remplace systématiquement " +
+    "par le nom réel. " +
     enteteConsigne(req.user) +
-    (adapt ? adapt + " " : "") +
-    "FORMAT : écris en prose fluide, en paragraphes continus. N'utilise JAMAIS de Markdown : pas " +
-    "d'astérisques (* ou **), pas de dièses (#), pas de tirets de liste. N'emploie aucune liste à " +
-    "puces. Les éventuels titres (objet, etc.) s'écrivent en majuscules sans aucun caractère de " +
-    "formatage, et les sections sont séparées par des sauts de ligne. " +
+    "FORMAT : prose fluide en paragraphes continus. N'utilise JAMAIS de Markdown : pas " +
+    "d'astérisques (* ou **), pas de dièses (#), pas de tirets de liste, pas de puces. " +
+    "Les titres (OBJET, etc.) s'écrivent en majuscules sans aucun caractère de formatage. " +
+    "Sections séparées par des sauts de ligne. " +
     "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
-    "Si une information est absente, omets simplement cette section ou cette phrase — n'écris JAMAIS " +
+    "Si une information est absente, omets simplement la section — n'écris JAMAIS " +
     "'Non renseigné', 'Non précisé', 'À compléter' ou équivalent. " +
     "N'ajoute aucun commentaire hors de la lettre.";
 
@@ -574,23 +541,30 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
     return res.status(400).json({ error: 'Renseignez les notes de consultation.' });
   }
 
-  const adaptRedacteur = adaptationRedacteur(req.user);
+  const specialiteRedacteurCR = (req.user && req.user.specialite) || 'médecine générale';
   const system =
-    "Tu es un assistant médical pour médecins libéraux français. À partir de notes brutes, rédige un " +
-    "compte-rendu de consultation structuré. " +
+    `Tu es un médecin expert en ${specialiteRedacteurCR}, exerçant en libéral en France. ` +
+    "À partir de notes brutes de consultation, rédige un compte-rendu structuré et cliniquement " +
+    "enrichi, comme tu le ferais dans ta pratique. Mobilise tes connaissances de spécialité pour " +
+    "compléter le raisonnement clinique : précise les hypothèses diagnostiques pertinentes, les " +
+    "éléments d'examen attendus pour cette présentation, les recommandations HAS applicables, " +
+    "et une conduite à tenir adaptée à la spécialité et au contexte. " +
+    "N'invente aucune donnée absente — enrichis et structure ce qui est fourni. " +
     enteteConsigne(req.user) +
-    (adaptRedacteur ? adaptRedacteur + " " : "") +
-    "Après l'en-tête, organise le compte-rendu avec ces sections, dans cet ordre, chaque titre en " +
-    "majuscules suivi de deux-points : MOTIF DE CONSULTATION :, ANTÉCÉDENTS MENTIONNÉS :, " +
-    "EXAMEN CLINIQUE :, DIAGNOSTIC / IMPRESSION CLINIQUE :, CONDUITE À TENIR :. " +
-    "Sous chaque titre, écris le contenu en prose (phrases continues), jamais sous forme de liste. " +
-    "Ne jamais inventer d'informations. Si une information est absente, omets entièrement la section " +
-    "correspondante (n'écris ni son titre ni son contenu) — n'écris JAMAIS 'Non renseigné', " +
-    "'Non précisé', 'À compléter' ou équivalent. " +
-    "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques (* ou **), pas de dièses (#), pas de " +
-    "tirets de liste ni de puces. Sépare les sections par des sauts de ligne. " +
-    "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
-    "N'ajoute aucun commentaire hors du compte-rendu.";
+    "Organise le compte-rendu avec exactement ces sections dans cet ordre, chaque titre en " +
+    "MAJUSCULES suivi de deux-points : " +
+    "MOTIF DE CONSULTATION :, " +
+    "EXAMEN CLINIQUE ET CONSTANTES : (inclure les constantes si mentionnées : PA, FC, SpO2, poids, taille, IMC), " +
+    "DIAGNOSTIC / IMPRESSION CLINIQUE :, " +
+    "OBJECTIFS THÉRAPEUTIQUES :, " +
+    "CONDUITE À TENIR : (traitements avec posologie complète si pertinent, examens complémentaires, orientations), " +
+    "SURVEILLANCE :, " +
+    "ÉDUCATION THÉRAPEUTIQUE / CONSEILS : (si applicable). " +
+    "Omets entièrement toute section pour laquelle aucune information n'est disponible — " +
+    "n'écris ni le titre ni le contenu, et n'écris JAMAIS 'Non renseigné', 'Non précisé' ou équivalent. " +
+    "Sous chaque titre, écris en prose (phrases continues), jamais sous forme de liste à puces. " +
+    "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques, pas de dièses, pas de tirets de liste. " +
+    "Sépare les sections par des sauts de ligne. N'ajoute aucun commentaire hors du compte-rendu.";
 
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
@@ -615,19 +589,24 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
     return res.status(400).json({ error: 'Aucun texte de document à analyser.' });
   }
 
+  const specialiteRedacteurRes = (req.user && req.user.specialite) || 'médecine générale';
   const system =
-    "Tu es un assistant médical. Analyse le document médical fourni et produis exactement trois sections, " +
-    "dans cet ordre, chaque titre en majuscules suivi de deux-points : RÉSUMÉ :, POINTS CLÉS :, " +
-    "ACTIONS SUGGÉRÉES :. " +
-    "Sous RÉSUMÉ, écris 3 à 5 phrases en prose. Sous POINTS CLÉS, écris chaque point sur sa propre " +
-    "ligne, en texte simple, sans tiret, sans puce et sans astérisque en début de ligne. Sous " +
-    "ACTIONS SUGGÉRÉES, procède de la même façon : une action par ligne, en texte simple. " +
-    "Sois concis et factuel. N'invente rien qui ne figure pas dans le document. " +
-    "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques (* ou **), pas de dièses (#), pas de " +
-    "tirets de liste. Sépare les sections par des sauts de ligne. " +
-    "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
-    "Si une information est absente, omets simplement la ligne ou la section concernée — n'écris " +
-    "JAMAIS 'Non renseigné', 'Non précisé', 'À compléter' ou équivalent.";
+    `Tu es un médecin expert en ${specialiteRedacteurRes}, exerçant en libéral en France. ` +
+    "Analyse le document médical fourni et produis exactement trois sections dans cet ordre, " +
+    "chaque titre en MAJUSCULES suivi de deux-points : RÉSUMÉ :, POINTS CLÉS :, ACTIONS SUGGÉRÉES :. " +
+    "Sous RÉSUMÉ : 3 à 5 phrases en prose synthétisant les éléments essentiels du document. " +
+    "Sous POINTS CLÉS : chaque point sur sa propre ligne, en texte simple, sans tiret ni puce, " +
+    "en mettant en avant ce qui est cliniquement significatif pour ta spécialité. " +
+    "Sous ACTIONS SUGGÉRÉES : enrichis avec tes connaissances cliniques — propose des actions " +
+    "concrètes et adaptées au contexte (suivi biologique, orientation spécialisée, ajustement " +
+    "thérapeutique, éducation patient, etc.), une action par ligne, en texte simple. " +
+    "N'invente aucune donnée absente du document ; les actions suggérées sont des propositions " +
+    "cliniques fondées sur les données fournies et les recommandations en vigueur. " +
+    medecinContext(req.user) +
+    "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques (* ou **), pas de dièses (#), " +
+    "pas de tirets de liste. Sépare les sections par des sauts de ligne. " +
+    "N'écris jamais de champ vide entre crochets. " +
+    "Si une section est vide, omets-la entièrement — n'écris JAMAIS 'Non renseigné' ou équivalent.";
 
   const user = `Document médical à analyser :\n\n${document}\n` +
     (complement ? `\nÉléments additionnels à intégrer / actions retenues par le médecin : ${complement}\n` : '');
