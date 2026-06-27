@@ -1228,14 +1228,21 @@ function resubstitute(text, substitutions, patient) {
   let out = text;
   if (patient && patient.trim()) {
     const name = patient.trim();
-    // Cas défensif : "Monsieur le patient" / "Madame la patiente" etc. → nom complet
-    // (l'IA écrit parfois un titre seul suivi de la référence anonymisée)
+    // Ordre du plus spécifique au plus général
+    // 1. Titre + référence anonymisée combinés → nom complet
     out = out.replace(/\b(?:M\.|Mme\.?|Monsieur|Madame)\s+(?:le patient|la patiente)\b/gi, name);
-    // Références directes anonymisées → nom réel
+    // 2. Possessifs → nom complet
+    out = out.replace(/\b(?:mon|ma|notre)\s+patient[e]?\b/gi, name);
+    // 3. Références directes anonymisées → nom complet
     out = out.replace(/\bla patiente\b/gi, name);
     out = out.replace(/\ble patient\b/gi, name);
+    // 4. Titre seul sans mot qui suit → "M./Mme [nom]"
+    out = out.replace(/\bMonsieur\b(?!\s+[A-ZÀ-ÖÙÜa-zà-öùü])/g, `M. ${name}`);
+    out = out.replace(/\bMadame\b(?!\s+[A-ZÀ-ÖÙÜa-zà-öùü])/g, `Mme ${name}`);
+    // 5. "M." / "Mme" sans nom en majuscule après → "M./Mme [nom]"
+    out = out.replace(/\bM\.(?!\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ])/g, `M. ${name}`);
+    out = out.replace(/\bMme\.?(?!\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ])/g, `Mme ${name}`);
   }
-  // Restaurer NIR et adresse depuis la Map
   for (const [k, v] of substitutions) {
     if (k === '__nir__')   out = out.split('[numéro retiré]').join(v);
     if (k === '__addr__')  out = out.split('[adresse retirée]').join(v);
