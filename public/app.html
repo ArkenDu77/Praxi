@@ -1225,21 +1225,26 @@ function pseudonymize(text, patient, age) {
 }
 
 function resubstitute(text, substitutions, patient) {
+  console.log('[resubstitute] patient:', patient, 'text preview:', text.slice(0, 100));
   let out = text;
   if (patient && patient.trim()) {
     const name = patient.trim();
     // Ordre du plus spécifique au plus général
     // 1. Titre + référence anonymisée combinés → nom complet
     out = out.replace(/\b(?:M\.|Mme\.?|Monsieur|Madame)\s+(?:le patient|la patiente)\b/gi, name);
-    // 2. Possessifs → nom complet
-    out = out.replace(/\b(?:mon|ma|notre)\s+patient[e]?\b/gi, name);
-    // 3. Références directes anonymisées → nom complet
+    // 2. Possessifs (mon/ma/notre/votre) → nom complet
+    out = out.replace(/\b(?:mon|ma|notre|votre)\s+patient[e]?\b/gi, name);
+    // 3. Démonstratifs → nom complet
+    out = out.replace(/\bce(?:tte)?\s+patient[e]?\b/gi, name);
+    // 4. "ce dossier" → "le dossier de [nom]"
+    out = out.replace(/\bce\s+dossier\b/gi, `le dossier de ${name}`);
+    // 5. Références directes anonymisées → nom complet
     out = out.replace(/\bla patiente\b/gi, name);
     out = out.replace(/\ble patient\b/gi, name);
-    // 4. Titre seul sans mot qui suit → "M./Mme [nom]"
+    // 6. Titre seul sans mot qui suit → "M./Mme [nom]"
     out = out.replace(/\bMonsieur\b(?!\s+[A-ZÀ-ÖÙÜa-zà-öùü])/g, `M. ${name}`);
     out = out.replace(/\bMadame\b(?!\s+[A-ZÀ-ÖÙÜa-zà-öùü])/g, `Mme ${name}`);
-    // 5. "M." / "Mme" sans nom en majuscule après → "M./Mme [nom]"
+    // 7. "M." / "Mme" sans nom en majuscule après → "M./Mme [nom]"
     out = out.replace(/\bM\.(?!\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ])/g, `M. ${name}`);
     out = out.replace(/\bMme\.?(?!\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ])/g, `Mme ${name}`);
   }
@@ -1353,6 +1358,7 @@ async function runGeneration(key, btn, complement, btnLabel) {
 
     // Re-substitution : restaure le nom du patient + NIR/adresse dans le document reçu
     let out = data.document || '';
+    console.log('[runGeneration] patientOrig:', JSON.stringify(patientOrig), 'subs:', subs ? [...subs.entries()] : null);
     if (subs) out = resubstitute(out, subs, patientOrig);
 
     const outEl = document.getElementById(cfg.outId);
