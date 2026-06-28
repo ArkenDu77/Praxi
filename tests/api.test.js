@@ -245,13 +245,32 @@ describe('POST /api/clinical/analyze — bouclier clinique V2', () => {
     expect(res.body.analysis.inconsistencies.join(' ')).toMatch(/Amoxicilline/);
   });
 
-  test('ne propose rien sans signal clinique reconnu', async () => {
+  test('propose toujours des suggestions et interprétations', async () => {
     const res = await request(app)
       .post('/api/clinical/analyze')
       .set('Authorization', `Bearer ${authToken}`)
       .send({ notes: 'Contrôle annuel stable, aucun symptôme rapporté.' })
       .expect(200);
-    expect(res.body.analysis.suggestions).toEqual([]);
+    expect(res.body.analysis.suggestions.length).toBeGreaterThanOrEqual(3);
+    expect(res.body.analysis.deductions.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.analysis.scoreSummary).toEqual(expect.any(String));
+  });
+
+  test('dossier algologique riche : score élevé, déductions et suggestions', async () => {
+    const res = await request(app)
+      .post('/api/clinical/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        documentType: 'liaison', patient: 'Mme Martin Sophie', age: '49 ans',
+        specialiste: 'Algologue', motif: 'Douleurs lombaires chroniques',
+        notes: 'Lombalgies chroniques depuis 18 mois avec irradiation fesse droite, EVA 7/10. Pas de déficit moteur. IRM : discopathie L4-L5. Paracétamol, ibuprofène, tramadol insuffisants. Impact sommeil et travail.'
+      })
+      .expect(200);
+    expect(res.body.analysis.confidence).toBeGreaterThanOrEqual(80);
+    expect(res.body.analysis.deductions.length).toBeGreaterThanOrEqual(3);
+    expect(res.body.analysis.suggestions.length).toBeGreaterThanOrEqual(3);
+    expect(res.body.analysis.specialtyFocus.join(' ')).toMatch(/douleur|EVA/i);
+    expect(res.body.analysis.scoreSummary).toMatch(/Dossier solide|complet/i);
   });
 });
 

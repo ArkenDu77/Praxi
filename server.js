@@ -547,58 +547,92 @@ function aiError(res, err) {
   res.status(status).json({ error: message });
 }
 
-// ─── PRAXI V2 : moteur clinique explicable ──────────────────────────────────
-// Cette première passe est volontairement déterministe : elle reste disponible
-// même si le service IA est indisponible et ne transforme jamais une suggestion
-// en fait. L'IA rédige ensuite uniquement à partir de ce contrat clinique.
+// ─── PRAXI V2 : moteur clinique explicable ────────────────────────────────────────────
+// Déterministe, disponible même sans IA. Ne transforme jamais une suggestion en fait.
 const CLINICAL_PROFILES = {
   cardiologue: {
     focus: ['symptômes et chronologie', 'ECG', 'facteurs de risque cardiovasculaire', 'traitements', 'syncope et dyspnée'],
-    questions: ['Début, durée et fréquence des symptômes ?', 'Survenue à l’effort ou au repos ?', 'Syncope, douleur thoracique ou dyspnée associée ?', 'ECG et constantes disponibles ?', 'Facteurs de risque cardiovasculaire ?']
+    questions: ['Début, durée et fréquence des symptômes ?', 'Survenue à l’effort ou au repos ?', 'Syncope, douleur thoracique ou dyspnée associée ?', 'ECG et constantes disponibles ?', 'Facteurs de risque cardiovasculaire ?']
   },
   endocrinologue: {
     focus: ['HbA1c ou bilan hormonal', 'poids et IMC', 'traitements et observance', 'complications', 'évolution biologique'],
-    questions: ['Dernier bilan biologique et date ?', 'Poids, taille ou IMC ?', 'Traitement actuel et observance ?', 'Complications déjà recherchées ?', 'Objectif thérapeutique attendu ?']
+    questions: ['Dernier bilan biologique et date ?', 'Poids, taille ou IMC ?', 'Traitement actuel et observance ?', 'Complications déjà recherchées ?', 'Objectif thérapeutique attendu ?']
   },
   neurologue: {
     focus: ['chronologie', 'examen neurologique', 'imagerie', 'signes associés', 'traitements essayés'],
-    questions: ['Chronologie précise et mode d’installation ?', 'Déficit moteur, sensitif ou trouble de la conscience ?', 'Examen neurologique réalisé ?', 'Imagerie ou bilan déjà disponible ?', 'Traitements essayés et réponse ?']
+    questions: ['Chronologie précise et mode d’installation ?', 'Déficit moteur, sensitif ou trouble de la conscience ?', 'Examen neurologique réalisé ?', 'Imagerie ou bilan déjà disponible ?', 'Traitements essayés et réponse ?']
   },
   pneumologue: {
     focus: ['dyspnée et toux', 'tabagisme', 'SpO2', 'EFR et imagerie', 'traitements inhalés'],
-    questions: ['Tabagisme actuel et cumulé ?', 'Dyspnée au repos ou à l’effort ?', 'SpO2 et auscultation ?', 'EFR ou imagerie disponibles ?', 'Traitement respiratoire actuel ?']
+    questions: ['Tabagisme actuel et cumulé ?', 'Dyspnée au repos ou à l’effort ?', 'SpO2 et auscultation ?', 'EFR ou imagerie disponibles ?', 'Traitement respiratoire actuel ?']
   },
   gastro: {
     focus: ['douleur et transit', 'signes d’alarme', 'biologie hépatique', 'endoscopie et imagerie', 'traitements essayés'],
-    questions: ['Localisation et rythme des symptômes ?', 'Amaigrissement, saignement ou fièvre ?', 'Transit et alimentation ?', 'Biologie, endoscopie ou imagerie ?', 'Traitements déjà essayés ?']
+    questions: ['Localisation et rythme des symptômes ?', 'Amaigrissement, saignement ou fièvre ?', 'Transit et alimentation ?', 'Biologie, endoscopie ou imagerie ?', 'Traitements déjà essayés ?']
   },
   nephrologue: {
     focus: ['créatinine et DFG', 'protéinurie', 'pression artérielle', 'ionogramme', 'médicaments néphrotoxiques'],
-    questions: ['Créatinine, DFG et évolution ?', 'Protéinurie ou hématurie ?', 'Pression artérielle ?', 'Ionogramme disponible ?', 'Traitements potentiellement néphrotoxiques ?']
+    questions: ['Créatinine, DFG et évolution ?', 'Protéinurie ou hématurie ?', 'Pression artérielle ?', 'Ionogramme disponible ?', 'Traitements potentiellement néphrotoxiques ?']
   },
   rhumatologue: {
     focus: ['topographie et rythme des douleurs', 'raideur', 'examen articulaire', 'syndrome inflammatoire', 'imagerie'],
-    questions: ['Rythme mécanique ou inflammatoire ?', 'Raideur matinale et durée ?', 'Examen articulaire ?', 'CRP/VS disponibles ?', 'Imagerie déjà réalisée ?']
+    questions: ['Rythme mécanique ou inflammatoire ?', 'Raideur matinale et durée ?', 'Examen articulaire ?', 'CRP/VS disponibles ?', 'Imagerie déjà réalisée ?']
   },
   psychiatre: {
     focus: ['symptômes et durée', 'retentissement', 'risque suicidaire', 'addictions', 'traitements psychotropes'],
-    questions: ['Durée et retentissement fonctionnel ?', 'Idées suicidaires ou mise en danger ?', 'Sommeil et appétit ?', 'Consommations ou addictions ?', 'Traitements et suivi antérieurs ?']
+    questions: ['Durée et retentissement fonctionnel ?', 'Idées suicidaires ou mise en danger ?', 'Sommeil et appétit ?', 'Consommations ou addictions ?', 'Traitements et suivi antérieurs ?']
   },
   gynecologue: {
     focus: ['cycle et grossesse', 'douleur ou saignement', 'contraception', 'examen', 'imagerie et biologie'],
-    questions: ['Date des dernières règles et possibilité de grossesse ?', 'Douleur ou saignement ?', 'Contraception ?', 'Examen clinique réalisé ?', 'Échographie ou biologie disponible ?']
+    questions: ['Date des dernières règles et possibilité de grossesse ?', 'Douleur ou saignement ?', 'Contraception ?', 'Examen clinique réalisé ?', 'Échographie ou biologie disponible ?']
   },
   pediatre: {
     focus: ['âge exact', 'croissance', 'développement', 'vaccinations', 'contexte familial'],
-    questions: ['Âge, poids et courbe de croissance ?', 'Développement psychomoteur ?', 'Vaccinations à jour ?', 'Alimentation et sommeil ?', 'Signes de gravité rapportés ?']
+    questions: ['Âge, poids et courbe de croissance ?', 'Développement psychomoteur ?', 'Vaccinations à jour ?', 'Alimentation et sommeil ?', 'Signes de gravité rapportés ?']
   },
   oncologue: {
     focus: ['histologie et stade', 'imagerie', 'traitements reçus', 'tolérance', 'état général'],
-    questions: ['Type histologique et stade ?', 'Dernière imagerie ?', 'Traitements reçus et dates ?', 'Tolérance et toxicités ?', 'Performance status ou autonomie ?']
+    questions: ['Type histologique et stade ?', 'Dernière imagerie ?', 'Traitements reçus et dates ?', 'Tolérance et toxicités ?', 'Performance status ou autonomie ?']
+  },
+  algologue: {
+    focus: ['mécanisme et topographie de la douleur', 'EVA ou échelle', 'retentissement fonctionnel', 'traitements antalgiques essayés', 'composante neuropathique', 'imagerie et signes de gravité'],
+    questions: ['EVA actuelle et EVA maximale récente ?', 'Mécanisme nociceptif, neuropathique ou mixte ?', 'Traitements antalgiques et paliers OMS déjà essayés ?', 'Retentissement sommeil, humeur, autonomie ?', 'Signes neurologiques ou d’alarme recherchés ?']
+  },
+  dermatologue: {
+    focus: ['description précise des lésions', 'localisation et étendue', 'évolution et ancienneté', 'traitements locaux et généraux', 'contexte atopique ou immunologique'],
+    questions: ['Description précise des lésions (aspect, taille, couleur) ?', 'Localisation et étendue ?', 'Ancienneté et évolution des lésions ?', 'Traitements locaux ou généraux déjà essayés ?', 'Antécédents atopiques ou cutanés ?']
+  },
+  orl: {
+    focus: ['symptômes ORL et ancienneté', 'audiogramme ou bilan auditif', 'rhinoscopie ou nasofibroscopie', 'traitements essayés', 'signes d’alarme (dysphagie, dysphonie)'],
+    questions: ['Ancienneté et évolution des symptômes ?', 'Bilan auditif ou audiogramme disponible ?', 'Symptômes rhinologiques associés ?', 'Traitements médicaux essayés ?', 'Dysphagie, dysphonie ou dyspnée laryngeée ?']
+  },
+  ophtalmologue: {
+    focus: ['acuité visuelle', 'fond d’œil', 'pression intra-oculaire', 'contexte (diabète, HTA)', 'traitements oculaires'],
+    questions: ['Acuité visuelle mesurée ?', 'Fond d’œil disponible ?', 'Contexte diabète ou HTA connu ?', 'Douleur oculaire ou trouble visuel brutal ?', 'Traitement oculaire en cours ?']
+  },
+  urologue: {
+    focus: ['symptômes urinaires et chronologie', 'PSA ou bilan biologique', 'échographie vésico-rénale', 'ECBU et antibiogramme', 'contexte prostatique ou lithiasique'],
+    questions: ['Symptômes urinaires précis et ancienneté ?', 'PSA et date du dernier dosage ?', 'Imagerie urinaire disponible ?', 'ECBU récent disponible ?', 'Antécédents urologiques ou chirurgicaux ?']
+  },
+  orthopedie: {
+    focus: ['mécanisme et localisation lésionnelle', 'imagerie disponible (radio, IRM)', 'retentissement fonctionnel', 'traitements conservateurs essayés', 'critères chirurgicaux'],
+    questions: ['Mécanisme et ancienneté de la lésion ?', 'Radiographie et IRM disponibles ?', 'Retentissement fonctionnel précis ?', 'Kinésithérapie ou infiltrations essayées ?', 'Critères d’indication chirurgicale déjà évoqués ?']
+  },
+  medecine_interne: {
+    focus: ['présentation multi-systémique', 'bilan biologique exhaustif', 'bilan immunologique', 'fièvre et AEG', 'diagnostics différentiels'],
+    questions: ['Atteintes multi-systémiques présentes ?', 'Bilan biologique complet disponible ?', 'Bilan immunologique (ANA, ANCA, etc.) ?', 'Fièvre prolongée ou AEG associée ?', 'Diagnostics déjà éliminés ?']
+  },
+  geriatrie: {
+    focus: ['polyмédication et iatrogénie', 'chutes et troubles de l’équilibre', 'troubles cognitifs', 'état nutritionnel', 'autonomie et contexte social'],
+    questions: ['Nombre de médicaments et interactions ?', 'Chutes récentes et fréquence ?', 'Troubles cognitifs évalués (MMS/MMSE) ?', 'État nutritionnel (poids, albumine) ?', 'Contexte social et aide à domicile ?']
+  },
+  anesthesiste: {
+    focus: ['score ASA et antécédents chirurgicaux', 'allergies médicamenteuses', 'anticoagulants et antiaggrégeants', 'évaluation des voies aériennes', 'traitements en cours'],
+    questions: ['Antécédents anesthésiques et chirurgicaux ?', 'Allergies médicamenteuses connues ?', 'Anticoagulants ou antiaggrégeants en cours ?', 'Évaluation des voies aériennes (Mallampati) ?', 'Bilan biologique pré-opératoire disponible ?']
   },
   default: {
     focus: ['motif', 'chronologie', 'antécédents', 'traitements', 'examen et résultats disponibles'],
-    questions: ['Chronologie et évolution ?', 'Antécédents pertinents ?', 'Traitements et allergies ?', 'Examen clinique et constantes ?', 'Question précise posée au destinataire ?']
+    questions: ['Chronologie et évolution ?', 'Antécédents pertinents ?', 'Traitements et allergies ?', 'Examen clinique et constantes ?', 'Question précise posée au destinataire ?']
   }
 };
 
@@ -608,8 +642,29 @@ function plainClinicalText(body = {}) {
 }
 
 function specialtyProfile(name = '') {
-  const aliases = { gastro:'gastro', hepatologue:'gastro', nephrologue:'nephrologue', rhumatologue:'rhumatologue', psychiatre:'psychiatre', gynecologue:'gynecologue', pediatre:'pediatre', oncologue:'oncologue', cancerologue:'oncologue' };
-  const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const aliases = {
+    gastro:'gastro', hepatologue:'gastro', hepato:'gastro',
+    nephrologue:'nephrologue', neph:'nephrologue',
+    rhumatologue:'rhumatologue', rhumato:'rhumatologue',
+    psychiatre:'psychiatre', psychi:'psychiatre',
+    gynecologue:'gynecologue', gyneco:'gynecologue', obstetric:'gynecologue',
+    pediatre:'pediatre', pediat:'pediatre',
+    oncologue:'oncologue', cancerologue:'oncologue', hematologue:'oncologue',
+    algologue:'algologue', algologie:'algologue', algolog:'algologue',
+    dermatologue:'dermatologue', dermato:'dermatologue',
+    orl:'orl', oto:'orl', rhino:'orl', laryngo:'orl',
+    ophtalmologue:'ophtalmologue', ophtalmo:'ophtalmologue',
+    urologue:'urologue', urolog:'urologue',
+    orthoped:'orthopedie', orthopedie:'orthopedie',
+    interniste:'medecine_interne',
+    geriatre:'geriatrie', geriatrie:'geriatrie',
+    anesthes:'anesthesiste', reanimat:'anesthesiste',
+    cardiologue:'cardiologue', cardio:'cardiologue',
+    endocrinologue:'endocrinologue', endocrino:'endocrinologue', diabetologue:'endocrinologue',
+    neurologue:'neurologue', neuro:'neurologue',
+    pneumologue:'pneumologue', pneumo:'pneumologue'
+  };
+  const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/-/g,' ');
   const alias = Object.keys(aliases).find(k => normalized.includes(k));
   const key = alias ? aliases[alias] : Object.keys(CLINICAL_PROFILES).find(k => k !== 'default' && normalized.includes(k));
   return CLINICAL_PROFILES[key || 'default'];
@@ -617,9 +672,424 @@ function specialtyProfile(name = '') {
 
 function hasAny(text, patterns) { return patterns.some(p => p.test(text)); }
 
+function hasClinicalExamSignals(src) {
+  return hasAny(src, [
+    /examen|auscult|tension|\bpa\b|\bfc\b|spo2|saturation|poids|taille|imc/i,
+    /d[eé]ficit|sphincter|motricit|neurolog|man[oe]uvre|lasegue|las[eè]gue/i,
+    /\beva\b|échelle.*douleur|douleur.*\/\s*10/i,
+    /irm|scanner|échographie|radio|imagerie|tomodensitom[eé]trie/i
+  ]);
+}
+
+function hasTreatmentSignals(src) {
+  return hasAny(src, [
+    /traitement|th[eé]rapie|m[eé]dicament|sous\s|mg\b|comprim/i,
+    /parac[eé]tamol|ibuprofène|tramadol|morphine|codéine|oxycodone|pregabaline|amitriptyline|kin[eé]sith[eé]rapie|kin[eé]\b/i
+  ]);
+}
+
+function pushUniqueDeduction(list, text) {
+  if (text && !list.includes(text)) list.push(text);
+}
+
+function pushUniqueSuggestion(list, item) {
+  if (!item || !item.label) return;
+  if (!list.some(x => x.id === item.id || x.label === item.label)) list.push(item);
+}
+
+function analyzeBySpecialty(source, body, deductions, suggestions) {
+  const spec = (body.specialiste || body.specialty || '').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+  // Cardiology
+  if (/palpitation/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Un avis cardiologique est pertinent au regard des palpitations rapportées.');
+    if (/ecg[^\n.]*normal|ecg\s*normal/i.test(source))
+      pushUniqueDeduction(deductions, 'Un ECG intercritique normal n’exclut pas un trouble rythmique intermittent.');
+    if (/pas de syncope|sans syncope|absence de syncope/i.test(source))
+      pushUniqueDeduction(deductions, 'L’absence de syncope rapportée est un élément rassurant, sans exclure une cause rythmique.');
+    pushUniqueSuggestion(suggestions, { id:'holter', label:'Discuter un Holter ECG', rationale: /ecg[^\n.]*normal/i.test(source) ? 'Palpitations persistantes avec ECG intercritique normal' : 'Palpitations rapportées', category:'examen', confidence: /depuis|mois|semaine/i.test(source) ? 96 : 86 });
+    pushUniqueSuggestion(suggestions, { id:'cardio', label:'Discuter un avis cardiologique', rationale:'Symptomatologie rythmique rapportée', category:'orientation', confidence:91 });
+    pushUniqueSuggestion(suggestions, { id:'echo', label:'Discuter une échographie cardiaque', rationale:'A apprécier selon les antécédents et facteurs de risque', category:'examen', confidence:71 });
+  }
+  if (/douleur(s)? thoracique/i.test(source)) {
+    pushUniqueDeduction(deductions, 'La douleur thoracique rapportée nécessite de préciser son caractère (effort/repos, irradiation, durée).');
+    pushUniqueSuggestion(suggestions, { id:'ecg', label:'Discuter un ECG selon le contexte', rationale:'Douleur thoracique rapportée', category:'examen', confidence:94 });
+  }
+  if (/hta|hypertension/i.test(source) && /cardio/i.test(spec)) {
+    pushUniqueDeduction(deductions, 'L’HTA rapportée constitue un facteur de risque cardiovasculaire à mentionner explicitement.');
+    pushUniqueSuggestion(suggestions, { id:'hta-bilan', label:'Mentionner les chiffres tensionnels habituels et le traitement', rationale:'HTA connue dans le dossier', category:'clinique', confidence:85 });
+  }
+
+  // Endocrinology
+  if (/diab[eè]te/i.test(source)) {
+    if (/hba1c\s*(?:[:=]?\s*)?(8(?:[.,]\d)?|9(?:[.,]\d)?|1\d)/i.test(source)) {
+      pushUniqueDeduction(deductions, 'L’HbA1c rapportée suggère un équilibre glycémique insuffisant nécessitant une réévaluation thérapeutique.');
+      pushUniqueSuggestion(suggestions, { id:'diabeto', label:'Discuter une réévaluation thérapeutique (HbA1c élevée)', rationale:'HbA1c élevée rapportée', category:'prise_en_charge', confidence:92 });
+    } else {
+      pushUniqueDeduction(deductions, 'Le diabète mentionné nécessite de préciser le type, l’ancienneté, l’HbA1c récente et les complications recherchées.');
+    }
+    pushUniqueSuggestion(suggestions, { id:'complications-diab', label:'Mentionner la recherche de complications (néphropathie, rétinopathie, neuropathie)', rationale:'Diabète rapporté', category:'examen', confidence:84 });
+  }
+  if (/thyro[iï]d/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le contexte thyroïdien nécessite de préciser les bilans hormonaux récents (TSH, T4).');
+    pushUniqueSuggestion(suggestions, { id:'thyro', label:'Joindre le bilan thyroïdien récent (TSH, T4)', rationale:'Pathologie thyroïdienne mentionnée', category:'examen', confidence:89 });
+  }
+
+  // Neurology
+  if (/epilepsi|crise(s)? convulsiv|comitialit/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’épilepsie rapportée nécessite de préciser le type de crises, leur fréquence et la tolérance du traitement antiépileptique.');
+    pushUniqueSuggestion(suggestions, { id:'eeg', label:'Mentionner le dernier EEG si disponible', rationale:'Épilepsie rapportée', category:'examen', confidence:85 });
+    pushUniqueSuggestion(suggestions, { id:'observance-epi', label:'Préciser l’observance du traitement antiépileptique', rationale:'Impact direct sur le contrôle des crises', category:'prise_en_charge', confidence:90 });
+  }
+  if (/cephale|migraine/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Les céphalées rapportées nécessitent de préciser leur caractère (pulsatiles, biléatérales, aura) et leur fréquence mensuelle.');
+    pushUniqueSuggestion(suggestions, { id:'cephale-freq', label:'Préciser la fréquence et le type de céphalées', rationale:'Céphalées mentionnées', category:'clinique', confidence:82 });
+    pushUniqueSuggestion(suggestions, { id:'cephale-ttt', label:'Lister les traitements de crise et de fond déjà essayés', rationale:'Orientation thérapeutique pour le neurologue', category:'prise_en_charge', confidence:87 });
+  }
+  if (/avc|ait|accident vasculaire|ischemie cerebral/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’AVC ou AIT mentionné nécessite de rappeler la date, le type (ischémique/hémorragique) et le bilan étiologique déjà réalisé.');
+    pushUniqueSuggestion(suggestions, { id:'prevention-avc', label:'Mentionner la prévention secondaire en cours (anticoagulants, antiaggrégeants)', rationale:'AVC/AIT dans les antécédents', category:'prise_en_charge', confidence:93 });
+  }
+
+  // Pulmonology
+  if (/tabagism|fumeur|paquet[- ]ann/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le tabagisme rapporté constitue un élément essentiel pour évaluer le risque de BPCO et de pathologie néoplasique bronchique.');
+    pushUniqueSuggestion(suggestions, { id:'efr', label:'Discuter la réalisation d’EFR (spirométrie)', rationale:'Tabagisme significatif mentionné', category:'examen', confidence:88 });
+  }
+  if (/hemoptys/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’hémoptysie mentionnée est un signe d’alarme nécessitant une imagerie thoracique urgente si ce n’est fait.');
+    pushUniqueSuggestion(suggestions, { id:'scanner-thorax', label:'Préciser si un scanner thoracique a été réalisé', rationale:'Hémoptysie rapportée — signe d’alarme', category:'examen', confidence:96 });
+  }
+  if (/apnee|ronflement|saos|syndrome.*apnee/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le syndrome d’apnées du sommeil suspecté ou confirmé nécessite de préciser les symptômes diurnes et la saturation nocturne.');
+    pushUniqueSuggestion(suggestions, { id:'polygraphie', label:'Mentionner si une polygraphie ou polysomnographie est disponible', rationale:'Apnées du sommeil rapportées', category:'examen', confidence:90 });
+  }
+
+  // Gastroenterology
+  if (/rectorragie|sang.*selle|selle.*sang|melena/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Les rectorragies ou le méléna mentionnés sont des signes d’alarme justifiant une coloscopie si non encore programmée.');
+    pushUniqueSuggestion(suggestions, { id:'coloscopie', label:'Préciser si une coloscopie est prévue ou disponible', rationale:'Saignement digestif rapporté — signe d’alarme', category:'examen', confidence:95 });
+  }
+  if (/amaigrissement|perte.*poids/i.test(source) && /gastro|hepato|colon|digest/i.test(source + spec)) {
+    pushUniqueDeduction(deductions, 'L’amaigrissement dans ce contexte digestif est un signe d’alarme qui nécessite un bilan oncologique et nutritionnel.');
+    pushUniqueSuggestion(suggestions, { id:'bilan-aeg', label:'Mentionner le poids actuel et la perte de poids quantifiée', rationale:'Amaigrissement rapporté — signe d’alarme', category:'clinique', confidence:93 });
+  }
+  if (/pyrosis|reflux|rgo/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le reflux ou les pyrosis rapportés justifient de préciser leur ancienneté, leur sévérité et la réponse aux IPP déjà essayés.');
+    pushUniqueSuggestion(suggestions, { id:'ipp', label:'Préciser la réponse aux IPP et l’indication endoscopique', rationale:'RGO ou pyrosis mentionnés', category:'prise_en_charge', confidence:84 });
+  }
+  if (/ictere|jaundice|bilirub/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’ictère rapporté nécessite un bilan hépatique complet en urgence et une imagerie hépato-biliaire.');
+    pushUniqueSuggestion(suggestions, { id:'bilan-hepatique', label:'Joindre le bilan hépatique complet (bili, transaminases, GGT, PAL)', rationale:'Ictère rapporté', category:'examen', confidence:95 });
+  }
+
+  // Nephrology
+  if (/creatinine|dfg|clearance/i.test(source)) {
+    pushUniqueDeduction(deductions, 'La créatinine ou le DFG mentionnés nécessitent de préciser la valeur exacte, la date et la tendance évolutive.');
+    pushUniqueSuggestion(suggestions, { id:'dfg-evol', label:'Joindre les valeurs de créatinine avec dates pour évaluer la progression', rationale:'Créatinine ou DFG mentionnés', category:'examen', confidence:90 });
+  }
+  if (/proteinurie|albumin.*urine|hematurie/i.test(source) && /nephro|renal|rein/i.test(source + spec)) {
+    pushUniqueDeduction(deductions, 'La protéinurie ou l’hématurie rapportées orientent vers une atteinte glomérulaire ou tubulaire à préciser.');
+    pushUniqueSuggestion(suggestions, { id:'ecbu', label:'Préciser le résultat du dernier ECBU et la protéinurie quantifiée', rationale:'Protéinurie ou hématurie mentionnées', category:'examen', confidence:87 });
+  }
+
+  // Rheumatology
+  if (/arthrite|polyarthrite|arthrose|spondyl/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’atteinte articulaire rapportée nécessite de préciser son rythme (mécanique ou inflammatoire) et le nombre d’articulations concernées.');
+    pushUniqueSuggestion(suggestions, { id:'bilan-rhumato', label:'Joindre le bilan inflammatoire (CRP, VS) et immunologique si disponible', rationale:'Pathologie articulaire mentionnée', category:'examen', confidence:88 });
+  }
+  if (/raideur matinal/i.test(source)) {
+    pushUniqueDeduction(deductions, 'La raideur matinale mentionnée oriente vers un rythme inflammatoire et nécessite d’en préciser la durée.');
+    pushUniqueSuggestion(suggestions, { id:'raideur', label:'Préciser la durée de la raideur matinale (> ou < 30 minutes)', rationale:'Raideur matinale rapportée', category:'clinique', confidence:85 });
+  }
+  if (/goutte|uricemie|acide urique/i.test(source)) {
+    pushUniqueDeduction(deductions, 'La goutte ou l’hyperuricémie rapportée nécessite de préciser le dernier dosage d’acide urique.');
+    pushUniqueSuggestion(suggestions, { id:'uricemie', label:'Mentionner le dernier dosage d’acide urique', rationale:'Goutte ou hyperuricémie mentionnée', category:'examen', confidence:87 });
+  }
+  if (/osteoporose|densitometrie|dexa/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’ostéoporose mentionnée justifie de préciser le score T de la dernière densitométrie et les traitements en cours.');
+    pushUniqueSuggestion(suggestions, { id:'dexa', label:'Joindre la dernière densitométrie (T-score)', rationale:'Ostéoporose mentionnée', category:'examen', confidence:83 });
+  }
+
+  // Psychiatry
+  if (/ideation.*suicid|risque.*suicid|tentative.*suicide|tss\b/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le risque suicidaire mentionné est une urgence clinique : préciser l’intensité de l’idéation, les moyens disponibles et les facteurs protecteurs.');
+    pushUniqueSuggestion(suggestions, { id:'urgence-psy', label:'Signaler explicitement l’évaluation du risque suicidaire dans le courrier', rationale:'Risque suicidaire rapporté — élément critique', category:'prise_en_charge', confidence:98 });
+  }
+  if (/depression|episode depressif|humeur|tristesse/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’épisode dépressif rapporté nécessite de préciser son ancienneté, son intensité et les traitements déjà essayés.');
+    pushUniqueSuggestion(suggestions, { id:'psy-ttt', label:'Préciser les antidépresseurs et psychotropes déjà essayés et leur réponse', rationale:'Traitement psychiatrique à évaluer', category:'prise_en_charge', confidence:88 });
+  }
+  if (/anxiete|trouble anxieux|attaque de panique/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’anxiété ou les attaques de panique mentionnées justifient de préciser l’impact fonctionnel et les stratégies thérapeutiques déjà tentées.');
+    pushUniqueSuggestion(suggestions, { id:'tcc', label:'Mentionner si une TCC ou un suivi psychologique est en cours', rationale:'Trouble anxieux mentionné', category:'prise_en_charge', confidence:83 });
+  }
+  if (/addiction|alcool|cannabis|substance|dependance/i.test(source)) {
+    pushUniqueDeduction(deductions, 'L’addiction ou la consommation de substance mentionnée doit être précisée (type, quantité, ancienneté).');
+    pushUniqueSuggestion(suggestions, { id:'addiction-detail', label:'Préciser les consommations (type, fréquence) et toute démarche de sevrage', rationale:'Addiction ou consommation mentionnée', category:'clinique', confidence:86 });
+  }
+
+  // Gynecology
+  if (/menorragie|metrorragie|saignement.*gyneco|saignement.*uterine/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Les ménorragies ou métrorragies rapportées nécessitent une échographie pelvienne et un bilan d’hémostase si non encore réalisés.');
+    pushUniqueSuggestion(suggestions, { id:'echo-gyneco', label:'Préciser si une échographie pelvienne est disponible', rationale:'Saignement gynécologique rapporté', category:'examen', confidence:91 });
+  }
+  if (/grossesse|enceinte|amenorrhee|ddm|dernieres regles/i.test(source)) {
+    pushUniqueDeduction(deductions, 'La grossesse ou son contexte mentionné nécessite de préciser le terme, la parité et les antécédents obstétricaux.');
+    pushUniqueSuggestion(suggestions, { id:'suivi-obstet', label:'Préciser le terme de la grossesse et les antécédents obstétricaux', rationale:'Grossesse ou aménorrhée mentionnée', category:'clinique', confidence:90 });
+  }
+  if (/menopause|postmenopause/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le contexte ménopausal justifie de mentionner la date de la ménopause, le traitement hormonal éventuel et le bilan osseux.');
+    pushUniqueSuggestion(suggestions, { id:'menopause', label:'Mentionner la date de la ménopause et le traitement hormonal si en cours', rationale:'Ménopause mentionnée', category:'clinique', confidence:82 });
+  }
+
+  // Pediatrics
+  if (/retard.*croissance|courbe.*taille|courbe.*poids|croissance insuffisante/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le retard de croissance mentionné nécessite de préciser le percentile actuel et la courbe d’évolution depuis la naissance.');
+    pushUniqueSuggestion(suggestions, { id:'courbe-croissance', label:'Joindre ou décrire la courbe de croissance (percentile taille et poids)', rationale:'Retard de croissance rapporté', category:'clinique', confidence:89 });
+  }
+  if (/retard.*developpement|trouble.*developpement|autisme|tsa\b|tdah/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le trouble du développement mentionné nécessite une évaluation multidisciplinaire (orthophonie, psychomotricité, neuro-pédia).');
+    pushUniqueSuggestion(suggestions, { id:'bilan-neuro-pedia', label:'Mentionner les bilans spécialisés déjà réalisés (orthophonie, psychomotricité)', rationale:'Trouble du développement mentionné', category:'examen', confidence:87 });
+  }
+  if (/fievre|febrile/i.test(source) && /pediatr/i.test(spec)) {
+    pushUniqueDeduction(deductions, 'La fièvre chez l’enfant nécessite de préciser son ancienneté, son niveau maximal et tout signe de gravité associé.');
+    pushUniqueSuggestion(suggestions, { id:'gravite-pedia', label:'Signaler les signes de gravité (altération du comportement, signe méningée, purpura)', rationale:'Fièvre pédiatrique rapportée', category:'clinique', confidence:92 });
+  }
+
+  // Oncology
+  if (/cancer|carcinome|tumeur|lymphome|leucemie|hemopathie|neoplasie|sarcome/i.test(source)) {
+    pushUniqueDeduction(deductions, 'La pathologie oncologique mentionnée nécessite de préciser le type histologique, le stade et le protocole de traitement en cours ou prévu.');
+    pushUniqueSuggestion(suggestions, { id:'histologie', label:'Préciser le type histologique et le stade (TNM si disponible)', rationale:'Pathologie cancéreuse rapportée', category:'clinique', confidence:93 });
+    pushUniqueSuggestion(suggestions, { id:'ps', label:'Mentionner le performance status (OMS/ECOG) ou l’autonomie du patient', rationale:'Élément clé pour la décision thérapeutique oncologique', category:'clinique', confidence:87 });
+  }
+  if (/chimiotherapie|immunotherapie|radiotherapie|hormonotherapie|therap.*ciblee/i.test(source)) {
+    pushUniqueDeduction(deductions, 'Le traitement oncologique en cours nécessite de mentionner le protocole exact, le nombre de cycles réalisés et les toxicités éventuelles.');
+    pushUniqueSuggestion(suggestions, { id:'toxicite', label:'Préciser les toxicités observées (hématologiques, digestives, cutanées)', rationale:'Traitement oncologique mentionné', category:'prise_en_charge', confidence:90 });
+  }
+
+  // Algology / Pain
+  const isPainCtx = /lombalg|cervicalg|douleur|algia|eva|radicul|sciatique|nevralgie|neuropath/i.test(source);
+  const toAlgo    = /algolog/i.test(spec);
+  if (isPainCtx || toAlgo) {
+    if (/lombalg|lombaire/i.test(source) && /irradiation|fesse|cuisse|radicul|sciatique/i.test(source))
+      pushUniqueDeduction(deductions, 'La topographie lombaire avec irradiation membre inférieur oriente vers une composante radiculaire à explorer en algologie.');
+    if (/\beva\b|\/\s*10|sur\s*10/i.test(source))
+      pushUniqueDeduction(deductions, 'L’intensité douloureuse chiffrée (EVA) confirme un retentissement symptomatique significatif justifiant un avis antalgique spécialisé.');
+    if (/irm|scanner|échographie|imagerie/i.test(source) && /protrusion|hernie|discopath|sténose/i.test(source))
+      pushUniqueDeduction(deductions, 'Les éléments d’imagerie fournis permettent de contextualiser la douleur mécanique ou compressive sans remplacer l’évaluation clinique algologique.');
+    if (/paracétamol|ibuprofène|tramadol|ains\b|morphine|codéine/i.test(source) && /insuffisant|échec|peu efficace|soulagement insuffisant/i.test(source))
+      pushUniqueDeduction(deductions, 'L’échec des antalgiques de premier niveau plaide pour une réévaluation de la stratégie antalgique en consultation spécialisée.');
+    if (/pas de déficit|sans déficit|pas de troubles sphinctériens|sans signe/i.test(source))
+      pushUniqueDeduction(deductions, 'L’absence de signe neurologique de gravité rapportée est un élément rassurant à mentionner au confrère.');
+    if (/sommeil|professionnel|autonomie|retentissement|impact/i.test(source))
+      pushUniqueDeduction(deductions, 'Le retentissement fonctionnel documenté renforce l’indication d’une prise en charge antalgique structurée.');
+    pushUniqueSuggestion(suggestions, { id:'neuropath', label:'Évoquer une composante neuropathique (DN4 si pertinent)', rationale:'Douleur avec irradiation ou caractère chronique', category:'examen', confidence:86 });
+    pushUniqueSuggestion(suggestions, { id:'oms', label:'Rappeler les paliers antalgiques OMS déjà essayés', rationale:'Antécédents thérapeutiques rapportés', category:'prise_en_charge', confidence:90 });
+    pushUniqueSuggestion(suggestions, { id:'pluri', label:'Proposer une prise en charge pluridisciplinaire (kiné + algologie)', rationale:'Douleur chronique avec retentissement fonctionnel', category:'orientation', confidence:84 });
+    pushUniqueSuggestion(suggestions, { id:'retour-algo', label:'Solliciter un retour d’avis après consultation algologique', rationale:'Continuité des soins', category:'orientation', confidence:92 });
+    if (/ibuprofène|ains\b|diclofénac|naproxène/i.test(source))
+      pushUniqueSuggestion(suggestions, { id:'bilan-ains', label:'Mentionner surveillance si AINS au long cours', rationale:'AINS rapportés dans les traitements', category:'surveillance', confidence:72 });
+  }
+
+  // Dermatology
+  if (/dermatologue|dermato/i.test(spec) || /lesion.*cutan|psoriasis|eczema|melanome|acne/i.test(source)) {
+    if (/melanome|lesion.*suspecte|naevus|grain.*beaute/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La lésion cutanée suspecte mentionnée nécessite une évaluation dermoscopique urgente.');
+      pushUniqueSuggestion(suggestions, { id:'dermoscopy', label:'Préciser l’aspect clinique et dermoscopique de la lésion', rationale:'Lésion suspecte rapportée — urgence diagnostique', category:'examen', confidence:94 });
+    }
+    if (/psoriasis/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Le psoriasis mentionné nécessite de préciser son étendue (score PASI) et les traitements systémiques déjà essayés.');
+      pushUniqueSuggestion(suggestions, { id:'pasi', label:'Mentionner l’étendue (score PASI ou BSA%) et les traitements essayés', rationale:'Psoriasis mentionné', category:'clinique', confidence:84 });
+    }
+    if (/eczema|dermatite atopique/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La dermatite atopique mentionnée justifie de préciser les facteurs déclenchants et la réponse aux dermocorticoïdes.');
+      pushUniqueSuggestion(suggestions, { id:'dermocortico', label:'Préciser l’utilisation et la réponse aux dermocorticoïdes', rationale:'Eczema ou dermatite atopique mentionné', category:'prise_en_charge', confidence:82 });
+    }
+  }
+
+  // ORL
+  if (/orl|auriculaire|oreille|audition|acouphene|rhinite|sinusite|angine|amygdale|laryngite|dysphonie/i.test(source + spec)) {
+    if (/acouphene|tinnitus/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Les acouphènes mentionnés nécessitent un bilan audiométrique complet et une évaluation de leur retentissement fonctionnel.');
+      pushUniqueSuggestion(suggestions, { id:'audiogramme', label:'Mentionner si un audiogramme récent est disponible', rationale:'Acouphènes rapportés', category:'examen', confidence:88 });
+    }
+    if (/surdite|hypoacousie/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La surdité ou l’hypoacousie mentionnée nécessite de préciser son type (transmission/perception) et son ancienneté.');
+      pushUniqueSuggestion(suggestions, { id:'audiogramme-type', label:'Joindre l’audiogramme tonal et vocal si disponible', rationale:'Trouble auditif rapporté', category:'examen', confidence:90 });
+    }
+    if (/dysphagie/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La dysphagie mentionnée est un signe d’alarme ORL nécessitant une nasofibroscopie et un bilan morphologique rapide.');
+      pushUniqueSuggestion(suggestions, { id:'nasofibro', label:'Signaler la dysphagie comme signe d’alarme — nasofibroscopie recommandée', rationale:'Dysphagie rapportée — signe d’alarme', category:'examen', confidence:93 });
+    }
+  }
+
+  // Ophthalmology
+  if (/ophtalmo|oculaire|visuel|glaucome|cataracte|dmla|retinopathie|fond.*oeil/i.test(source + spec)) {
+    if (/diab[eè]te/i.test(source) && /ophtalmo/i.test(spec)) {
+      pushUniqueDeduction(deductions, 'Le diabète justifie un dépistage systématique de la rétinopathie diabétique par fond d’œil ou rétinographie.');
+      pushUniqueSuggestion(suggestions, { id:'retino', label:'Mentionner la date du dernier fond d’œil pour dépistage rétinopathie', rationale:'Diabète — dépistage rétinopathie obligatoire', category:'examen', confidence:95 });
+    }
+    if (/glaucome|pression.*intraoculaire|pio/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Le contexte de glaucome nécessite de préciser les chiffres de PIO, le traitement hypotonisant et le dernier champ visuel.');
+      pushUniqueSuggestion(suggestions, { id:'pio', label:'Préciser la PIO et le traitement hypotonisant en cours', rationale:'Glaucome mentionné', category:'examen', confidence:90 });
+    }
+    if (/baisse.*vision|trouble.*visuel|vision.*floue/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La baisse d’acuité visuelle mentionnée nécessite de préciser son installation (brutale ou progressive) et l’acuité mesurée.');
+      pushUniqueSuggestion(suggestions, { id:'acuite', label:'Préciser l’acuité visuelle mesurée de loin et de près', rationale:'Trouble visuel rapporté', category:'clinique', confidence:88 });
+    }
+  }
+
+  // Urology
+  if (/urologue|urinaire|prostate|vesical|calcul.*urinaire|hematurie.*uro|infection.*urinaire/i.test(source + spec)) {
+    if (/psa/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Le PSA mentionné doit être précisé avec sa valeur exacte et son évolution dans le temps.');
+      pushUniqueSuggestion(suggestions, { id:'psa-val', label:'Préciser la valeur du PSA total, la date et l’évolution', rationale:'PSA mentionné', category:'examen', confidence:92 });
+    }
+    if (/hematurie/i.test(source)) {
+      pushUniqueDeduction(deductions, 'L’hématurie mentionnée est un signe d’alarme urologique nécessitant une échographie vésico-rénale et un ECBU.');
+      pushUniqueSuggestion(suggestions, { id:'echo-uro', label:'Préciser si une échographie vésico-rénale et un ECBU sont disponibles', rationale:'Hématurie rapportée — signe d’alarme', category:'examen', confidence:94 });
+    }
+    if (/pollakiurie|dysurie|incontinen|brulure.*miction|svb|symptome.*mictionnels/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Les symptômes du bas appareil urinaire rapportés justifient un score IPSS et une échographie prostatique si ce n’est fait.');
+      pushUniqueSuggestion(suggestions, { id:'ipss', label:'Mentionner le score IPSS ou les symptômes mictionnels quantifiés', rationale:'Symptômes urinaires rapportés', category:'clinique', confidence:83 });
+    }
+    if (/calcul|lithiase|colique.*nephretique/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Le contexte lithiasique mentionné nécessite de préciser la localisation, la taille et les antécédents de calculs précédents.');
+      pushUniqueSuggestion(suggestions, { id:'lithiase', label:'Joindre le scanner ou écho urinaire avec mesure du calcul', rationale:'Lithiase urinaire rapportée', category:'examen', confidence:91 });
+    }
+  }
+
+  // Orthopedics
+  if (/orthopedie|orthopedique|chirurgie.*articulaire|prothese|ligament|tendon|fracture|entorse/i.test(source + spec)) {
+    if (/irm|radio|radiographie/i.test(source)) {
+      pushUniqueDeduction(deductions, 'L’imagerie mentionnée (IRM ou radiographie) est un élément essentiel à joindre ou décrire précisément pour le chirurgien orthopédiste.');
+      pushUniqueSuggestion(suggestions, { id:'imagerie-ortho', label:'Joindre ou décrire les résultats d’imagerie disponibles (radio, IRM)', rationale:'Imagerie mentionnée pour bilan orthopédique', category:'examen', confidence:92 });
+    }
+    if (/prothese|arthroplastie|chirurgie/i.test(source)) {
+      pushUniqueDeduction(deductions, 'L’indication chirurgicale potentielle nécessite de préciser les traitements conservateurs déjà essayés et le retentissement fonctionnel.');
+      pushUniqueSuggestion(suggestions, { id:'conservateur', label:'Préciser les traitements conservateurs essayés (kiné, infiltrations, AINS)', rationale:'Chirurgie envisagée — évaluation conservatrice préalable', category:'prise_en_charge', confidence:87 });
+    }
+  }
+
+  // Internal Medicine
+  if (/medecine interne|interniste|maladie.*auto-immune|vascularite|sarcoidose|lupus|sjogren/i.test(source + spec)) {
+    if (/fievre|febrile/i.test(source) && /prolonge|depuis.*semaine|depuis.*mois/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La fièvre prolongée mentionnée oriente vers une cause infectieuse, inflammatoire ou néoplasique nécessitant un bilan exhaustif.');
+      pushUniqueSuggestion(suggestions, { id:'fievre-bilan', label:'Mentionner le bilan infectieux et inflammatoire déjà réalisé', rationale:'Fièvre prolongée rapportée', category:'examen', confidence:91 });
+    }
+    if (/lupus|sjogren|polyarthrite|spondyl|vascularite/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La pathologie auto-immune mentionnée nécessite de préciser le bilan immunologique (ANA, ANCA, anti-DNA, FR) et l’atteinte d’organe.');
+      pushUniqueSuggestion(suggestions, { id:'immuno-bilan', label:'Joindre le bilan immunologique (ANA, ANCA, etc.) si disponible', rationale:'Pathologie auto-immune rapportée', category:'examen', confidence:88 });
+    }
+  }
+
+  // Geriatrics
+  if (/geriatr|personne agee|sujet age|polymedication|chutes?\b|demence|alzheimer|mmse|mms/i.test(source + spec)) {
+    if (/chute|chutes/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Les chutes mentionnées nécessitent une évaluation multifactorielle (équilibre, vision, médicaments, environnement).');
+      pushUniqueSuggestion(suggestions, { id:'chutes-bilan', label:'Mentionner la fréquence des chutes et les facteurs favorisants identifiés', rationale:'Chutes rapportées en contexte gériatrique', category:'clinique', confidence:88 });
+      pushUniqueSuggestion(suggestions, { id:'polymed', label:'Lister l’ensemble des médicaments (iatrogénie, psychotropes, hypotenseurs)', rationale:'Recherche de causes iatrogènes aux chutes', category:'prise_en_charge', confidence:85 });
+    }
+    if (/demence|alzheimer|mmse|mms|troubles cognitifs|confusion/i.test(source)) {
+      pushUniqueDeduction(deductions, 'Les troubles cognitifs mentionnés nécessitent de préciser le score MMSE ou MoCA, l’ancienneté et le retentissement sur l’autonomie.');
+      pushUniqueSuggestion(suggestions, { id:'mmse', label:'Mentionner le score MMSE ou MoCA avec date', rationale:'Troubles cognitifs rapportés', category:'clinique', confidence:89 });
+    }
+    if (/denutrition|poids.*baisse|albumin|malnutrition/i.test(source)) {
+      pushUniqueDeduction(deductions, 'La dénutrition ou l’amaigrissement chez le sujet âgé nécessite un bilan nutritionnel avec albumine et score MNA.');
+      pushUniqueSuggestion(suggestions, { id:'nutri', label:'Préciser le poids actuel, la perte de poids et l’albumine si disponible', rationale:'Dénutrition mentionnée en contexte gériatrique', category:'clinique', confidence:87 });
+    }
+  }
+
+  // Anesthesia
+  if (/anesthes|preoperatoire|pre-op|bilan.*operatoire|chirurgie.*programm/i.test(source + spec)) {
+    pushUniqueDeduction(deductions, 'La consultation pré-anesthésique nécessite de rassembler les antécédents anesthésiques, les allergies connues et le bilan biologique récent.');
+    if (/anticoagulant|warfarine|rivaroxaban|apixaban|heparine|syntrom|previscan/i.test(source)) {
+      pushUniqueDeduction(deductions, 'L’anticoagulant mentionné nécessite une discussion du protocole de relai périopératoire avec l’anesthésiste.');
+      pushUniqueSuggestion(suggestions, { id:'relai-acoa', label:'Préciser l’anticoagulant, l’indication et le protocole de relai prévu', rationale:'Anticoagulant mentionné en contexte chirurgical', category:'prise_en_charge', confidence:95 });
+    }
+    pushUniqueSuggestion(suggestions, { id:'bilan-preop', label:'Mentionner le bilan biologique pré-opératoire (NFS, coag, iono, ECG)', rationale:'Consultation pré-anesthésique', category:'examen', confidence:88 });
+    pushUniqueSuggestion(suggestions, { id:'asa', label:'Préciser le score ASA si connu', rationale:'Stratification du risque anesthésique', category:'clinique', confidence:80 });
+  }
+}
+
+function ensureMinimumGuidance({ deductions, suggestions, source, body }) {
+  if (deductions.length === 0)
+    pushUniqueDeduction(deductions, 'Le dossier fourni permet une lettre de liaison structurée ; une synthèse orientée vers la question clinique du spécialiste est recommandée.');
+  if (body.motif)
+    pushUniqueDeduction(deductions, `L’adressage pour « ${s(body.motif, 120)} » justifie de préciser au confrère les éléments clés du contexte et la question posée.`);
+  if (body.specialiste || body.specialty)
+    pushUniqueDeduction(deductions, `La demande d’avis ${s(body.specialiste || body.specialty, 80)} appelle une mise en avant des éléments pertinents pour cette spécialité.`);
+
+  const fallback = [
+    { id:'retour', label:'Solliciter un retour d’avis après la consultation', rationale:'Facilite le suivi et la coordination des soins', category:'orientation', confidence:90 },
+    { id:'antecedents', label:'Mentionner les antécédents pertinents s’ils sont connus', rationale:'Enrichit le dossier sans surinterpretér', category:'clinique', confidence:78 },
+    { id:'traitements', label:'Récapituler les traitements en cours et leur tolérance', rationale:'Information utile au spécialiste destinataire', category:'clinique', confidence:82 },
+    { id:'allergies', label:'Préciser les allergies connues ou leur absence', rationale:'Sécurité thérapeutique', category:'clinique', confidence:75 },
+    { id:'gravite', label:'Signaler l’absence de signe de gravité si applicable', rationale:'Élément rassurant pour le confrère', category:'clinique', confidence:74 }
+  ];
+  for (const item of fallback) {
+    if (suggestions.length >= 3) break;
+    pushUniqueSuggestion(suggestions, item);
+  }
+  return { deductions: deductions.slice(0, 8), suggestions: suggestions.slice(0, 8) };
+}
+
+function buildConfidenceMeta(source, body, missing, inconsistencies) {
+  const breakdown = [];
+  if (source.length >= 40)  breakdown.push({ label:'Notes cliniques renseignées', value:25, kind:'gain' });
+  if (source.length >= 200) breakdown.push({ label:'Dossier détaillé', value:10, kind:'gain' });
+  if (body.patient || /m\.|mme|monsieur|madame/i.test(source)) breakdown.push({ label:'Identité patient', value:10, kind:'gain' });
+  if (body.motif || /motif|adress|avis pour|demande/i.test(source)) breakdown.push({ label:'Motif d’adressage', value:15, kind:'gain' });
+  if (/depuis|début|mois|semaine|an(s)?\b|évolution/i.test(source)) breakdown.push({ label:'Chronologie', value:10, kind:'gain' });
+  if (hasTreatmentSignals(source)) breakdown.push({ label:'Traitements documentés', value:10, kind:'gain' });
+  if (hasClinicalExamSignals(source)) breakdown.push({ label:'Examen, sémiologie ou imagerie', value:10, kind:'gain' });
+  if (/\beva\b|\/\s*10|retentissement|impact|sommeil/i.test(source)) breakdown.push({ label:'Retentissement ou intensité douleur', value:5, kind:'gain' });
+
+  const optionalMissing = [];
+  missing.forEach(label => {
+    if (label === 'allergies') {
+      optionalMissing.push(label);
+      breakdown.push({ label:'Allergies non précisées (facultatif)', value:-3, kind:'optional' });
+    } else if (label === 'examen clinique ou constantes' && hasClinicalExamSignals(source)) {
+      optionalMissing.push(label);
+      breakdown.push({ label:'Constantes vitales non détaillées (facultatif)', value:-2, kind:'optional' });
+    } else if (label === 'examen clinique ou constantes') {
+      optionalMissing.push(label);
+      breakdown.push({ label:'Examen clinique formel non détaillé', value:-5, kind:'optional' });
+    } else if (['chronologie','traitements','motif d’adressage'].includes(label)) {
+      breakdown.push({ label:`${label} — à compléter`, value:-10, kind:'important' });
+    } else {
+      optionalMissing.push(label);
+      breakdown.push({ label:`${label} (recommandé)`, value:-4, kind:'optional' });
+    }
+  });
+  inconsistencies.forEach(() => breakdown.push({ label:'Incohérence à vérifier', value:-15, kind:'critical' }));
+
+  let confidence = breakdown.reduce((sum, item) => sum + item.value, 0);
+  confidence = Math.max(30, Math.min(98, confidence));
+
+  const importantGaps = missing.filter(m => ['chronologie','traitements',"motif d’adressage",'identité ou repère patient'].includes(m));
+  let scoreSummary, confidenceLabel;
+  if (inconsistencies.length) {
+    scoreSummary = `${inconsistencies.length} incohérence(s) à vérifier avant envoi.`;
+    confidenceLabel = 'À vérifier';
+  } else if (importantGaps.length) {
+    scoreSummary = `Informations importantes manquantes : ${importantGaps.join(', ')}.`;
+    confidenceLabel = 'À compléter';
+  } else if (optionalMissing.length) {
+    scoreSummary = `Dossier solide — ${optionalMissing.length} précision(s) facultative(s) pour enrichir le courrier (${optionalMissing.join(', ')}).`;
+    confidenceLabel = confidence >= 80 ? 'Prêt à générer' : 'Bon dossier';
+  } else {
+    scoreSummary = 'Dossier complet : vous pouvez générer la lettre en confiance.';
+    confidenceLabel = 'Prêt à générer';
+  }
+  return { confidence, confidenceBreakdown: breakdown, scoreSummary, confidenceLabel, optionalMissing };
+}
+
 function clinicalAnalysis(body = {}) {
   const source = plainClinicalText(body);
-  const lower = source.toLowerCase();
   const profile = specialtyProfile(body.specialiste || body.specialty || '');
   const missing = [];
   const questions = [];
@@ -628,51 +1098,37 @@ function clinicalAnalysis(body = {}) {
   const suggestions = [];
 
   const checks = [
-    ['chronologie', [/depuis|début|evolution|évolution|jour|semaine|mois|an(s)?\b/i], 'Depuis quand et avec quelle évolution ?'],
-    ['traitements', [/traitement|sous\s|mg\b|comprim|médicament|therapie|thérapie/i], 'Quels sont les traitements actuels et leur tolérance ?'],
-    ['allergies', [/allerg/i], 'Des allergies médicamenteuses sont-elles connues ?'],
-    ['examen clinique ou constantes', [/examen|tension|\bpa\b|\bfc\b|spo2|saturation|poids|taille|imc|auscult/i], 'Quels éléments d’examen ou constantes sont disponibles ?']
+    ['chronologie', [/depuis|début|evolution|évolution|jour|semaine|mois|an(s)?\b/i], 'Depuis quand et avec quelle évolution ?'],
+    ['traitements', [/traitement|thérapie|therapie|médicament|medicament|sous\s|mg\b|comprim|paracétamol|ibuprofène|tramadol|kinésithérapie|kiné\b/i], 'Quels sont les traitements actuels et leur tolérance ?'],
+    ['allergies', [/allerg/i], 'Des allergies médicamenteuses sont-elles connues ?'],
+    ['examen clinique ou constantes', [/examen|tension|\bpa\b|\bfc\b|spo2|saturation|poids|taille|imc|auscult|déficit|sphincter|\beva\b|irm|scanner|échographie|imagerie/i], 'Quels éléments d’examen, de sémiologie ou d’imagerie sont disponibles ?']
   ];
   checks.forEach(([label, patterns, question]) => {
     if (!hasAny(source, patterns)) { missing.push(label); questions.push(question); }
   });
   if (!body.patient && !/patient|monsieur|madame|\bm\.|mme/i.test(source)) missing.push('identité ou repère patient');
   if (!body.motif && !/motif|adress|avis|pour\s/i.test(source) && body.documentType === 'liaison') {
-    missing.push('motif d’adressage'); questions.push('Quelle est la question clinique précise posée au spécialiste ?');
+    missing.push('motif d’adressage'); questions.push('Quelle est la question clinique précise posée au spécialiste ?');
   }
 
-  if (/douleur(s)? thoracique/i.test(source)) {
-    questions.push('Irradiation, effort/repos, durée et dyspnée associée ?');
-    suggestions.push({ id: 'ecg', label: 'Discuter un ECG selon le contexte', rationale: 'Douleur thoracique rapportée', category: 'examen', confidence: 94 });
-  }
-  if (/palpitation/i.test(source)) {
-    deductions.push('Un avis cardiologique est pertinent au regard des palpitations rapportées.');
-    if (/ecg[^\n.]*normal|ecg\s*normal/i.test(source))
-      deductions.push('Un ECG intercritique normal n’exclut pas un trouble rythmique intermittent.');
-    if (/pas de syncope|sans syncope|absence de syncope/i.test(source))
-      deductions.push('L’absence de syncope rapportée est un élément rassurant, sans exclure une cause rythmique.');
-    suggestions.push({ id: 'holter', label: 'Discuter un Holter ECG', rationale: /ecg[^\n.]*normal|ecg\s*normal/i.test(source) ? 'Palpitations persistantes avec ECG intercritique normal' : 'Palpitations rapportées', category: 'examen', confidence: /depuis|mois|semaine/i.test(source) ? 96 : 86 });
-    suggestions.push({ id: 'cardio', label: 'Discuter un avis cardiologique', rationale: 'Symptomatologie rythmique rapportée', category: 'orientation', confidence: 91 });
-    suggestions.push({ id: 'echo', label: 'Discuter une échographie cardiaque', rationale: 'À apprécier selon l’examen clinique, les antécédents et les facteurs de risque', category: 'examen', confidence: 71 });
-  }
-  if (/diab[eè]te/i.test(source) && /hba1c\s*(?:[:=]?\s*)?(8(?:[.,]\d)?|9(?:[.,]\d)?|1\d)/i.test(source)) {
-    deductions.push('L’HbA1c rapportée suggère un équilibre glycémique insuffisant.');
-    suggestions.push({ id: 'diabeto', label: 'Discuter une réévaluation thérapeutique', rationale: 'HbA1c élevée rapportée', category: 'prise_en_charge', confidence: 92 });
-  }
-  if (/femme|enceinte|grossesse/i.test(source) && /hypertrophie\s+prostat|ad[eé]nome\s+prostat/i.test(source))
+  // Safety inconsistency checks
+  if (/femme|enceinte|grossesse/i.test(source) && /hypertrophie\s+prostat|ad[ée]nome\s+prostat/i.test(source))
     inconsistencies.push('Sexe/contexte de grossesse incompatible avec une pathologie prostatique rapportée.');
-  if (/allerg[^\n.]*p[eé]nicill|allerg[^\n.]*amoxicill/i.test(source) && /amoxicilline/i.test(source))
-    inconsistencies.push('Amoxicilline mentionnée malgré une allergie rapportée aux pénicillines : vérifier avant prescription.');
-  if (/enceinte|grossesse/i.test(source) && /isotr[eé]tino[iï]ne|valproate/i.test(source))
-    inconsistencies.push('Traitement potentiellement incompatible avec une grossesse rapportée : vérification urgente requise.');
-  if (/anticoagul|apixaban|rivaroxaban|warfarine|fluindione/i.test(source) && /ibuprof[eè]ne|k[eé]toprof[eè]ne|naprox[eè]ne|ains\b/i.test(source))
-    inconsistencies.push('Association anticoagulant/AINS rapportée : risque hémorragique à vérifier.');
+  if (/allerg[^\n.]*p[ée]nicill|allerg[^\n.]*amoxicill/i.test(source) && /amoxicilline/i.test(source))
+    inconsistencies.push('Amoxicilline mentionnée malgré une allergie rapportée aux pénicillines : vérifier avant prescription.');
+  if (/enceinte|grossesse/i.test(source) && /isotr[ée]tino[ï]ne|valproate/i.test(source))
+    inconsistencies.push('Traitement potentiellement incompatible avec une grossesse rapportée : vérification urgente requise.');
+  if (/anticoagul|apixaban|rivaroxaban|warfarine|fluindione/i.test(source) && /ibuprofène|k[ée]toprof[èe]ne|naprox[èe]ne|ains\b/i.test(source))
+    inconsistencies.push('Association anticoagulant/AINS rapportée : risque hémorragique à vérifier.');
   const age = Number((String(body.age || '').match(/\d{1,3}/) || [])[0]);
   const infarctAge = Number((source.match(/infarctus[^\n.]*?(?:à|a)\s*(\d{1,3})\s*ans/i) || [])[1]);
-  if (infarctAge && infarctAge < 15) inconsistencies.push(`Antécédent d’infarctus à ${infarctAge} ans : vérifier l’âge et la formulation.`);
+  if (infarctAge && infarctAge < 15) inconsistencies.push(`Antécédent d’infarctus à ${infarctAge} ans : vérifier l’âge et la formulation.`);
   if (age && (age < 0 || age > 115)) inconsistencies.push('Âge impossible ou très improbable.');
   const dates = [...source.matchAll(/\b(\d{2})\/(\d{2})\/(\d{4})\b/g)];
-  dates.forEach(m => { if (+m[1] > 31 || +m[2] > 12) inconsistencies.push(`Date impossible détectée : ${m[0]}.`); });
+  dates.forEach(m => { if (+m[1] > 31 || +m[2] > 12) inconsistencies.push(`Date impossible détectée : ${m[0]}.`); });
+
+  // Specialty-specific analysis
+  analyzeBySpecialty(source, body, deductions, suggestions);
 
   const alreadyAnswered = q => {
     if (source.toLowerCase().includes(q.toLowerCase())) return true;
@@ -686,26 +1142,22 @@ function clinicalAnalysis(body = {}) {
   };
   profile.questions.forEach(q => { if (questions.length < 7 && !questions.includes(q) && !alreadyAnswered(q)) questions.push(q); });
   const filteredQuestions = [...new Set(questions)].filter(q => !alreadyAnswered(q));
-  const complexity = source.length > 1800 || inconsistencies.length > 0 || suggestions.length >= 3 ? 'detaille'
-    : source.length < 450 && suggestions.length < 2 ? 'express' : 'standard';
-  const confidenceBreakdown = [{ label: 'Dossier clinique initial', value: 45 }];
-  if (body.motif || /palpitation|douleur|dyspn[eé]e|diab[eè]te|suivi|contr[oô]le/i.test(source)) confidenceBreakdown.push({ label: 'Motif ou symptômes décrits', value: 20 });
-  if (/depuis|début|jour|semaine|mois|an(s)?\b/i.test(source)) confidenceBreakdown.push({ label: 'Chronologie disponible', value: 10 });
-  if (/\becg\b|examen|tension|\bpa\b|\bfc\b|spo2|saturation/i.test(source)) confidenceBreakdown.push({ label: 'Examen ou résultat disponible', value: 15 });
-  if (missing.includes('traitements')) confidenceBreakdown.push({ label: 'Traitements non précisés', value: -10 });
-  if (missing.includes('allergies')) confidenceBreakdown.push({ label: 'Allergies non précisées', value: -7 });
-  if (missing.includes('examen clinique ou constantes')) confidenceBreakdown.push({ label: 'Constantes ou examen incomplets', value: -10 });
-  if (source.length < 40) confidenceBreakdown.push({ label: 'Informations très brèves', value: -10 });
-  inconsistencies.forEach(() => confidenceBreakdown.push({ label: 'Incohérence à vérifier', value: -20 }));
-  let confidence = confidenceBreakdown.reduce((sum, item) => sum + item.value, 0);
-  confidence = Math.max(20, Math.min(98, confidence));
+
+  const guided = ensureMinimumGuidance({ deductions, suggestions, source, body });
+  deductions.length = 0; deductions.push(...guided.deductions);
+  suggestions.length = 0; suggestions.push(...guided.suggestions);
+
+  const complexity = source.length > 1800 || inconsistencies.length > 0 || suggestions.length >= 4 ? 'detaille'
+    : source.length < 450 && suggestions.length < 3 ? 'express' : 'standard';
+  const { confidence, confidenceBreakdown, scoreSummary, confidenceLabel, optionalMissing } =
+    buildConfidenceMeta(source, body, [...new Set(missing)], inconsistencies);
 
   const facts = source.split(/\n|(?<=[.!?])\s+/).map(x => x.trim()).filter(x => x.length > 2).slice(0, 12);
   return {
-    facts, deductions, suggestions, missing: [...new Set(missing)],
+    facts, deductions: deductions.slice(0, 8), suggestions: suggestions.slice(0, 8),
+    missing: [...new Set(missing)], optionalMissing,
     questions: filteredQuestions.slice(0, 7), inconsistencies: [...new Set(inconsistencies)],
-    confidence,
-    confidenceBreakdown,
+    confidence, confidenceBreakdown, scoreSummary, confidenceLabel,
     recommendedLength: complexity,
     specialtyFocus: profile.focus
   };
