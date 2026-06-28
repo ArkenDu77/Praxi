@@ -298,6 +298,27 @@ body {
 .spinner.dark { border: 2px solid rgba(56,189,248,.18); border-top-color: var(--accent); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* ─── MODÈLES RAPIDES (quick templates) ─── */
+.quick-tpl-bar {
+  margin-bottom: 20px; padding: 12px 14px;
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.quick-tpl-label {
+  font-size: 10.5px; font-weight: 500; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-dim);
+  display: block; margin-bottom: 10px;
+}
+.quick-tpl-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.quick-tpl-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--bg-card); border: 1px solid var(--border2);
+  border-radius: 999px; padding: 5px 13px;
+  font-size: 12px; color: var(--text-muted); cursor: pointer;
+  font-family: inherit; transition: border-color .2s, color .2s, background .2s;
+}
+.quick-tpl-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+
 /* ─── ALERTS ─── */
 .alert {
   display: none; margin-top: 18px; padding: 12px 16px;
@@ -532,11 +553,31 @@ body {
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M9 8h6M5 19V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2z"/></svg>
     Résumé de document
   </button>
+  <button class="side-link" data-view="mdph">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+    Certificat MDPH
+  </button>
+  <button class="side-link" data-view="ald">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+    Protocole ALD
+  </button>
+  <button class="side-link" data-view="certificat">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13,2 13,9 20,9"/></svg>
+    Certificat médical
+  </button>
+  <button class="side-link" data-view="ordonnance">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 12h6M9 16h3"/></svg>
+    Ordonnance
+  </button>
 
   <div class="side-section">Mon espace</div>
   <button class="side-link" data-view="history">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3M3.05 11a9 9 0 11.5 4M3 4v5h5"/></svg>
     Historique <span id="history-count" style="margin-left:auto;font-size:11px;color:var(--text-dim)"></span>
+  </button>
+  <button class="side-link" data-view="patients">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    Mes patients
   </button>
   <button class="side-link" data-view="profile">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
@@ -557,6 +598,12 @@ body {
   <section class="view active" id="view-liaison">
     <h1 class="page-title">Lettre de liaison</h1>
     <p class="page-sub">Adressez un patient à un confrère spécialiste à partir de vos notes.</p>
+
+    <div class="quick-tpl-bar" id="tpl-liaison" style="display:none">
+      <span class="quick-tpl-label">Modèles rapides</span>
+      <div class="quick-tpl-row" id="tpl-liaison-row"></div>
+    </div>
+
     <div class="page-actions">
       <button class="btn btn-ghost" id="open-doctolib-l">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
@@ -670,6 +717,12 @@ body {
   <section class="view" id="view-cr">
     <h1 class="page-title">Compte-rendu de consultation</h1>
     <p class="page-sub">Transformez vos notes de consultation en compte-rendu structuré.</p>
+
+    <div class="quick-tpl-bar" id="tpl-cr" style="display:none">
+      <span class="quick-tpl-label">Modèles rapides</span>
+      <div class="quick-tpl-row" id="tpl-cr-row"></div>
+    </div>
+
     <div class="page-actions">
       <button class="btn btn-ghost" id="open-doctolib-c">
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
@@ -759,11 +812,254 @@ body {
     </div>
   </section>
 
+  <!-- ── MDPH ── -->
+  <section class="view" id="view-mdph">
+    <h1 class="page-title">Certificat médical MDPH</h1>
+    <p class="page-sub">Rédigez un certificat conforme au Cerfa 15695*01 pour une demande MDPH.</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Nom du patient</label>
+        <input class="input" id="m-patient" placeholder="Ex. M. Dupont Jean" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">Diagnostic principal</label>
+      <input class="input" id="m-diagnostic" placeholder="Ex. Sclérose en plaques, forme récurrente-rémittente (CIM-10 : G35)" />
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <span>Notes médicales</span>
+        <span class="label-opt">Antécédents, retentissement fonctionnel, traitements, pronostic</span>
+      </label>
+      <div class="with-mic">
+        <textarea class="textarea" id="m-notes" placeholder="Décrivez le retentissement fonctionnel dans la vie quotidienne : mobilité, autonomie, communication, vie professionnelle…"></textarea>
+        <button type="button" class="mic-btn" data-mic="m-notes" title="Dictée vocale">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+      </div>
+      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" data-gen="mdph">
+        <span class="btn-label">Générer le certificat MDPH</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="m-error"></div>
+
+    <div class="result" id="m-result">
+      <div class="result-head">
+        <span class="result-title">Certificat médical MDPH</span>
+        <div class="result-tools" data-result-tools="mdph"></div>
+      </div>
+      <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
+      <div class="result-body" id="m-out"></div>
+      <div class="complete-box" data-complete="mdph"></div>
+    </div>
+  </section>
+
+  <!-- ── ALD ── -->
+  <section class="view" id="view-ald">
+    <h1 class="page-title">Protocole de soins ALD</h1>
+    <p class="page-sub">Rédigez le volet médecin traitant du protocole ALD (Cerfa 11626*07) conforme aux recommandations HAS.</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Nom du patient</label>
+        <input class="input" id="a-patient" placeholder="Ex. Mme Martin Claire" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">Affection longue durée</label>
+      <input class="input" id="a-affection" placeholder="Ex. Diabète de type 2 (ALD 8), Insuffisance cardiaque grave (ALD 5)…" />
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <span>Notes médicales</span>
+        <span class="label-opt">Diagnostic, traitements actuels, bilans à prévoir</span>
+      </label>
+      <div class="with-mic">
+        <textarea class="textarea" id="a-notes" placeholder="Éléments cliniques, résultats biologiques, traitements en cours, suivi spécialisé…"></textarea>
+        <button type="button" class="mic-btn" data-mic="a-notes" title="Dictée vocale">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+      </div>
+      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" data-gen="ald">
+        <span class="btn-label">Générer le protocole ALD</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="a-error"></div>
+
+    <div class="result" id="a-result">
+      <div class="result-head">
+        <span class="result-title">Protocole de soins ALD</span>
+        <div class="result-tools" data-result-tools="ald"></div>
+      </div>
+      <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
+      <div class="result-body" id="a-out"></div>
+      <div class="complete-box" data-complete="ald"></div>
+    </div>
+  </section>
+
+  <!-- ── CERTIFICAT ── -->
+  <section class="view" id="view-certificat">
+    <h1 class="page-title">Certificat médical</h1>
+    <p class="page-sub">Rédigez tout type de certificat médical conforme au Code de déontologie (art. 28 CNOM).</p>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Nom du patient</label>
+        <input class="input" id="cert-patient" placeholder="Ex. M. Bernard Paul" />
+      </div>
+      <div class="field" style="max-width:280px">
+        <label class="label">Type de certificat</label>
+        <input class="input" id="cert-type" placeholder="Ex. arrêt de travail, aptitude sportive, non contre-indication…" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <span>Éléments médicaux</span>
+        <span class="label-opt">Motif, durée, diagnostic si pertinent</span>
+      </label>
+      <div class="with-mic">
+        <textarea class="textarea" id="cert-notes" placeholder="Motif du certificat, éléments cliniques pertinents, durée si applicable (ex. arrêt 3 jours), restrictions si aptitude…"></textarea>
+        <button type="button" class="mic-btn" data-mic="cert-notes" title="Dictée vocale">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+      </div>
+      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" data-gen="certificat">
+        <span class="btn-label">Générer le certificat</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="cert-error"></div>
+
+    <div class="result" id="cert-result">
+      <div class="result-head">
+        <span class="result-title">Certificat médical</span>
+        <div class="result-tools" data-result-tools="certificat"></div>
+      </div>
+      <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
+      <div class="result-body" id="cert-out"></div>
+      <div class="complete-box" data-complete="certificat"></div>
+    </div>
+  </section>
+
+  <!-- ── ORDONNANCE ── -->
+  <section class="view" id="view-ordonnance">
+    <h1 class="page-title">Ordonnance médicale</h1>
+    <p class="page-sub">Rédigez une ordonnance structurée, conforme aux bonnes pratiques HAS/ANSM.</p>
+
+    <div class="quick-tpl-bar" id="tpl-ordonnance" style="display:none">
+      <span class="quick-tpl-label">Modèles rapides</span>
+      <div class="quick-tpl-row" id="tpl-ordonnance-row"></div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Nom du patient</label>
+        <input class="input" id="ord-patient" placeholder="Ex. M. Dupont Jean" />
+      </div>
+      <div class="field" style="max-width:200px">
+        <label class="label">Date de naissance <span class="label-opt">Optionnel</span></label>
+        <input class="input" id="ord-ddn" type="date" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <span>Médicaments à prescrire</span>
+        <span class="label-opt">Un médicament par ligne — DCI + posologie</span>
+      </label>
+      <div class="with-mic">
+        <textarea class="textarea" id="ord-medicaments" rows="7" placeholder="Ex. :&#10;Amoxicilline 1g — 1 cp 3 fois/jour pendant 7 jours&#10;Ibuprofène 400mg — 1 cp si douleur, max 3/j, ne pas dépasser 5 jours&#10;Pansement gastrique — 1 sachet matin à jeun"></textarea>
+        <button type="button" class="mic-btn" data-mic="ord-medicaments" title="Dictée vocale">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" data-gen="ordonnance">
+        <span class="btn-label">Générer l'ordonnance</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="ord-error"></div>
+
+    <div class="result" id="ord-result">
+      <div class="result-head">
+        <span class="result-title">Ordonnance médicale</span>
+        <div class="result-tools" data-result-tools="ordonnance"></div>
+      </div>
+      <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
+      <div class="result-body" id="ord-out"></div>
+      <div class="complete-box" data-complete="ordonnance"></div>
+    </div>
+  </section>
+
   <!-- ── HISTORIQUE ── -->
   <section class="view" id="view-history">
     <h1 class="page-title">Historique</h1>
     <p class="page-sub">Vos 50 derniers documents générés, stockés localement sur votre appareil.</p>
+    <div class="field" style="margin-bottom:18px">
+      <div style="position:relative">
+        <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="input" id="history-search" placeholder="Rechercher dans l'historique…" style="padding-left:38px" />
+      </div>
+    </div>
     <div id="history-container"></div>
+  </section>
+
+  <!-- ── PATIENTS ── -->
+  <section class="view" id="view-patients">
+    <h1 class="page-title">Mes patients</h1>
+    <p class="page-sub">Fiches patients réutilisables — stockées localement sur votre appareil.</p>
+
+    <div class="field-row" style="align-items:flex-end">
+      <div class="field">
+        <label class="label">Nom complet</label>
+        <input class="input" id="pt-nom" placeholder="Ex. M. Dupont Jean" />
+      </div>
+      <div class="field" style="max-width:160px">
+        <label class="label">Date de naissance</label>
+        <input class="input" id="pt-ddn" type="date" />
+      </div>
+    </div>
+    <div class="field-row" style="align-items:flex-end">
+      <div class="field">
+        <label class="label">Pathologies chroniques</label>
+        <input class="input" id="pt-patho" placeholder="Ex. HTA, Diabète T2, Insuffisance rénale..." />
+      </div>
+      <div class="field" style="max-width:180px">
+        <label class="label">Médecin traitant (si spécialiste)</label>
+        <input class="input" id="pt-mt" placeholder="Dr Nom Prénom" />
+      </div>
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn btn-primary" id="pt-add-btn">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="btn-label">Ajouter ce patient</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="pt-error" style="display:none"></div>
+
+    <div style="margin-top:24px">
+      <div class="label" style="margin-bottom:12px">Patients enregistrés</div>
+      <div id="patients-list"></div>
+    </div>
   </section>
 
   <!-- ── PROFIL ── -->
@@ -829,6 +1125,12 @@ body {
         </div>
         <div class="alert alert-error" id="profile-error"></div>
       </form>
+    </div>
+
+    <!-- Stats d'usage -->
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+      <div class="label" style="margin-bottom:16px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Statistiques d'usage</div>
+      <div id="usage-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
     </div>
   </section>
 
@@ -962,13 +1264,131 @@ function switchView(name) {
     b.classList.toggle('active', b.dataset.view === name));
   document.querySelectorAll('.view').forEach(v =>
     v.classList.toggle('active', v.id === 'view-' + name));
-  if (name === 'history') renderHistory();
+  if (name === 'patients') renderPatients();
+  if (name === 'profile') renderUsageStats();
+  if (['liaison', 'cr', 'ordonnance'].includes(name)) setTimeout(() => renderQuickTemplates(name), 0);
+  if (name === 'history') {
+    renderHistory();
+    const searchEl = document.getElementById('history-search');
+    if (searchEl && !searchEl.dataset.wired) {
+      searchEl.dataset.wired = '1';
+      searchEl.addEventListener('input', () => renderHistory(searchEl.value.trim().toLowerCase()));
+    }
+  }
   sidebar.classList.remove('open'); overlay.classList.remove('show');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 document.querySelectorAll('.side-link[data-view]').forEach(b => {
   b.addEventListener('click', () => switchView(b.dataset.view));
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+//  TEMPLATES PAR SPÉCIALITÉ — Modèles rapides pour chaque formulaire
+// ═══════════════════════════════════════════════════════════════════════
+const SPECIALTY_TEMPLATES = {
+  liaison: {
+    'Médecin généraliste': [
+      { label: 'Adressage cardio — palpitations', target: 'l-notes', text: 'Palpitations depuis ... semaines. ECG : ... PA : .../... FC : ... Pas de cardiopathie connue. Traitement : ...' },
+      { label: 'Adressage dermato — lésion suspecte', target: 'l-notes', text: 'Lésion mélanocytaire au ... Diamètre ... mm. Évolution depuis ... mois. Critères ABCDE : ...' },
+      { label: 'Adressage pneumo — toux chronique', target: 'l-notes', text: 'Toux chronique > 3 mois. Tabac : ... paquets-années. SpO2 : ... %. RXT : ...' },
+      { label: 'Adressage gastro — douleurs abdominales', target: 'l-notes', text: 'Douleurs épigastriques depuis ... Pyrosis : oui/non. Perte de poids : oui/non. ATCD : ...' },
+    ],
+    'Cardiologue': [
+      { label: 'Adressage rythmologie — FA', target: 'l-notes', text: 'Fibrillation auriculaire diagnostiquée le ... Score CHA2DS2-VASc : .../9. Holter : ... Traitement anticoagulant : ...' },
+      { label: 'Adressage post-IDM — suivi', target: 'l-notes', text: 'Post-IDM le ... Coronarographie : ... FE : ... %. Traitement actuel : ... Observance : ...' },
+    ],
+    'Pneumologue': [
+      { label: 'BPCO — adressage suivi', target: 'l-notes', text: 'BPCO GOLD ... Tabac sevré le ... EFR : VEMS/CVF ... % théorique. SpO2 : ... %. Exacerbations sur 12 mois : ...' },
+      { label: 'Asthme sévère non contrôlé', target: 'l-notes', text: 'Asthme non contrôlé malgré CSI + LABA. ACT : .../25. DEP : ... % théorique. Exacerbations : ...' },
+    ],
+    'Rhumatologue': [
+      { label: 'Adressage polyarthrite', target: 'l-notes', text: 'Polyarthrite depuis ... mois. Articulations atteintes : ... VS : ... CRP : ... FR : ... Anti-CCP : ...' },
+      { label: 'Gonalgie — suspicion méniscale', target: 'l-notes', text: 'Gonalgie depuis ... Suite à ... IRM non faite. McMurray : ... Varus/valgus : ...' },
+    ],
+    'Diabétologue': [
+      { label: 'Déséquilibre diabète T2', target: 'l-notes', text: 'Diabète T2 depuis ... HbA1c : ... %. Glycémies à jeun : ... g/L. Traitement actuel : ... Observance : ...' },
+    ],
+  },
+  cr: {
+    'Médecin généraliste': [
+      { label: 'Fièvre — enfant', target: 'c-notes', text: 'Enfant ... ans. Fièvre à ... °C depuis ... jours. ORL : ... Poumon : ... Abdomen : ... Pas de signe de gravité.' },
+      { label: 'Suivi HTA', target: 'c-notes', text: 'Suivi HTA. PA : .../... mmHg. FC : .../min. Poids : ... kg. Traitement : ... Tolérance : bonne.' },
+      { label: 'Bilan annuel', target: 'c-notes', text: 'Bilan annuel. PA : ... Poids : ... IMC : ... Cholestérol total : ... HDL : ... LDL : ... Glycémie : ...' },
+      { label: 'Consultation certificat sport', target: 'c-notes', text: 'Certificat aptitude sport. Pas de symptôme à l\'effort. Auscultation cardiaque : RAS. PA : ... Pouls : ...' },
+    ],
+    'Cardiologue': [
+      { label: 'Consultation HTA', target: 'c-notes', text: 'HTA traitée. PA assis : .../... debout : .../... FC : ... ECG : ... Auscultation : ...' },
+      { label: 'Suivi insuffisance cardiaque', target: 'c-notes', text: 'IC FE : ... %. NYHA : ... Poids : ... kg. Œdèmes : ... BNP : ... Traitement : ...' },
+    ],
+    'Psychiatre': [
+      { label: 'Consultation dépression', target: 'c-notes', text: 'Épisode dépressif depuis ... sem. PHQ-9 : .../27. Idées suicidaires : oui/non. Sommeil : ... Appétit : ... Traitement : ...' },
+      { label: 'Suivi anxiété', target: 'c-notes', text: 'Anxiété généralisée. GAD-7 : .../21. Attaques panique : oui/non. Traitement en cours : ... Observance : ...' },
+    ],
+    'Pédiatre': [
+      { label: 'Consultation nourrisson', target: 'c-notes', text: 'Nourrisson ... mois. Poids : ... kg. Taille : ... cm. PC : ... cm. Développement psychomoteur : ... Vaccins à jour : ...' },
+    ],
+  },
+  ordonnance: {
+    'Médecin généraliste': [
+      { label: 'Infection ORL — angine', target: 'ord-medicaments', text: 'Amoxicilline 1g — 1 cp 3 fois/jour — 6 jours\nParacétamol 1g — 1 cp 3 fois/jour si fièvre ou douleur\nIbuprofène 400mg — 1 cp 3 fois/jour pendant les repas si douleurs importantes (max 5 jours)' },
+      { label: 'Sinusite — antibiothérapie', target: 'ord-medicaments', text: 'Amoxicilline-acide clavulanique 1g — 1 cp 3 fois/jour — 5 jours\nParacétamol 1g — 1 cp toutes les 6h si douleur — max 4/jour\nSpray nasal isotonique — 2 pulvérisations par narine 3 fois/jour' },
+      { label: 'Cystite non compliquée', target: 'ord-medicaments', text: 'Fosfomycine trométamol 3g — 1 sachet en prise unique (le soir)\nConseils : bien s\'hydrater, vider complètement la vessie' },
+      { label: 'Renouvellement HTA + statine', target: 'ord-medicaments', text: 'Ramipril 5mg — 1 cp/jour le matin\nAmlodipine 5mg — 1 cp/jour le soir\nAtorvasta-tine 20mg — 1 cp/jour le soir\nAspégic 75mg — 1 cp/jour (si prescrit)\nRenouvellement 3 mois — non substituable si mentionné' },
+    ],
+    'Cardiologue': [
+      { label: 'Post-IDM — traitement de sortie', target: 'ord-medicaments', text: 'Aspirine 75mg — 1 cp/jour (antiagrégant plaquettaire)\nTicagrélor 90mg — 1 cp 2 fois/jour (à vie si DES)\nBisoprolol 5mg — 1 cp/jour le matin\nPérinopril 5mg — 1 cp/jour le matin\nAtorvasta-tine 40mg — 1 cp/jour le soir\nPantoprazole 20mg — 1 cp/jour le matin' },
+      { label: 'Insuffisance cardiaque FER réduite', target: 'ord-medicaments', text: 'Ramipril 5mg — 1 cp/jour (titration en cours)\nBisoprolol 5mg — 1 cp/jour\nÉplérénone 25mg — 1 cp/jour\nFurosémide 40mg — 1 cp/jour le matin si œdèmes' },
+    ],
+  },
+};
+
+function getSpecialtyKey() {
+  if (!me) return null;
+  const specs = Array.isArray(me.specialites) && me.specialites.length ? me.specialites : (me.specialite ? [me.specialite] : []);
+  const all = SPECIALTY_TEMPLATES;
+  for (const sp of specs) {
+    if (all.liaison && all.liaison[sp]) return sp;
+    if (all.cr && all.cr[sp]) return sp;
+  }
+  // fallback : partial match
+  for (const sp of specs) {
+    for (const key of Object.keys(all.liaison || {})) {
+      if (key.toLowerCase().includes(sp.toLowerCase().slice(0, 6))) return key;
+    }
+  }
+  return specs[0] || null;
+}
+
+function renderQuickTemplates(viewKey) {
+  const barId = 'tpl-' + viewKey;
+  const rowId = 'tpl-' + viewKey + '-row';
+  const bar = document.getElementById(barId);
+  const row = document.getElementById(rowId);
+  if (!bar || !row) return;
+
+  const specKey = getSpecialtyKey();
+  const bucket  = SPECIALTY_TEMPLATES[viewKey];
+  if (!bucket) return;
+
+  const templates = (specKey && bucket[specKey]) || bucket['Médecin généraliste'] || [];
+  if (!templates.length) return;
+
+  row.innerHTML = '';
+  templates.forEach(tpl => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quick-tpl-btn';
+    btn.textContent = tpl.label;
+    btn.addEventListener('click', () => {
+      const el = document.getElementById(tpl.target);
+      if (el) { el.value = tpl.text; el.focus(); el.setSelectionRange(0, 0); }
+    });
+    row.appendChild(btn);
+  });
+  bar.style.display = 'block';
+}
+
+// Les templates rapides sont rendus via renderQuickTemplates(name) depuis switchView (voir ci-dessus)
 
 // ═══════════════════════════════════════════════════════════════════════
 //  UTILS
@@ -1304,6 +1724,73 @@ const GEN = {
       if (!docText) return { err: 'Chargez d\'abord un document .txt ou .pdf.' };
       return { payload: { text: docText } };
     }
+  },
+  mdph: {
+    btnLabel: 'Générer le certificat MDPH',
+    endpoint: 'mdph',
+    errId: 'm-error', resId: 'm-result', outId: 'm-out',
+    label: 'Certificat MDPH',
+    getPatient: () => document.getElementById('m-patient').value.trim(),
+    build: () => {
+      const diagnostic = document.getElementById('m-diagnostic').value.trim();
+      const notes      = document.getElementById('m-notes').value.trim();
+      if (!diagnostic && !notes) return { err: 'Renseignez le diagnostic ou les notes médicales.' };
+      return { payload: {
+        patient:    document.getElementById('m-patient').value,
+        diagnostic,
+        notes
+      }};
+    }
+  },
+  ald: {
+    btnLabel: 'Générer le protocole ALD',
+    endpoint: 'ald',
+    errId: 'a-error', resId: 'a-result', outId: 'a-out',
+    label: 'Protocole ALD',
+    getPatient: () => document.getElementById('a-patient').value.trim(),
+    build: () => {
+      const affection = document.getElementById('a-affection').value.trim();
+      const notes     = document.getElementById('a-notes').value.trim();
+      if (!affection && !notes) return { err: "Renseignez l'affection longue durée." };
+      return { payload: {
+        patient:   document.getElementById('a-patient').value,
+        affection,
+        notes
+      }};
+    }
+  },
+  certificat: {
+    btnLabel: 'Générer le certificat',
+    endpoint: 'certificat',
+    errId: 'cert-error', resId: 'cert-result', outId: 'cert-out',
+    label: 'Certificat médical',
+    getPatient: () => document.getElementById('cert-patient').value.trim(),
+    build: () => {
+      const type  = document.getElementById('cert-type').value.trim();
+      const notes = document.getElementById('cert-notes').value.trim();
+      if (!type && !notes) return { err: 'Renseignez le type de certificat.' };
+      return { payload: {
+        patient: document.getElementById('cert-patient').value,
+        type,
+        notes
+      }};
+    }
+  },
+  ordonnance: {
+    btnLabel: "Générer l'ordonnance",
+    endpoint: 'ordonnance',
+    errId: 'ord-error', resId: 'ord-result', outId: 'ord-out',
+    label: 'Ordonnance médicale',
+    getPatient: () => document.getElementById('ord-patient').value.trim(),
+    build: () => {
+      const medicaments = document.getElementById('ord-medicaments').value.trim();
+      if (!medicaments) return { err: 'Renseignez les médicaments à prescrire.' };
+      return { payload: {
+        patient:    document.getElementById('ord-patient').value,
+        ddn:        document.getElementById('ord-ddn').value,
+        medicaments
+      }};
+    }
   }
 };
 
@@ -1374,6 +1861,18 @@ async function runGeneration(key, btn, complement, btnLabel) {
   }
 }
 
+// Raccourci Ctrl+Enter / Cmd+Enter pour générer depuis n'importe quel formulaire
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    const activeView = document.querySelector('.view.active');
+    if (!activeView) return;
+    const viewId = activeView.id.replace('view-', '');
+    const btn = document.querySelector('[data-gen="' + viewId + '"]');
+    if (btn && !btn.disabled) btn.click();
+  }
+});
+
 document.querySelectorAll('[data-gen]').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.gen;
@@ -1393,6 +1892,10 @@ const CHIP_SETS = {
 function chipsFor(key, text) {
   if (key === 'liaison') return CHIP_SETS.liaison.slice();
   if (key === 'resume')  return CHIP_SETS.resume.slice();
+  if (key === 'mdph') return ['Retentissement détaillé', 'Pronostic précisé', 'Aide humaine ajoutée', 'Aide technique ajoutée'];
+  if (key === 'ald') return ['Bilans HAS ajoutés', 'Spécialistes coordonnés', 'Durée 5 ans', 'Durée 2 ans'];
+  if (key === 'certificat') return ['Durée précisée', 'Restrictions ajoutées', 'Diagnostic mentionné', 'Remis en main propre'];
+  if (key === 'ordonnance') return ['Double exemplaire', 'Renouvellement 3 mois', 'Surveillance biologique', 'Éviter alcool', 'Avec repas'];
   if (key === 'cr') {
     const t = (text || '').toUpperCase();
     const chips = [];
@@ -1512,7 +2015,23 @@ function renderTools(key) {
     '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>');
   saveBtn.addEventListener('click', () => saveToHistory(saveBtn, cfg, key));
 
-  host.append(copyBtn, txtBtn, pdfBtn, saveBtn);
+  const printBtn = mkTool('Imprimer',
+    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg>');
+  printBtn.addEventListener('click', () => {
+    const el = document.getElementById(cfg.outId);
+    const text = (el.dataset.plain || el.textContent).trim();
+    if (!text) return;
+    const w = window.open('', '_blank');
+    w.document.write('<html><head><title>' + (GEN[key].label || 'Document') + '</title>' +
+      '<style>body{font-family:Arial,sans-serif;font-size:12pt;line-height:1.6;max-width:800px;margin:40px auto;white-space:pre-wrap}' +
+      '@media print{body{margin:20mm}}</style></head>' +
+      '<body>' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '</body></html>');
+    w.document.close();
+    w.focus();
+    setTimeout(() => { w.print(); }, 300);
+  });
+
+  host.append(copyBtn, txtBtn, pdfBtn, printBtn, saveBtn);
 }
 function mkTool(label, svg) {
   const b = document.createElement('button');
@@ -1540,7 +2059,16 @@ async function copyResult(btn, outId) {
 }
 
 function fileBaseName(cfg, key) {
-  const labelSlug = key === 'cr' ? 'compte-rendu' : key === 'liaison' ? 'lettre-liaison' : 'analyse-document';
+  const slugMap = {
+    'liaison':    'lettre-liaison',
+    'cr':         'compte-rendu',
+    'resume':     'analyse-document',
+    'mdph':       'certificat-mdph',
+    'ald':        'protocole-ald',
+    'certificat': 'certificat-medical',
+    'ordonnance': 'ordonnance',
+  };
+  const labelSlug = slugMap[key] || key;
   const patient   = slug(cfg.getPatient());
   const stamp     = new Date().toISOString().slice(0, 10);
   return labelSlug + '_' + patient + '_' + stamp;
@@ -1625,8 +2153,128 @@ function addFooter(doc, W, H, M) {
 // ═══════════════════════════════════════════════════════════════════════
 //  HISTORIQUE LOCAL (50 max, FIFO)
 // ═══════════════════════════════════════════════════════════════════════
-const HIST_KEY = 'praxi_history';
+const HIST_KEY     = 'praxi_history';
+const PATIENTS_KEY = 'praxi_patients';
 const HIST_MAX = 50;
+
+// ═══════════════════════════════════════════════════════════════════════
+//  PATIENTS — Fiches patients en localStorage
+// ═══════════════════════════════════════════════════════════════════════
+function loadPatients() {
+  try { return JSON.parse(localStorage.getItem(PATIENTS_KEY) || '[]'); }
+  catch { return []; }
+}
+function persistPatients(list) {
+  localStorage.setItem(PATIENTS_KEY, JSON.stringify(list));
+}
+
+function renderPatients() {
+  const container = document.getElementById('patients-list');
+  if (!container) return;
+  const list = loadPatients();
+  if (!list.length) {
+    container.innerHTML = '<div class="history-empty"><div style="font-size:14px;color:var(--text-muted)">Aucun patient enregistré. Ajoutez votre premier patient ci-dessus.</div></div>';
+    return;
+  }
+  container.innerHTML = list.map(p => `
+    <div class="hist-item" style="cursor:default">
+      <div class="hist-icon">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" width="18" height="18"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      </div>
+      <div class="hist-body" style="flex:1">
+        <div class="hist-type">${escapeHtml(p.nom)}</div>
+        <div class="hist-patient" style="font-size:12px">${p.ddn ? 'Né(e) le ' + escapeHtml(p.ddn) : ''}${p.patho ? ' — ' + escapeHtml(p.patho) : ''}</div>
+        ${p.mt ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">MT : ${escapeHtml(p.mt)}</div>` : ''}
+      </div>
+      <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;margin-right:8px" onclick="usePatient('${p.id}')">Utiliser</button>
+      <button class="hist-del" data-pt-del="${escapeHtml(p.id)}" title="Supprimer">×</button>
+    </div>
+  `).join('');
+
+  container.querySelectorAll('[data-pt-del]').forEach(b => {
+    b.addEventListener('click', () => {
+      persistPatients(loadPatients().filter(x => x.id !== b.dataset.ptDel));
+      renderPatients();
+    });
+  });
+}
+
+function usePatient(id) {
+  const p = loadPatients().find(x => x.id === id);
+  if (!p) return;
+  // Remplir tous les champs "patient" visibles dans la vue active
+  const activeView = document.querySelector('.view.active');
+  if (!activeView) return;
+  const patientInputs = activeView.querySelectorAll('input[id$="-patient"], input[id="m-patient"], input[id="a-patient"], input[id="cert-patient"]');
+  patientInputs.forEach(inp => { inp.value = p.nom; });
+  // Aussi remplir l-patient, c-patient si présents
+  ['l-patient','c-patient','m-patient','a-patient','cert-patient'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el && activeView.contains(el)) el.value = p.nom;
+  });
+}
+
+// Init patients view
+document.addEventListener('DOMContentLoaded', () => {}, false);
+
+document.getElementById('pt-add-btn').addEventListener('click', () => {
+  const nom   = (document.getElementById('pt-nom').value || '').trim();
+  const ddn   = (document.getElementById('pt-ddn').value || '').trim();
+  const patho = (document.getElementById('pt-patho').value || '').trim();
+  const mt    = (document.getElementById('pt-mt').value || '').trim();
+  const errEl = document.getElementById('pt-error');
+
+  if (!nom) {
+    errEl.textContent = 'Le nom du patient est requis.';
+    errEl.style.display = 'block';
+    return;
+  }
+  errEl.style.display = 'none';
+
+  const list = loadPatients();
+  list.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), nom, ddn, patho, mt, createdAt: new Date().toISOString() });
+  persistPatients(list);
+
+  document.getElementById('pt-nom').value = '';
+  document.getElementById('pt-ddn').value = '';
+  document.getElementById('pt-patho').value = '';
+  document.getElementById('pt-mt').value = '';
+
+  renderPatients();
+});
+
+function renderUsageStats() {
+  const container = document.getElementById('usage-stats');
+  if (!container) return;
+  const hist = loadHistory();
+  const typeLabels = {
+    liaison:    'Lettres de liaison',
+    cr:         'Comptes-rendus',
+    resume:     'Analyses document',
+    mdph:       'Certificats MDPH',
+    ald:        'Protocoles ALD',
+    certificat: 'Certificats médicaux',
+  };
+  const counts = {};
+  hist.forEach(it => { counts[it.type] = (counts[it.type] || 0) + 1; });
+  const total = hist.length;
+
+  const thisMonth = new Date().toISOString().slice(0, 7);
+  const monthCount = hist.filter(it => (it.createdAt || '').startsWith(thisMonth)).length;
+
+  const items = [
+    { label: 'Total documents', value: total, color: 'var(--accent)' },
+    { label: 'Ce mois-ci', value: monthCount, color: 'var(--success)' },
+    ...Object.entries(typeLabels).map(([k, l]) => ({ label: l, value: counts[k] || 0, color: 'var(--text-muted)' }))
+  ];
+
+  container.innerHTML = items.map(it =>
+    `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
+      <div style="font-size:24px;font-weight:700;color:${it.color};line-height:1">${it.value}</div>
+      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeHtml(it.label)}</div>
+    </div>`
+  ).join('');
+}
 
 function loadHistory() {
   try { return JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); }
@@ -1668,7 +2316,7 @@ function saveToHistory(btn, cfg, key) {
   setTimeout(() => { label.textContent = orig; btn.classList.remove('saved'); }, 1600);
 }
 
-function renderHistory() {
+function renderHistory(query) {
   const container = document.getElementById('history-container');
   const list = loadHistory();
 
@@ -1683,12 +2331,25 @@ function renderHistory() {
   }
 
   const icons = {
-    liaison: '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8M3 8l9-5 9 5"/></svg>',
-    cr:      '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
-    resume:  '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M9 8h6M5 19V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2z"/></svg>'
+    liaison:    '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8M3 8l9-5 9 5"/></svg>',
+    cr:         '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>',
+    resume:     '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M9 8h6M5 19V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2z"/></svg>',
+    mdph:       '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 17v-2m3 2v-4m3 4v-6M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>',
+    ald:        '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>',
+    certificat:  '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 12h6M9 16h6M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/></svg>',
+    ordonnance:  '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 12h6M9 16h3"/></svg>'
   };
 
-  container.innerHTML = '<div class="history-list">' + list.map(it =>
+  const displayList = query
+    ? list.filter(it => ((it.patient || '') + ' ' + (it.typeLabel || it.type || '') + ' ' + (it.text || '')).toLowerCase().includes(query))
+    : list;
+
+  if (query && !displayList.length) {
+    container.innerHTML = '<div class="history-empty"><div>Aucun résultat pour "' + escapeHtml(query) + '"</div></div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="history-list">' + displayList.map(it =>
     '<div class="hist-item" data-id="' + it.id + '">' +
       '<div class="hist-icon">' + (icons[it.type] || icons.cr) + '</div>' +
       '<div class="hist-body">' +
