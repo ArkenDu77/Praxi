@@ -547,6 +547,220 @@ function aiError(res, err) {
   res.status(status).json({ error: message });
 }
 
+// ─── PRAXI V2 : moteur clinique explicable ──────────────────────────────────
+// Cette première passe est volontairement déterministe : elle reste disponible
+// même si le service IA est indisponible et ne transforme jamais une suggestion
+// en fait. L'IA rédige ensuite uniquement à partir de ce contrat clinique.
+const CLINICAL_PROFILES = {
+  cardiologue: {
+    focus: ['symptômes et chronologie', 'ECG', 'facteurs de risque cardiovasculaire', 'traitements', 'syncope et dyspnée'],
+    questions: ['Début, durée et fréquence des symptômes ?', 'Survenue à l’effort ou au repos ?', 'Syncope, douleur thoracique ou dyspnée associée ?', 'ECG et constantes disponibles ?', 'Facteurs de risque cardiovasculaire ?']
+  },
+  endocrinologue: {
+    focus: ['HbA1c ou bilan hormonal', 'poids et IMC', 'traitements et observance', 'complications', 'évolution biologique'],
+    questions: ['Dernier bilan biologique et date ?', 'Poids, taille ou IMC ?', 'Traitement actuel et observance ?', 'Complications déjà recherchées ?', 'Objectif thérapeutique attendu ?']
+  },
+  neurologue: {
+    focus: ['chronologie', 'examen neurologique', 'imagerie', 'signes associés', 'traitements essayés'],
+    questions: ['Chronologie précise et mode d’installation ?', 'Déficit moteur, sensitif ou trouble de la conscience ?', 'Examen neurologique réalisé ?', 'Imagerie ou bilan déjà disponible ?', 'Traitements essayés et réponse ?']
+  },
+  pneumologue: {
+    focus: ['dyspnée et toux', 'tabagisme', 'SpO2', 'EFR et imagerie', 'traitements inhalés'],
+    questions: ['Tabagisme actuel et cumulé ?', 'Dyspnée au repos ou à l’effort ?', 'SpO2 et auscultation ?', 'EFR ou imagerie disponibles ?', 'Traitement respiratoire actuel ?']
+  },
+  gastro: {
+    focus: ['douleur et transit', 'signes d’alarme', 'biologie hépatique', 'endoscopie et imagerie', 'traitements essayés'],
+    questions: ['Localisation et rythme des symptômes ?', 'Amaigrissement, saignement ou fièvre ?', 'Transit et alimentation ?', 'Biologie, endoscopie ou imagerie ?', 'Traitements déjà essayés ?']
+  },
+  nephrologue: {
+    focus: ['créatinine et DFG', 'protéinurie', 'pression artérielle', 'ionogramme', 'médicaments néphrotoxiques'],
+    questions: ['Créatinine, DFG et évolution ?', 'Protéinurie ou hématurie ?', 'Pression artérielle ?', 'Ionogramme disponible ?', 'Traitements potentiellement néphrotoxiques ?']
+  },
+  rhumatologue: {
+    focus: ['topographie et rythme des douleurs', 'raideur', 'examen articulaire', 'syndrome inflammatoire', 'imagerie'],
+    questions: ['Rythme mécanique ou inflammatoire ?', 'Raideur matinale et durée ?', 'Examen articulaire ?', 'CRP/VS disponibles ?', 'Imagerie déjà réalisée ?']
+  },
+  psychiatre: {
+    focus: ['symptômes et durée', 'retentissement', 'risque suicidaire', 'addictions', 'traitements psychotropes'],
+    questions: ['Durée et retentissement fonctionnel ?', 'Idées suicidaires ou mise en danger ?', 'Sommeil et appétit ?', 'Consommations ou addictions ?', 'Traitements et suivi antérieurs ?']
+  },
+  gynecologue: {
+    focus: ['cycle et grossesse', 'douleur ou saignement', 'contraception', 'examen', 'imagerie et biologie'],
+    questions: ['Date des dernières règles et possibilité de grossesse ?', 'Douleur ou saignement ?', 'Contraception ?', 'Examen clinique réalisé ?', 'Échographie ou biologie disponible ?']
+  },
+  pediatre: {
+    focus: ['âge exact', 'croissance', 'développement', 'vaccinations', 'contexte familial'],
+    questions: ['Âge, poids et courbe de croissance ?', 'Développement psychomoteur ?', 'Vaccinations à jour ?', 'Alimentation et sommeil ?', 'Signes de gravité rapportés ?']
+  },
+  oncologue: {
+    focus: ['histologie et stade', 'imagerie', 'traitements reçus', 'tolérance', 'état général'],
+    questions: ['Type histologique et stade ?', 'Dernière imagerie ?', 'Traitements reçus et dates ?', 'Tolérance et toxicités ?', 'Performance status ou autonomie ?']
+  },
+  default: {
+    focus: ['motif', 'chronologie', 'antécédents', 'traitements', 'examen et résultats disponibles'],
+    questions: ['Chronologie et évolution ?', 'Antécédents pertinents ?', 'Traitements et allergies ?', 'Examen clinique et constantes ?', 'Question précise posée au destinataire ?']
+  }
+};
+
+function plainClinicalText(body = {}) {
+  return ['patient','age','ddn','motif','notes','text','diagnostic','affection','type','medicaments','medicamentsAld']
+    .map(k => typeof body[k] === 'string' ? body[k] : '').filter(Boolean).join('\n').trim();
+}
+
+function specialtyProfile(name = '') {
+  const aliases = { gastro:'gastro', hepatologue:'gastro', nephrologue:'nephrologue', rhumatologue:'rhumatologue', psychiatre:'psychiatre', gynecologue:'gynecologue', pediatre:'pediatre', oncologue:'oncologue', cancerologue:'oncologue' };
+  const normalized = name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const alias = Object.keys(aliases).find(k => normalized.includes(k));
+  const key = alias ? aliases[alias] : Object.keys(CLINICAL_PROFILES).find(k => k !== 'default' && normalized.includes(k));
+  return CLINICAL_PROFILES[key || 'default'];
+}
+
+function hasAny(text, patterns) { return patterns.some(p => p.test(text)); }
+
+function clinicalAnalysis(body = {}) {
+  const source = plainClinicalText(body);
+  const lower = source.toLowerCase();
+  const profile = specialtyProfile(body.specialiste || body.specialty || '');
+  const missing = [];
+  const questions = [];
+  const inconsistencies = [];
+  const deductions = [];
+  const suggestions = [];
+
+  const checks = [
+    ['chronologie', [/depuis|début|evolution|évolution|jour|semaine|mois|an(s)?\b/i], 'Depuis quand et avec quelle évolution ?'],
+    ['traitements', [/traitement|sous\s|mg\b|comprim|médicament|therapie|thérapie/i], 'Quels sont les traitements actuels et leur tolérance ?'],
+    ['allergies', [/allerg/i], 'Des allergies médicamenteuses sont-elles connues ?'],
+    ['examen clinique ou constantes', [/examen|tension|\bpa\b|\bfc\b|spo2|saturation|poids|taille|imc|auscult/i], 'Quels éléments d’examen ou constantes sont disponibles ?']
+  ];
+  checks.forEach(([label, patterns, question]) => {
+    if (!hasAny(source, patterns)) { missing.push(label); questions.push(question); }
+  });
+  if (!body.patient && !/patient|monsieur|madame|\bm\.|mme/i.test(source)) missing.push('identité ou repère patient');
+  if (!body.motif && !/motif|adress|avis|pour\s/i.test(source) && body.documentType === 'liaison') {
+    missing.push('motif d’adressage'); questions.push('Quelle est la question clinique précise posée au spécialiste ?');
+  }
+
+  if (/douleur(s)? thoracique/i.test(source)) {
+    questions.push('Irradiation, effort/repos, durée et dyspnée associée ?');
+    suggestions.push({ id: 'ecg', label: 'Discuter un ECG selon le contexte', rationale: 'Douleur thoracique rapportée', category: 'examen', confidence: 94 });
+  }
+  if (/palpitation/i.test(source)) {
+    deductions.push('Un avis cardiologique est pertinent au regard des palpitations rapportées.');
+    if (/ecg[^\n.]*normal|ecg\s*normal/i.test(source))
+      deductions.push('Un ECG intercritique normal n’exclut pas un trouble rythmique intermittent.');
+    if (/pas de syncope|sans syncope|absence de syncope/i.test(source))
+      deductions.push('L’absence de syncope rapportée est un élément rassurant, sans exclure une cause rythmique.');
+    suggestions.push({ id: 'holter', label: 'Discuter un Holter ECG', rationale: /ecg[^\n.]*normal|ecg\s*normal/i.test(source) ? 'Palpitations persistantes avec ECG intercritique normal' : 'Palpitations rapportées', category: 'examen', confidence: /depuis|mois|semaine/i.test(source) ? 96 : 86 });
+    suggestions.push({ id: 'cardio', label: 'Discuter un avis cardiologique', rationale: 'Symptomatologie rythmique rapportée', category: 'orientation', confidence: 91 });
+    suggestions.push({ id: 'echo', label: 'Discuter une échographie cardiaque', rationale: 'À apprécier selon l’examen clinique, les antécédents et les facteurs de risque', category: 'examen', confidence: 71 });
+  }
+  if (/diab[eè]te/i.test(source) && /hba1c\s*(?:[:=]?\s*)?(8(?:[.,]\d)?|9(?:[.,]\d)?|1\d)/i.test(source)) {
+    deductions.push('L’HbA1c rapportée suggère un équilibre glycémique insuffisant.');
+    suggestions.push({ id: 'diabeto', label: 'Discuter une réévaluation thérapeutique', rationale: 'HbA1c élevée rapportée', category: 'prise_en_charge', confidence: 92 });
+  }
+  if (/femme|enceinte|grossesse/i.test(source) && /hypertrophie\s+prostat|ad[eé]nome\s+prostat/i.test(source))
+    inconsistencies.push('Sexe/contexte de grossesse incompatible avec une pathologie prostatique rapportée.');
+  if (/allerg[^\n.]*p[eé]nicill|allerg[^\n.]*amoxicill/i.test(source) && /amoxicilline/i.test(source))
+    inconsistencies.push('Amoxicilline mentionnée malgré une allergie rapportée aux pénicillines : vérifier avant prescription.');
+  if (/enceinte|grossesse/i.test(source) && /isotr[eé]tino[iï]ne|valproate/i.test(source))
+    inconsistencies.push('Traitement potentiellement incompatible avec une grossesse rapportée : vérification urgente requise.');
+  if (/anticoagul|apixaban|rivaroxaban|warfarine|fluindione/i.test(source) && /ibuprof[eè]ne|k[eé]toprof[eè]ne|naprox[eè]ne|ains\b/i.test(source))
+    inconsistencies.push('Association anticoagulant/AINS rapportée : risque hémorragique à vérifier.');
+  const age = Number((String(body.age || '').match(/\d{1,3}/) || [])[0]);
+  const infarctAge = Number((source.match(/infarctus[^\n.]*?(?:à|a)\s*(\d{1,3})\s*ans/i) || [])[1]);
+  if (infarctAge && infarctAge < 15) inconsistencies.push(`Antécédent d’infarctus à ${infarctAge} ans : vérifier l’âge et la formulation.`);
+  if (age && (age < 0 || age > 115)) inconsistencies.push('Âge impossible ou très improbable.');
+  const dates = [...source.matchAll(/\b(\d{2})\/(\d{2})\/(\d{4})\b/g)];
+  dates.forEach(m => { if (+m[1] > 31 || +m[2] > 12) inconsistencies.push(`Date impossible détectée : ${m[0]}.`); });
+
+  const alreadyAnswered = q => {
+    if (source.toLowerCase().includes(q.toLowerCase())) return true;
+    if (/ECG/i.test(q) && /\becg\b/i.test(source)) return true;
+    if (/syncope/i.test(q) && /syncope/i.test(source)) return true;
+    if (/début|durée|chronologie/i.test(q) && /depuis|début|jour|semaine|mois|an(s)?\b/i.test(source)) return true;
+    if (/traitement/i.test(q) && /traitement|sous\s|mg\b|comprim|médicament/i.test(source)) return true;
+    if (/allerg/i.test(q) && /allerg/i.test(source)) return true;
+    if (/constante|SpO2|pression artérielle/i.test(q) && /tension|\bpa\b|\bfc\b|spo2|saturation/i.test(source)) return true;
+    return false;
+  };
+  profile.questions.forEach(q => { if (questions.length < 7 && !questions.includes(q) && !alreadyAnswered(q)) questions.push(q); });
+  const filteredQuestions = [...new Set(questions)].filter(q => !alreadyAnswered(q));
+  const complexity = source.length > 1800 || inconsistencies.length > 0 || suggestions.length >= 3 ? 'detaille'
+    : source.length < 450 && suggestions.length < 2 ? 'express' : 'standard';
+  const confidenceBreakdown = [{ label: 'Dossier clinique initial', value: 45 }];
+  if (body.motif || /palpitation|douleur|dyspn[eé]e|diab[eè]te|suivi|contr[oô]le/i.test(source)) confidenceBreakdown.push({ label: 'Motif ou symptômes décrits', value: 20 });
+  if (/depuis|début|jour|semaine|mois|an(s)?\b/i.test(source)) confidenceBreakdown.push({ label: 'Chronologie disponible', value: 10 });
+  if (/\becg\b|examen|tension|\bpa\b|\bfc\b|spo2|saturation/i.test(source)) confidenceBreakdown.push({ label: 'Examen ou résultat disponible', value: 15 });
+  if (missing.includes('traitements')) confidenceBreakdown.push({ label: 'Traitements non précisés', value: -10 });
+  if (missing.includes('allergies')) confidenceBreakdown.push({ label: 'Allergies non précisées', value: -7 });
+  if (missing.includes('examen clinique ou constantes')) confidenceBreakdown.push({ label: 'Constantes ou examen incomplets', value: -10 });
+  if (source.length < 40) confidenceBreakdown.push({ label: 'Informations très brèves', value: -10 });
+  inconsistencies.forEach(() => confidenceBreakdown.push({ label: 'Incohérence à vérifier', value: -20 }));
+  let confidence = confidenceBreakdown.reduce((sum, item) => sum + item.value, 0);
+  confidence = Math.max(20, Math.min(98, confidence));
+
+  const facts = source.split(/\n|(?<=[.!?])\s+/).map(x => x.trim()).filter(x => x.length > 2).slice(0, 12);
+  return {
+    facts, deductions, suggestions, missing: [...new Set(missing)],
+    questions: filteredQuestions.slice(0, 7), inconsistencies: [...new Set(inconsistencies)],
+    confidence,
+    confidenceBreakdown,
+    recommendedLength: complexity,
+    specialtyFocus: profile.focus
+  };
+}
+
+function stripPraxiArtifacts(text) {
+  if (!text || typeof text !== 'string') return text;
+  return text
+    .replace(/\n-{2,}\s*\n\s*ANALYSE\s+DE\s+PRAXI[\s\S]*$/i, '')
+    .replace(/\n\s*ANALYSE\s+DE\s+PRAXI[\s\S]*$/i, '')
+    .trim();
+}
+
+function finalizeDocument(text) {
+  return stripPraxiArtifacts(text);
+}
+
+function clinicalGenerationRules(req, documentType) {
+  const mode = ['express','standard','detaille'].includes(req.body.mode) ? req.body.mode : 'standard';
+  const lengths = { express: 'EXPRESS : 5 à 8 lignes, lecture en moins de 20 secondes', standard: 'STANDARD : 10 à 15 lignes', detaille: 'DÉTAILLÉ : complet mais sans répétition' };
+  const style = s(req.body.stylePreference, 300) || 'professionnel, direct et sobre';
+  const accepted = Array.isArray(req.body.acceptedSuggestions) ? req.body.acceptedSuggestions.map(x => s(x, 300)).filter(Boolean) : [];
+  const analysis = req.body.clinicalAnalysis && typeof req.body.clinicalAnalysis === 'object' ? req.body.clinicalAnalysis : {};
+  const focus = Array.isArray(analysis.specialtyFocus) ? analysis.specialtyFocus.map(x => s(x, 120)).filter(Boolean).slice(0, 8) : [];
+  const deductions = Array.isArray(analysis.deductions) ? analysis.deductions.map(x => s(x, 300)).filter(Boolean).slice(0, 8) : [];
+  const unresolved = Array.isArray(analysis.inconsistencies) ? analysis.inconsistencies.map(x => s(x, 300)).filter(Boolean).slice(0, 8) : [];
+  return `\nCONTRAT DE SÉCURITÉ CLINIQUE PRAXI V2 (${documentType}) :\n` +
+    `Longueur : ${lengths[mode]}. Style du praticien : ${style}.\n` +
+    "Le document produit doit être exclusivement le document médical final, prêt à être signé et transmis. " +
+    "N'écris JAMAIS de section 'ANALYSE DE PRAXI', de mention de Praxi, ni de méta-commentaire sur la génération, les suggestions non retenues ou les informations manquantes. " +
+    "Sépare strictement les faits fournis des déductions : seuls les faits et déductions validées entrent dans le corps du document, en prose médicale continue. " +
+    "Les suggestions explicitement validées par le médecin s'intègrent naturellement dans une ou deux phrases cliniques du texte (ex. 'Un Holter ECG pourrait être utile si vous le jugez indiqué'), jamais dans une rubrique séparée. " +
+    "S'il n'y a aucune suggestion validée, n'ajoute strictement rien à ce sujet. " +
+    "Ne transforme jamais une suggestion en prescription, diagnostic, examen réalisé ou résultat. N'invente jamais âge, sexe, poids, IMC, antécédent, traitement, constante, résultat, interprétation d'ECG, diagnostic ou examen. " +
+    "Les jetons PATIENT_CONFIDENTIEL et AGE_PATIENT représentent des données disponibles mais masquées : recopie-les strictement à chaque emplacement naturel du nom et de l'âge, sans les reformuler et sans écrire 'Information non renseignée' à leur place. " +
+    "Si une autre donnée manque, omets naturellement la phrase ou la rubrique au lieu de répéter 'Information non renseignée', sauf champ légal strictement obligatoire. N'utilise aucune valeur chiffrée absente des données source. " +
+    `Éléments attendus par la spécialité destinataire : ${focus.length ? focus.join(' ; ') : 'non spécifiés'}. Ne les présente que s'ils figurent dans la source.\n` +
+    `Déductions identifiées (à formuler comme interprétations cliniques dans le texte, jamais comme faits établis) : ${deductions.length ? deductions.join(' ; ') : 'aucune'}.\n` +
+    `Incohérences non résolues : ${unresolved.length ? unresolved.join(' ; ') : 'aucune'}. Si elles sont présentes, signale qu'elles doivent être vérifiées sans choisir arbitrairement une version.\n` +
+    `Suggestions validées par le médecin (à intégrer dans le corps du texte uniquement) : ${accepted.length ? accepted.join(' ; ') : 'aucune'}.\n`;
+}
+
+function documentSafety(document, source, user) {
+  const allowed = `${source}\n${medecinContext(user)}\n${new Date().getFullYear()}`;
+  const values = [...new Set((document.match(/\b\d+(?:[.,]\d+)?\b/g) || []))];
+  const unsupportedNumbers = values.filter(n => !allowed.includes(n));
+  return { checked: true, unsupportedNumbers, requiresReview: unsupportedNumbers.length > 0 };
+}
+
+app.post('/api/clinical/analyze', authenticateJWT, (req, res) => {
+  const source = plainClinicalText(req.body);
+  if (!source) return res.status(400).json({ error: 'Ajoutez des informations cliniques à analyser.' });
+  res.json({ analysis: clinicalAnalysis(req.body) });
+});
+
 // POST /api/generate/liaison — lettre de liaison vers un spécialiste
 app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
   const patient     = txt(req.body.patient, 500);
@@ -565,23 +779,28 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
     `Tu es un médecin expert en ${specialiteRedacteur}, exerçant en libéral en France. ` +
     "Tu rédiges une lettre de liaison confraternelle destinée à un confrère spécialiste, " +
     "comme tu l'écrirais toi-même dans ta pratique quotidienne. " +
-    "Enrichis la lettre avec tes connaissances cliniques : évoque les éléments sémiologiques " +
+    "Structure la lettre avec rigueur clinique : évoque uniquement les éléments sémiologiques fournis " +
     "pertinents pour la spécialité du destinataire, les comorbidités à signaler, les traitements " +
     "en cours et leur tolérance, les examens déjà réalisés et leurs résultats. " +
     "N'invente aucune information absente des notes — mais valorise et structure ce qui est fourni " +
     "avec la précision d'un médecin expérimenté. " +
+    "Conserve systématiquement toutes les précisions utiles du motif et des notes : durée, évolution, circonstances, éléments positifs et négatifs, examens et résultats. Ne réduis jamais 'palpitations depuis trois mois, au repos' à la seule mention 'palpitations'. " +
+    "Ajoute une unique phrase de synthèse clinique expliquant pourquoi l'avis spécialisé est pertinent, fondée seulement sur les faits et interprétations validées. Exemple de ton : 'Compte tenu de la persistance des symptômes malgré un ECG intercritique normal, je sollicite votre avis spécialisé afin de compléter le bilan si vous le jugez indiqué.' " +
+    "Ne présente jamais l'absence d'un symptôme comme un résultat d'examen clinique : écris 'Aucune syncope n'est rapportée', pas 'L'examen clinique ne met pas en évidence de syncope'. " +
     "RÈGLE ABSOLUE SUR LE NOM DU PATIENT : utilise toujours le prénom et/ou nom exact fourni. " +
     "N'écris JAMAIS 'Monsieur' ou 'Madame' seul sans faire suivre immédiatement du nom complet. " +
     "N'écris JAMAIS 'le patient' ou 'la patiente' dans la lettre — remplace systématiquement " +
     "par le nom réel. " +
     enteteConsigne(req.user) +
+    clinicalGenerationRules(req, 'lettre de liaison') +
     "FORMAT : prose fluide en paragraphes continus. N'utilise JAMAIS de Markdown : pas " +
     "d'astérisques (* ou **), pas de dièses (#), pas de tirets de liste, pas de puces. " +
     "Les titres (OBJET, etc.) s'écrivent en majuscules sans aucun caractère de formatage. " +
     "Sections séparées par des sauts de ligne. " +
     "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
-    "Si une information est absente, omets simplement la section — n'écris JAMAIS " +
-    "'Non renseigné', 'Non précisé', 'À compléter' ou équivalent. " +
+    "Si une information est absente, omets naturellement la phrase ou la rubrique. " +
+    "Écris dans un style direct : 'Les palpitations évoluent depuis…', 'L’ECG réalisé au cabinet est normal'. Évite 'À l’anamnèse', 'est revenu dans les limites de la normale' et les périphrases. " +
+    "INTERDICTION ABSOLUE : n'écris jamais 'ANALYSE DE PRAXI', ne sépare pas le document par '---', et n'ajoute aucun commentaire méta sur les suggestions ou informations manquantes. La lettre s'arrête à la formule de politesse et la signature. " +
     "N'ajoute aucun commentaire hors de la lettre.";
 
   const user =
@@ -592,8 +811,8 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
     (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '');
 
   try {
-    const document = await generateDocument({ system, user, maxTokens: 1500 });
-    res.json({ document });
+    const document = finalizeDocument(await generateDocument({ system, user, maxTokens: 1500 }));
+    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
   } catch (err) {
     aiError(res, err);
   }
@@ -619,6 +838,7 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
        "consultation douleur structuré selon les recommandations HAS 2024. " +
        "Style télégraphique médical concis — pas de phrases complètes, aller droit au but. " +
        enteteConsigne(req.user) +
+       clinicalGenerationRules(req, 'compte-rendu de consultation') +
        "Sections dans cet ordre exact, chaque titre en MAJUSCULES suivi de deux-points :\n" +
        "MOTIF DE CONSULTATION : patient, âge, contexte d'adressage, type et topographie de douleur.\n" +
        "ÉVALUATION DE LA DOULEUR :\n" +
@@ -644,17 +864,17 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
        "RÈGLES ABSOLUES : si des valeurs d'échelles sont mentionnées dans les notes " +
        "(ex. 'EVA 7', 'DN4 positif'), intègre-les dans la section ÉVALUATION. " +
        "Si une valeur n'est pas mentionnée, écris '— à coter' à la place. " +
-       "N'écris JAMAIS 'Non renseigné', 'Non précisé' ou équivalent. " +
+       "Si une valeur manque, omets-la sans créer de rubrique artificielle. " +
        "FORMAT : n'utilise JAMAIS de Markdown (pas d'astérisques, pas de dièses). " +
        "Sections séparées par des sauts de ligne. N'ajoute aucun commentaire hors du compte-rendu.")
     : (`Tu es un médecin expert en ${specialiteRedacteurCR}, exerçant en libéral en France. ` +
        "À partir de notes brutes de consultation, rédige un compte-rendu structuré et cliniquement " +
        "enrichi, comme tu le ferais dans ta pratique. Mobilise tes connaissances de spécialité pour " +
-       "compléter le raisonnement clinique : précise les hypothèses diagnostiques pertinentes, les " +
-       "éléments d'examen attendus pour cette présentation, les recommandations HAS applicables, " +
-       "et une conduite à tenir adaptée à la spécialité et au contexte. " +
-       "N'invente aucune donnée absente — enrichis et structure ce qui est fourni. " +
+       "expliciter le raisonnement clinique à partir des seuls faits fournis. Les hypothèses et " +
+       "propositions validées doivent rester clairement étiquetées comme telles. " +
+       "N'invente aucune donnée absente — structure uniquement ce qui est fourni. " +
        enteteConsigne(req.user) +
+       clinicalGenerationRules(req, 'compte-rendu de consultation') +
        "Organise le compte-rendu avec exactement ces sections dans cet ordre, chaque titre en " +
        "MAJUSCULES suivi de deux-points : " +
        "MOTIF DE CONSULTATION :, " +
@@ -664,8 +884,7 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
        "CONDUITE À TENIR : (traitements avec posologie complète si pertinent, examens complémentaires, orientations), " +
        "SURVEILLANCE :, " +
        "ÉDUCATION THÉRAPEUTIQUE / CONSEILS : (si applicable). " +
-       "Omets entièrement toute section pour laquelle aucune information n'est disponible — " +
-       "n'écris ni le titre ni le contenu, et n'écris JAMAIS 'Non renseigné', 'Non précisé' ou équivalent. " +
+       "Omets toute rubrique sans donnée disponible. " +
        "Sous chaque titre, écris en prose (phrases continues), jamais sous forme de liste à puces. " +
        "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques, pas de dièses, pas de tirets de liste. " +
        "Sépare les sections par des sauts de ligne. N'ajoute aucun commentaire hors du compte-rendu.");
@@ -677,8 +896,8 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
     (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '');
 
   try {
-    const document = await generateDocument({ system, user, maxTokens: 1800 });
-    res.json({ document });
+    const document = finalizeDocument(await generateDocument({ system, user, maxTokens: 1800 }));
+    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
   } catch (err) {
     aiError(res, err);
   }
@@ -696,28 +915,26 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
   const specialiteRedacteurRes = (req.user && req.user.specialite) || 'médecine générale';
   const system =
     `Tu es un médecin expert en ${specialiteRedacteurRes}, exerçant en libéral en France. ` +
-    "Analyse le document médical fourni et produis exactement trois sections dans cet ordre, " +
-    "chaque titre en MAJUSCULES suivi de deux-points : RÉSUMÉ :, POINTS CLÉS :, ACTIONS SUGGÉRÉES :. " +
-    "Sous RÉSUMÉ : 3 à 5 phrases en prose synthétisant les éléments essentiels du document. " +
-    "Sous POINTS CLÉS : chaque point sur sa propre ligne, en texte simple, sans tiret ni puce, " +
-    "en mettant en avant ce qui est cliniquement significatif pour ta spécialité. " +
-    "Sous ACTIONS SUGGÉRÉES : enrichis avec tes connaissances cliniques — propose des actions " +
-    "concrètes et adaptées au contexte (suivi biologique, orientation spécialisée, ajustement " +
-    "thérapeutique, éducation patient, etc.), une action par ligne, en texte simple. " +
-    "N'invente aucune donnée absente du document ; les actions suggérées sont des propositions " +
-    "cliniques fondées sur les données fournies et les recommandations en vigueur. " +
+    "Analyse le document médical fourni et distingue strictement les informations dans trois sections : " +
+    "FAITS :, DÉDUCTIONS :, SUGGESTIONS VALIDÉES :. " +
+    "Sous FAITS : reprends uniquement les éléments explicitement présents dans le document. " +
+    "Sous DÉDUCTIONS : indique uniquement les interprétations logiques, formulées avec prudence. " +
+    "Sous SUGGESTIONS VALIDÉES : reprends exclusivement les propositions préalablement validées par le médecin. " +
+    "Si aucune suggestion n'a été validée, écris 'Aucune suggestion validée'. " +
+    "N'invente aucune donnée absente du document. " +
     medecinContext(req.user) +
+    clinicalGenerationRules(req, 'analyse de document') +
     "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques (* ou **), pas de dièses (#), " +
     "pas de tirets de liste. Sépare les sections par des sauts de ligne. " +
     "N'écris jamais de champ vide entre crochets. " +
-    "Si une section est vide, omets-la entièrement — n'écris JAMAIS 'Non renseigné' ou équivalent.";
+    "Omets toute information absente au lieu d'ajouter une mention artificielle.";
 
   const user = `Document médical à analyser :\n\n${document}\n` +
     (complement ? `\nÉléments additionnels à intégrer / actions retenues par le médecin : ${complement}\n` : '');
 
   try {
-    const result = await generateDocument({ system, user, maxTokens: 1500 });
-    res.json({ document: result });
+    const result = finalizeDocument(await generateDocument({ system, user, maxTokens: 1500 }));
+    res.json({ document: result, safety: documentSafety(result, plainClinicalText(req.body), req.user) });
   } catch (err) {
     aiError(res, err);
   }
@@ -798,8 +1015,9 @@ app.post('/api/generate/mdph', authenticateJWT, async (req, res) => {
     `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
     "Tu rédiges un certificat médical destiné à la MDPH, conforme au Cerfa 15695*01. " +
     "Sois précis sur le retentissement fonctionnel dans la vie quotidienne. " +
-    "N'invente aucune information absente des notes — enrichis et structure ce qui est fourni. " +
+    "N'invente aucune information absente des notes — structure uniquement ce qui est fourni. " +
     enteteConsigne(req.user) +
+    clinicalGenerationRules(req, 'certificat MDPH') +
     "Sections en MAJUSCULES suivi de deux-points :\n" +
     "DIAGNOSTIC PRINCIPAL :\n(Pathologie, éléments diagnostiques, CIM-10, facteurs de gravité)\n\n" +
     "PATHOLOGIES ASSOCIÉES :\n(Comorbidités pertinentes — omets si aucune)\n\n" +
@@ -807,7 +1025,7 @@ app.post('/api/generate/mdph', authenticateJWT, async (req, res) => {
     "TRAITEMENTS EN COURS :\n(Médicaments, rééducation, hospitalisations)\n\n" +
     "PRONOSTIC :\n(Évolution, caractère permanent/temporaire)\n\n" +
     "BESOINS EN COMPENSATION :\n(Aide humaine, technique, aménagement — si applicable)\n\n" +
-    "FORMAT : pas de Markdown. Sections séparées par sauts de ligne. Jamais de champ vide ni 'Non renseigné'.";
+    "FORMAT : pas de Markdown. Omets les rubriques sans donnée disponible.";
 
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
@@ -816,8 +1034,8 @@ app.post('/api/generate/mdph', authenticateJWT, async (req, res) => {
     (complement ? `\nElements additionnels : ${complement}\n` : '');
 
   try {
-    const document = await generateDocument({ system, user, maxTokens: 2000 });
-    res.json({ document });
+    const document = finalizeDocument(await generateDocument({ system, user, maxTokens: 2000 }));
+    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
   } catch (err) { aiError(res, err); }
 });
 
@@ -837,8 +1055,9 @@ app.post('/api/generate/ald', authenticateJWT, async (req, res) => {
     `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
     "Tu rédiges le volet médecin traitant d'un protocole de soins ALD conforme au Cerfa 11626*07 et aux recommandations HAS. " +
     "Destiné au médecin conseil AM pour accord de prise en charge à 100%. Sois précis et exhaustif. " +
-    "N'invente aucune information — enrichis avec les recommandations HAS pour cette affection. " +
+    "N'invente aucune information. Les recommandations HAS ne peuvent apparaître que comme suggestions validées par le médecin. " +
     enteteConsigne(req.user) +
+    clinicalGenerationRules(req, 'protocole ALD') +
     "Sections en MAJUSCULES suivi de deux-points :\n" +
     "AFFECTION LONGUE DURÉE :\n(Numéro ALD si connu, intitulé exact selon liste ALD 30)\n\n" +
     "DIAGNOSTIC :\n(Diagnostic précis, éléments cliniques/paracliniques, CIM-10)\n\n" +
@@ -859,8 +1078,8 @@ app.post('/api/generate/ald', authenticateJWT, async (req, res) => {
     (complement ? `\nElements additionnels : ${complement}\n` : '');
 
   try {
-    const document = await generateDocument({ system, user, maxTokens: 2000 });
-    res.json({ document });
+    const document = finalizeDocument(await generateDocument({ system, user, maxTokens: 2000 }));
+    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
   } catch (err) { aiError(res, err); }
 });
 
@@ -897,6 +1116,7 @@ app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
     "Objectif, précis, limité aux éléments médicaux nécessaires. N'invente rien — base-toi uniquement sur les éléments fournis. " +
     legalNote +
     enteteConsigne(req.user) +
+    clinicalGenerationRules(req, 'certificat médical') +
     "Structure exacte :\n" +
     "En-tête médecin\n" +
     "[Ville], le [date du jour]\n\n" +
@@ -906,7 +1126,7 @@ app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
     "Certificat établi à la demande de l'intéressé(e) et remis en main propre, pour valoir ce que de droit.\n\n" +
     "Signature\n\n" +
     "FORMAT : prose fluide, pas de Markdown. " +
-    "N'écris jamais de champs vides entre crochets si l'information est absente — omets simplement le champ.";
+    "Omets les champs absents, sauf mention légalement obligatoire.";
 
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
@@ -915,8 +1135,8 @@ app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
     (complement ? `\nÉléments additionnels : ${complement}\n` : '');
 
   try {
-    const document = await generateDocument({ system, user, maxTokens: 1200 });
-    res.json({ document });
+    const document = finalizeDocument(await generateDocument({ system, user, maxTokens: 1200 }));
+    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
   } catch (err) { aiError(res, err); }
 });
 // POST /api/generate/ordonnance — ordonnance médicale structurée (standard ou bizone ALD)
@@ -940,7 +1160,7 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
     "Stupéfiants ou liste I/II : quantité obligatoirement en toutes lettres. " +
     "N'invente aucune posologie non fournie — utilise uniquement ce que le médecin indique. " +
     "FORMAT : texte brut, aucun Markdown. " +
-    "N'écris jamais de champs vides entre crochets si l'information est absente — omets simplement le champ.";
+    "Omets les champs absents, sauf mention légalement obligatoire.";
 
   let system, userMsg;
 
@@ -952,6 +1172,7 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
       "ZONE HAUTE (en rapport avec l'ALD) : médicaments pris en charge à 100% par l'Assurance Maladie. " +
       "ZONE BASSE (sans rapport avec l'ALD) : médicaments à la charge habituelle du patient. " +
       enteteConsigne(req.user) +
+      clinicalGenerationRules(req, 'ordonnance bizone') +
       "Structure EXACTE de l'ordonnance bizone :\n" +
       "ORDONNANCE BIZONE\n" +
       "Date : [date du jour]\n" +
@@ -980,6 +1201,7 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
       `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
       "Tu rédiges une ordonnance médicale complète et conforme aux bonnes pratiques françaises (HAS, ANSM). " +
       enteteConsigne(req.user) +
+      clinicalGenerationRules(req, 'ordonnance') +
       "Structure exacte :\n" +
       "ORDONNANCE MÉDICALE\n" +
       "Date : [date du jour]\n" +
@@ -997,8 +1219,8 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
   }
 
   try {
-    const document = await generateDocument({ system, user: userMsg, maxTokens: 1800 });
-    res.json({ document });
+    const document = finalizeDocument(await generateDocument({ system, user: userMsg, maxTokens: 1800 }));
+    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
   } catch (err) { aiError(res, err); }
 });
 
@@ -1030,3 +1252,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.finalizeDocument = finalizeDocument;

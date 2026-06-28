@@ -516,6 +516,19 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 0ms !important; }
 }
+.generation-settings{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:4px}.clinical-v2-control{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-dim)}
+.clinical-v2-control .select{width:auto;min-width:150px;padding-top:8px;padding-bottom:8px;font-size:12px}
+.clinical-modal{position:fixed;inset:0;z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(2,6,10,.78);backdrop-filter:blur(5px)}.clinical-modal.show{display:flex}
+.clinical-dialog{width:min(880px,100%);max-height:92vh;overflow:auto;background:var(--bg-card);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.clinical-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:16px;padding:18px 22px;background:var(--bg-card);border-bottom:1px solid var(--border)}.clinical-head h2{font-size:18px;margin:0}.clinical-score{margin-left:auto;min-width:116px;padding:8px 12px;border-radius:10px;border:1px solid var(--accent);text-align:center}.clinical-score small{display:block;font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--text-dim)}.clinical-score strong{display:block;font-size:20px;line-height:1.2}.clinical-score em{display:block;font-style:normal;font-size:10px;color:var(--text-muted)}
+.clinical-body{padding:20px 22px}.clinical-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.clinical-block{padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px}.clinical-block.full{grid-column:1/-1}.clinical-block h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;color:var(--text-muted)}.clinical-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.clinical-alert{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.06)}
+.clinical-suggestion{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}.clinical-suggestion:last-child{border-bottom:0}.clinical-suggestion input{margin-top:3px;accent-color:var(--accent)}.clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(56,189,248,.1);color:var(--accent)}
+.confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04)}.confidence-line:last-child{border:0}.confidence-plus{color:#22c55e}.confidence-minus{color:#f59e0b}
+.quick-answer{display:flex;gap:8px;margin-top:10px}.quick-answer input{flex:1;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px 10px;font:13px Inter,sans-serif}.quick-progress{font-size:11px;color:var(--text-dim);margin-bottom:5px}
+.clinical-deduction{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:9px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}.clinical-deduction:last-child{border:0}.clinical-deduction input{margin-top:10px;accent-color:var(--accent)}.clinical-deduction textarea{width:100%;min-height:42px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:7px 8px;font:13px/1.45 Inter,sans-serif}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.3)}.mini-apply{margin-left:7px;border:1px solid rgba(56,189,248,.35);background:rgba(56,189,248,.08);color:var(--accent);border-radius:6px;padding:4px 8px;font:600 10px Inter,sans-serif;cursor:pointer}.suggestion-why{margin-top:7px;font-size:11px;color:var(--text-dim)}.suggestion-why summary{cursor:pointer;color:var(--accent)}.final-check{display:grid;gap:12px}.final-row{display:flex;justify-content:space-between;gap:20px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px}.final-row span:first-child{color:var(--text-muted)}
+.final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px Inter,sans-serif}.final-row input:focus{outline:none;border-color:var(--accent)}.praxi-verification{margin:14px 0 0;padding:13px 15px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.25);border-radius:9px}.praxi-verification strong{display:block;font-size:12px;color:#22c55e;margin-bottom:7px}.praxi-verification div{font-size:11px;color:var(--text-muted);line-height:1.7}
+.clinical-foot{position:sticky;bottom:0;display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:14px 22px;background:var(--bg-card);border-top:1px solid var(--border)}.safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
+@media(max-width:700px){.clinical-grid{grid-template-columns:1fr}.clinical-block.full{grid-column:auto}.clinical-dialog{max-height:96vh}.clinical-head{padding:14px}.clinical-body{padding:14px}.generation-settings{width:100%;margin:4px 0 0}.clinical-v2-control{flex:1}.clinical-v2-control select{width:100%}}
 </style>
 </head>
 <body>
@@ -593,6 +606,19 @@ body {
 
 <!-- ─── MAIN ─── -->
 <main class="main">
+
+  <div class="generation-settings" id="generation-settings" aria-label="Réglages du document">
+    <label class="clinical-v2-control">Longueur
+      <select class="select" id="clinical-mode">
+        <option value="auto">Automatique</option><option value="express">Express</option><option value="standard">Standard</option><option value="detaille">Détaillée</option>
+      </select>
+    </label>
+    <label class="clinical-v2-control">Mon style
+      <select class="select" id="clinical-style">
+        <option value="auto">Appris automatiquement</option><option value="synthetique">Synthétique</option><option value="direct">Direct et sobre</option><option value="telegraphique">Télégraphique médical</option><option value="detaille">Détaillé</option>
+      </select>
+    </label>
+  </div>
 
   <!-- ── LIAISON ── -->
   <section class="view active" id="view-liaison">
@@ -1314,6 +1340,7 @@ function switchView(name) {
     v.classList.toggle('active', v.id === 'view-' + name));
   if (name === 'patients') renderPatients();
   if (name === 'profile') renderUsageStats();
+  placeClinicalSettings(name);
   if (['liaison', 'cr', 'ordonnance'].includes(name)) setTimeout(() => renderQuickTemplates(name), 0);
   if (name === 'history') {
     renderHistory();
@@ -1689,7 +1716,7 @@ function pseudonymize(text, patient, age) {
       .forEach(pat => {
         anon = anon.replace(new RegExp(pat, 'gi'), () => {
           if (!substitutions.has('__patient__')) substitutions.set('__patient__', raw);
-          return 'le patient';
+          return 'PATIENT_CONFIDENTIEL';
         });
       });
   }
@@ -1699,10 +1726,9 @@ function pseudonymize(text, patient, age) {
     const m = age.trim().match(/^(\d+)/);
     if (m) {
       const n = parseInt(m[1], 10);
-      const lo = Math.floor(n / 5) * 5;
       anon = anon.replace(new RegExp('\\b' + n + '\\s*ans\\b', 'gi'), match => {
         if (!substitutions.has('__age__')) substitutions.set('__age__', match);
-        return `entre ${lo} et ${lo + 5} ans`;
+        return 'AGE_PATIENT';
       });
     }
   }
@@ -1741,6 +1767,9 @@ function resubstitute(text, substitutions, patient) {
   let out = text;
   if (patient && patient.trim()) {
     const name = patient.trim();
+    out = out.replace(/\bPATIENT_CONFIDENTIEL\b/g, name);
+    out = out.replace(/Information non renseignée\s*\(prénom et nom du patient\)/gi, name);
+    out = out.replace(/(je\s+(?:me permets de vous |vous )?adresse\s+)Information non renseignée/gi, '$1' + name);
     // Ordre du plus spécifique au plus général
     // 1. Titre + référence anonymisée combinés → nom complet
     out = out.replace(/\b(?:M\.|Mme\.?|Monsieur|Madame)\s+(?:le patient|la patiente)\b/gi, name);
@@ -1753,6 +1782,8 @@ function resubstitute(text, substitutions, patient) {
     // 5. Références directes anonymisées → nom complet
     out = out.replace(/\bla patiente\b/gi, name);
     out = out.replace(/\ble patient\b/gi, name);
+    out = out.replace(/\bune patiente\b/gi, name);
+    out = out.replace(/\bun patient\b/gi, name);
     // 6. Titre seul sans mot qui suit → "M./Mme [nom]"
     out = out.replace(/\bMonsieur\b(?!\s+[A-ZÀ-ÖÙÜa-zà-öùü])/g, `M. ${name}`);
     out = out.replace(/\bMadame\b(?!\s+[A-ZÀ-ÖÙÜa-zà-öùü])/g, `Mme ${name}`);
@@ -1761,9 +1792,20 @@ function resubstitute(text, substitutions, patient) {
     out = out.replace(/\bMme\.?(?!\s+[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ])/g, `Mme ${name}`);
   }
   for (const [k, v] of substitutions) {
+    if (k === '__age__') {
+      const exact = String(v).match(/\d{1,3}/);
+      if (exact) {
+        out = out.replace(/\bAGE_PATIENT\b/g, exact[0] + ' ans');
+        out = out.replace(/(?:l['’]âge|âge)\s+Information non renseignée/gi, 'âge de ' + exact[0] + ' ans');
+        out = out.replace(/\bentre\s+\d{1,3}\s+et\s+\d{1,3}\s+ans\b/gi, exact[0] + ' ans');
+        out = out.replace(/\b(?:âgé(?:e)?\s+de\s+)?\d{1,3}\s*[–-]\s*\d{1,3}\s+ans\b/gi, exact[0] + ' ans');
+      }
+    }
     if (k === '__nir__')   out = out.split('[numéro retiré]').join(v);
     if (k === '__addr__')  out = out.split('[adresse retirée]').join(v);
   }
+  const today = new Intl.DateTimeFormat('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(new Date());
+  out = out.replace(/Information non renseignée\s*\(date d['’]émission\)/gi, today);
   return out;
 }
 
@@ -1893,6 +1935,197 @@ const GEN = {
   }
 };
 
+// ─── PRAXI V2 : analyse clinique avant toute génération ─────────────────────
+const CLINICAL_PREFS_KEY = 'praxi_clinical_preferences';
+const lastClinicalOptions = {};
+let clinicalPending = null;
+const clinicalQuestionProgress = {};
+
+function loadClinicalPreferences() {
+  try { return JSON.parse(localStorage.getItem(CLINICAL_PREFS_KEY) || '{}'); } catch (_) { return {}; }
+}
+function learnedStyle() {
+  const history = typeof loadHistory === 'function' ? loadHistory() : [];
+  if (history.length < 10) return 'professionnel, direct et sobre';
+  const sample = history.slice(0, 30).map(x => x.text || '').filter(Boolean);
+  if (!sample.length) return 'professionnel, direct et sobre';
+  const avgLines = sample.reduce((n, x) => n + x.split(/\n/).filter(Boolean).length, 0) / sample.length;
+  const avgWords = sample.reduce((n, x) => n + x.split(/\s+/).length, 0) / sample.length;
+  if (avgLines <= 9 || avgWords < 170) return `synthétique, environ ${Math.round(avgLines)} lignes, formulations directes`;
+  if (avgLines >= 18 || avgWords > 380) return `détaillé et structuré, environ ${Math.round(avgLines)} lignes`;
+  return `professionnel et équilibré, environ ${Math.round(avgLines)} lignes`;
+}
+function selectedStyle() {
+  const value = document.getElementById('clinical-style').value;
+  const labels = { synthetique:'très synthétique, phrases courtes', direct:'professionnel, direct et sobre', telegraphique:'télégraphique médical concis', detaille:'détaillé et structuré' };
+  return value === 'auto' ? learnedStyle() : labels[value];
+}
+function initClinicalPreferences() {
+  const prefs = loadClinicalPreferences();
+  const mode = document.getElementById('clinical-mode');
+  const style = document.getElementById('clinical-style');
+  mode.value = prefs.mode || 'auto'; style.value = prefs.style || 'auto';
+  [mode, style].forEach(el => el.addEventListener('change', () => localStorage.setItem(CLINICAL_PREFS_KEY, JSON.stringify({ mode:mode.value, style:style.value }))));
+}
+initClinicalPreferences();
+
+function placeClinicalSettings(viewName) {
+  const settings = document.getElementById('generation-settings');
+  const view = document.getElementById('view-' + (viewName || 'liaison'));
+  if (!settings || !view) return;
+  const action = view.querySelector('.actions');
+  if (action) { action.appendChild(settings); settings.style.display = 'flex'; }
+  else settings.style.display = 'none';
+}
+placeClinicalSettings('liaison');
+
+function clinicalList(items, empty) {
+  return items && items.length ? '<ul>' + items.map(x => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul>' : '<div style="font-size:13px;color:var(--text-dim)">' + empty + '</div>';
+}
+
+function ensureClinicalModal() {
+  let modal = document.getElementById('clinical-modal');
+  if (modal) return modal;
+  modal = document.createElement('div'); modal.id = 'clinical-modal'; modal.className = 'clinical-modal';
+  modal.innerHTML = '<div class="clinical-dialog" role="dialog" aria-modal="true" aria-labelledby="clinical-title"><div class="clinical-head"><div><div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.08em">COPILOTE MÉDICAL</div><h2 id="clinical-title">Analyse clinique</h2></div><div class="clinical-score"><small>Complétude des informations</small><strong id="clinical-score">—</strong><em id="clinical-score-label">À évaluer</em></div></div><div class="clinical-body" id="clinical-body"></div><div class="clinical-foot"><button class="btn btn-ghost" id="clinical-cancel">Revenir aux notes</button><button class="btn btn-primary" id="clinical-continue">Vérifier avant génération</button></div></div>';
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('show'); });
+  modal.querySelector('#clinical-cancel').addEventListener('click', () => {
+    if (modal.querySelector('#clinical-continue').dataset.step === 'final' && clinicalPending) {
+      renderClinicalReview(clinicalPending.key, clinicalPending.btn, clinicalPending.label, clinicalPending.analysis, clinicalPending.sourcePayload);
+    } else modal.classList.remove('show');
+  });
+  modal.querySelector('#clinical-continue').addEventListener('click', () => {
+    if (!clinicalPending) return;
+    const continueBtn = modal.querySelector('#clinical-continue');
+    if (continueBtn.dataset.step !== 'final') {
+      clinicalPending.acceptedSuggestions = Array.from(modal.querySelectorAll('[data-clinical-suggestion]:checked')).map(x => x.value);
+      clinicalPending.reviewedDeductions = Array.from(modal.querySelectorAll('[data-clinical-deduction]:checked')).map(x => x.closest('.clinical-deduction').querySelector('textarea').value.trim()).filter(Boolean);
+      renderFinalClinicalCheck(modal); return;
+    }
+    const acceptedSuggestions = clinicalPending.acceptedSuggestions || [];
+    const reviewedDeductions = clinicalPending.reviewedDeductions || [];
+    applyFinalIdentityEdits(clinicalPending.key);
+    const modeChoice = document.getElementById('clinical-mode').value;
+    const options = {
+      mode: modeChoice === 'auto' ? clinicalPending.analysis.recommendedLength : modeChoice,
+      stylePreference: selectedStyle(), acceptedSuggestions,
+      clinicalAnalysis: Object.assign({}, clinicalPending.analysis, { deductions: reviewedDeductions })
+    };
+    lastClinicalOptions[clinicalPending.key] = options;
+    const { key, btn, label } = clinicalPending; clinicalPending = null;
+    modal.classList.remove('show'); runGeneration(key, btn, '', label, options);
+  });
+  return modal;
+}
+
+function friendlyMissing(value) {
+  const labels = { chronologie:'Chronologie et évolution', traitements:'Traitements actuels', allergies:'Allergies', 'examen clinique ou constantes':'Examen clinique et constantes', 'identité ou repère patient':'Identité du patient', 'motif d’adressage':"Motif d’adressage" };
+  return labels[value] || value.charAt(0).toUpperCase() + value.slice(1);
+}
+function confidenceBreakdownHtml(items) {
+  return (items || []).map(item => `<div class="confidence-line"><span>${escapeHtml(item.label)}</span><strong class="${item.value >= 0 ? 'confidence-plus' : 'confidence-minus'}">${item.value >= 0 ? '+' : ''}${item.value} %</strong></div>`).join('');
+}
+function deductionsHtml(items) {
+  return items && items.length ? items.map((item, index) => `<div class="clinical-deduction"><input type="checkbox" data-clinical-deduction id="deduction-${index}" checked aria-label="Conserver cette interprétation"><textarea spellcheck="true" aria-label="Modifier l’interprétation clinique">${escapeHtml(item)}</textarea></div>`).join('') : '<div style="font-size:13px;color:var(--text-dim)">Aucune interprétation nécessaire.</div>';
+}
+function renderFinalClinicalCheck(modal) {
+  const built = GEN[clinicalPending.key].build();
+  const p = built.payload || {};
+  const suggestions = clinicalPending.acceptedSuggestions || [];
+  modal.querySelector('#clinical-title').textContent = 'Vérification finale';
+  const visibleFacts = clinicalPending.analysis.facts.filter(x => x !== p.patient && x !== p.age).slice(0, 6);
+  modal.querySelector('#clinical-body').innerHTML = `<div class="clinical-block full"><h3>Ce que verra le spécialiste</h3>${clinicalList(visibleFacts,'Aucun élément clinique saillant.')}</div><div class="clinical-block full"><h3>Résumé modifiable avant génération</h3><div class="final-check">
+    <div class="final-row"><span>Nom</span><input id="final-patient" value="${escapeHtml(p.patient || '')}" aria-label="Corriger le nom du patient"></div>
+    ${'age' in p ? `<div class="final-row"><span>Âge</span><input id="final-age" value="${escapeHtml(p.age || '')}" aria-label="Corriger l’âge du patient"></div>` : ''}
+    <div class="final-row"><span>Informations recommandées non complétées</span><strong>${clinicalPending.analysis.missing.length ? clinicalPending.analysis.missing.map(friendlyMissing).join(', ') : 'Aucune'}</strong></div>
+    <div class="final-row"><span>Interprétations conservées</span><strong>${clinicalPending.reviewedDeductions.length}</strong></div>
+    <div class="final-row"><span>Suggestions intégrées</span><strong>${suggestions.length ? escapeHtml(suggestions.join(' · ')) : 'Aucune'}</strong></div>
+  </div></div>`;
+  modal.querySelector('#clinical-cancel').textContent = 'Retour à l’analyse';
+  const button = modal.querySelector('#clinical-continue'); button.textContent = 'Générer'; button.dataset.step = 'final';
+}
+function applyFinalIdentityEdits(key) {
+  const patientIds = { liaison:'l-patient', cr:'c-patient', mdph:'m-patient', ald:'a-patient', certificat:'cert-patient', ordonnance:'ord-patient' };
+  const patient = document.getElementById('final-patient');
+  const target = document.getElementById(patientIds[key]);
+  if (patient && target) target.value = patient.value.trim();
+  const age = document.getElementById('final-age');
+  if (age && key === 'liaison') document.getElementById('l-age').value = age.value.trim();
+}
+function applyRecommendedFormat(mode) {
+  const select = document.getElementById('clinical-mode');
+  if (!select) return;
+  select.value = mode;
+  select.dispatchEvent(new Event('change'));
+  const button = document.getElementById('apply-recommended-format');
+  if (button) { button.textContent = 'Appliqué'; button.disabled = true; }
+}
+function appendClinicalAnswerToForm(key, question, answer) {
+  const ids = { liaison:'l-notes', cr:'c-notes', mdph:'m-notes', ald:'a-notes', certificat:'cert-notes', ordonnance:'ord-medicaments' };
+  const el = document.getElementById(ids[key]);
+  if (el) el.value = (el.value.trim() + `\n${question} ${answer}`).trim();
+}
+async function submitQuickClinicalAnswer() {
+  if (!clinicalPending) return;
+  const input = document.getElementById('clinical-quick-input');
+  const answer = input ? input.value.trim() : '';
+  if (!answer) { if (input) input.focus(); return; }
+  const question = clinicalPending.analysis.questions[0];
+  const pending = clinicalPending;
+  if (clinicalQuestionProgress[pending.key]) clinicalQuestionProgress[pending.key].answered += 1;
+  appendClinicalAnswerToForm(pending.key, question, answer);
+  const fresh = GEN[pending.key].build();
+  if (fresh.err) return;
+  const payload = Object.assign({}, fresh.payload, { documentType: pending.key, specialty: fresh.payload.specialiste || '' });
+  const next = document.getElementById('clinical-quick-next'); setLoading(next, true);
+  try {
+    const data = await api('/api/clinical/analyze', { method:'POST', body:JSON.stringify(payload) });
+    renderClinicalReview(pending.key, pending.btn, pending.label, data.analysis, payload);
+  } catch (err) { showError(GEN[pending.key].errId, err.message); }
+}
+function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
+  const modal = ensureClinicalModal(); clinicalPending = { key, btn, label, analysis, sourcePayload };
+  const score = modal.querySelector('#clinical-score'); score.textContent = analysis.confidence + '%';
+  const scoreBox = score.parentElement; scoreBox.style.borderColor = analysis.confidence > 85 ? '#22c55e' : analysis.confidence >= 60 ? '#f59e0b' : '#ef4444';
+  document.getElementById('clinical-score-label').textContent = analysis.confidence > 85 ? 'Excellent' : analysis.confidence >= 60 ? 'Améliorable' : 'À compléter';
+  if (!clinicalQuestionProgress[key]) clinicalQuestionProgress[key] = { total: analysis.questions.length, answered: 0 };
+  const suggestions = analysis.suggestions.length
+    ? analysis.suggestions.map((s, index) => `<div class="clinical-suggestion"><input type="checkbox" id="suggestion-${index}" data-clinical-suggestion value="${escapeHtml(s.label)}"><span><label for="suggestion-${index}">${escapeHtml(s.label)}</label><small class="clinical-confidence">Confiance ${Number(s.confidence) || 70} %</small><small class="clinical-rationale">Raison : ${escapeHtml(s.rationale)}</small><details class="suggestion-why"><summary>Pourquoi cette suggestion ?</summary><div>✓ ${escapeHtml(s.rationale)}<br>✓ Proposition à confirmer selon le contexte clinique complet</div></details></span></div>`).join('')
+    : '<div style="font-size:13px;color:var(--text-dim)">Aucune suggestion automatique. Praxi n’ajoutera rien.</div>';
+  const progress = clinicalQuestionProgress[key];
+  const questions = analysis.questions.length ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>` : '<div style="font-size:13px;color:#22c55e">Analyse complétée.</div>';
+  const recommended = analysis.missing.map(friendlyMissing);
+  modal.querySelector('#clinical-body').innerHTML = `<div class="clinical-grid">
+    ${sourcePayload && sourcePayload.specialiste ? `<div class="clinical-block full"><h3>Optimisée pour : ${escapeHtml(sourcePayload.specialiste)}</h3>${clinicalList(analysis.specialtyFocus || [],'Adaptation généraliste.')}</div>` : ''}
+    <div class="clinical-block"><h3>Éléments suffisants</h3>${clinicalList(analysis.facts,'Aucun fait exploitable identifié.')}</div>
+    <div class="clinical-block"><h3>Complétude des informations · ${analysis.confidence} %</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 8px">Les informations disponibles permettent une génération correcte, mais certains éléments pourraient enrichir le courrier.</p>${confidenceBreakdownHtml(analysis.confidenceBreakdown)}<div style="margin-top:8px;font-size:12px;color:var(--accent)">Format conseillé : ${escapeHtml(analysis.recommendedLength)}<button type="button" class="mini-apply" id="apply-recommended-format">Appliquer</button></div></div>
+    <div class="clinical-block${analysis.inconsistencies.length?' clinical-alert':''}"><h3>Incohérences à vérifier</h3>${clinicalList(analysis.inconsistencies,'Aucune incohérence détectée.')}</div>
+    <div class="clinical-block"><h3>Informations recommandées avant génération</h3>${clinicalList(recommended,'Éléments essentiels présents.')}</div>
+    <div class="clinical-block"><h3>Interprétation clinique · modifiable</h3>${deductionsHtml(analysis.deductions)}</div>
+    <div class="clinical-block"><h3>Répondre rapidement</h3>${questions}</div>
+    <div class="clinical-block full"><h3>Suggestions — rien n’est ajouté sans votre accord</h3>${suggestions}</div>
+  </div>`;
+  const next = document.getElementById('clinical-quick-next'); if (next) next.addEventListener('click', submitQuickClinicalAnswer);
+  const applyFormat = document.getElementById('apply-recommended-format'); if (applyFormat) applyFormat.addEventListener('click', () => applyRecommendedFormat(analysis.recommendedLength));
+  const quickInput = document.getElementById('clinical-quick-input'); if (quickInput) quickInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickClinicalAnswer(); } });
+  modal.querySelector('#clinical-cancel').textContent = 'Revenir aux notes';
+  const continueBtn = modal.querySelector('#clinical-continue'); continueBtn.textContent = 'Vérifier avant génération'; delete continueBtn.dataset.step;
+  modal.classList.add('show');
+}
+
+async function prepareClinicalGeneration(key, btn) {
+  const cfg = GEN[key]; clearError(cfg.errId);
+  const built = cfg.build(); if (built.err) { showError(cfg.errId, built.err); return; }
+  setLoading(btn, true);
+  try {
+    const payload = Object.assign({}, built.payload, { documentType: key, specialty: built.payload.specialiste || '' });
+    const data = await api('/api/clinical/analyze', { method:'POST', body:JSON.stringify(payload) });
+    renderClinicalReview(key, btn, cfg.btnLabel, data.analysis, payload);
+  } catch (err) { showError(cfg.errId, err.message); }
+  finally { setLoading(btn, false, cfg.btnLabel); }
+}
+
 function renderResult(el, text) {
   const clean = stripMarkdown(text).trim();
   el.dataset.plain = clean;
@@ -1905,8 +2138,20 @@ function renderResult(el, text) {
     el.dataset.editBound = '1';
   }
 }
+function renderPraxiVerification(resultHost, options, safety) {
+  const old = resultHost.querySelector('.praxi-verification'); if (old) old.remove();
+  const analysis = options.clinicalAnalysis || {};
+  const box = document.createElement('div'); box.className = 'praxi-verification';
+  box.innerHTML = `<strong>Vérification Praxi</strong><div>
+    ${safety && !safety.requiresReview ? '✓ Aucune valeur chiffrée non sourcée détectée.' : '⚠ Relecture des valeurs chiffrées recommandée.'}<br>
+    ✓ ${(analysis.deductions || []).length} interprétation(s) conservée(s).<br>
+    ✓ ${(options.acceptedSuggestions || []).length} suggestion(s) intégrée(s) après validation.<br>
+    ${(analysis.missing || []).length} information(s) recommandée(s) restent non renseignée(s).
+  </div>`;
+  resultHost.appendChild(box);
+}
 
-async function runGeneration(key, btn, complement, btnLabel) {
+async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
   const cfg = GEN[key];
   clearError(cfg.errId);
 
@@ -1917,6 +2162,10 @@ async function runGeneration(key, btn, complement, btnLabel) {
   try {
     let payload = Object.assign({}, built.payload);
     if (complement) payload.complement = complement;
+    const options = clinicalOptions || lastClinicalOptions[key] || {};
+    payload.mode = options.mode || 'standard';
+    payload.stylePreference = options.stylePreference || selectedStyle();
+    payload.acceptedSuggestions = options.acceptedSuggestions || [];
     let subs = null;
     let patientOrig = '';
 
@@ -1926,14 +2175,14 @@ async function runGeneration(key, btn, complement, btnLabel) {
       const ageOrig = key === 'liaison' ? (payload.age || '') : '';
       const { anonymizedText, substitutions } = pseudonymize(payload.notes || '', patientOrig, ageOrig);
       subs = substitutions;
+      if (ageOrig) subs.set('__age__', ageOrig);
       payload.notes = anonymizedText;
-      if (patientOrig) payload.patient = 'le patient';
+      if (patientOrig) payload.patient = 'PATIENT_CONFIDENTIEL';
       if (ageOrig) {
         const m = ageOrig.match(/^(\d+)/);
         if (m) {
           const n = parseInt(m[1], 10);
-          const lo = Math.floor(n / 5) * 5;
-          payload.age = `entre ${lo} et ${lo + 5} ans`;
+          payload.age = 'AGE_PATIENT';
         }
       }
     }
@@ -1951,6 +2200,14 @@ async function runGeneration(key, btn, complement, btnLabel) {
     renderResult(outEl, out);
     renderTools(key);
     renderChips(key, outEl.dataset.plain);
+    const resultHost = document.getElementById(cfg.resId);
+    renderPraxiVerification(resultHost, options, data.safety);
+    const oldSafety = resultHost.querySelector('.safety-banner'); if (oldSafety) oldSafety.remove();
+    if (data.safety && data.safety.requiresReview) {
+      const warning = document.createElement('div'); warning.className = 'safety-banner';
+      warning.textContent = 'Vérification requise : valeur(s) numérique(s) sans correspondance directe dans la source — ' + data.safety.unsupportedNumbers.join(', ') + '. Relisez avant validation.';
+      outEl.insertAdjacentElement('afterend', warning);
+    }
     document.getElementById(cfg.resId).classList.add('show');
     document.getElementById(cfg.resId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (err) {
@@ -1976,7 +2233,7 @@ document.querySelectorAll('[data-gen]').forEach(btn => {
   btn.addEventListener('click', () => {
     const key = btn.dataset.gen;
     document.getElementById(GEN[key].resId).classList.remove('show');
-    runGeneration(key, btn, '', GEN[key].btnLabel);
+    prepareClinicalGeneration(key, btn);
   });
 });
 

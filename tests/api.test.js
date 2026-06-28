@@ -187,6 +187,86 @@ describe('Rate limiting — /api/auth/forgot-password (max 3/h)', () => {
 
 // ─── GENERATE ROUTES ───────────────────────────────────────────────────────
 
+describe('POST /api/clinical/analyze — bouclier clinique V2', () => {
+  test('refuse sans authentification', async () => {
+    await request(app).post('/api/clinical/analyze').send({ notes: 'Palpitations' }).expect(401);
+  });
+
+  test('sépare faits, déductions, suggestions et informations manquantes', async () => {
+    const res = await request(app)
+      .post('/api/clinical/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        documentType: 'liaison', patient: 'Patient test', age: '54 ans',
+        specialiste: 'Cardiologue', motif: 'Palpitations depuis 3 mois',
+        notes: 'ECG normal. Pas de syncope.'
+      })
+      .expect(200);
+    expect(res.body.analysis).toEqual(expect.objectContaining({
+      facts: expect.any(Array), deductions: expect.any(Array), suggestions: expect.any(Array),
+      missing: expect.any(Array), questions: expect.any(Array), inconsistencies: expect.any(Array),
+      confidence: expect.any(Number), recommendedLength: expect.any(String)
+    }));
+    expect(res.body.analysis.suggestions.some(x => /Holter/i.test(x.label))).toBe(true);
+    expect(res.body.analysis.suggestions.find(x => /Holter/i.test(x.label)).confidence).toBeGreaterThanOrEqual(90);
+    expect(res.body.analysis.specialtyFocus.join(' ')).toMatch(/ECG/);
+    expect(res.body.analysis.questions.join(' ')).not.toMatch(/ECG.*disponible/i);
+    expect(res.body.analysis.deductions.length).toBeGreaterThanOrEqual(3);
+    expect(res.body.analysis.confidenceBreakdown).toEqual(expect.arrayContaining([
+      expect.objectContaining({ label: expect.any(String), value: expect.any(Number) })
+    ]));
+  });
+
+  test('détecte une incohérence clinique explicite', async () => {
+    const res = await request(app)
+      .post('/api/clinical/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ notes: 'Femme enceinte suivie pour hypertrophie prostatique.' })
+      .expect(200);
+    expect(res.body.analysis.inconsistencies.length).toBeGreaterThan(0);
+    expect(res.body.analysis.confidence).toBeLessThan(80);
+  });
+
+  test('détecte une date impossible', async () => {
+    const res = await request(app)
+      .post('/api/clinical/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ notes: 'Consultation du 42/19/2026 pour douleur.' })
+      .expect(200);
+    expect(res.body.analysis.inconsistencies.join(' ')).toMatch(/Date impossible/);
+  });
+
+  test('signale une incompatibilité médicamenteuse explicite', async () => {
+    const res = await request(app)
+      .post('/api/clinical/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ notes: 'Allergie connue aux pénicillines. Prescription envisagée : amoxicilline.' })
+      .expect(200);
+    expect(res.body.analysis.inconsistencies.join(' ')).toMatch(/Amoxicilline/);
+  });
+
+  test('ne propose rien sans signal clinique reconnu', async () => {
+    const res = await request(app)
+      .post('/api/clinical/analyze')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ notes: 'Contrôle annuel stable, aucun symptôme rapporté.' })
+      .expect(200);
+    expect(res.body.analysis.suggestions).toEqual([]);
+  });
+});
+
+describe('finalizeDocument — suppression ANALYSE DE PRAXI', () => {
+  const { finalizeDocument } = require('../server');
+  const sample = `Dr Test\n\nCher Confrère,\n\nLettre de liaison.\n\nDr Test\n\n---\n\nANALYSE DE PRAXI\n\nAucune suggestion validée.`;
+
+  test('retire la section ANALYSE DE PRAXI du document final', () => {
+    const out = finalizeDocument(sample);
+    expect(out).not.toMatch(/ANALYSE DE PRAXI/i);
+    expect(out).not.toMatch(/---/);
+    expect(out).toContain('Lettre de liaison.');
+  });
+});
+
 describe('POST /api/generate/liaison', () => {
   test('refuse sans authentification', async () => {
     await request(app)

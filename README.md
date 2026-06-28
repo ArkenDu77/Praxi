@@ -94,6 +94,19 @@ curl -X PATCH http://localhost:3001/api/admin/status/1 \
 
 ## Fonctionnalités de l'application (`/app.html`)
 
+### Bouclier clinique V2
+
+Avant chaque génération, Praxi effectue une revue clinique explicable et affiche séparément :
+
+- les faits présents dans la source ;
+- les déductions prudentes ;
+- les informations manquantes et questions utiles ;
+- les incohérences simples à vérifier ;
+- les suggestions, qui ne sont intégrées qu'après validation explicite du médecin ;
+- un score de confiance expliqué et un format recommandé.
+
+Le médecin choisit un document Express, Standard ou Détaillé. Le style peut être défini manuellement ou appris localement à partir de l'historique. Le serveur impose un contrat anti-hallucination à tous les générateurs et signale les valeurs numériques sans correspondance directe dans la source.
+
 - **Authentification JWT** — vérification au chargement, redirection vers `/login.html` si absent ou expiré.
 - **Sidebar** — logo, nom du médecin, 3 modules, historique, profil, déconnexion.
 - **3 modules** — lettre de liaison, compte-rendu de consultation, résumé de document (.txt / .pdf via pdf.js).
