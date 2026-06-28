@@ -176,11 +176,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'",
+        "https://fonts.googleapis.com",
+        "https://unpkg.com",
+        "https://cdnjs.cloudflare.com",
+      ],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
+      connectSrc: ["'self'", "https://cdnjs.cloudflare.com"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
     },
@@ -789,21 +793,21 @@ app.post('/api/generate/mdph', authenticateJWT, async (req, res) => {
     return res.status(400).json({ error: 'Renseignez le diagnostic ou les notes medicales.' });
   }
 
-  const spec = (req.user && req.user.specialite) || 'medecine generale';
+  const spec = (req.user && req.user.specialite) || 'médecine générale';
   const system =
-    `Tu es un medecin expert en ${spec}, exercant en liberal en France. ` +
-    "Tu rediges un certificat medical destine a la MDPH, conforme au Cerfa 15695*01. " +
-    "Sois precis sur le retentissement fonctionnel dans la vie quotidienne. " +
+    `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
+    "Tu rédiges un certificat médical destiné à la MDPH, conforme au Cerfa 15695*01. " +
+    "Sois précis sur le retentissement fonctionnel dans la vie quotidienne. " +
     "N'invente aucune information absente des notes — enrichis et structure ce qui est fourni. " +
     enteteConsigne(req.user) +
     "Sections en MAJUSCULES suivi de deux-points :\n" +
-    "DIAGNOSTIC PRINCIPAL :\n(Pathologie, elements diagnostiques, CIM-10, facteurs gravite)\n\n" +
-    "PATHOLOGIES ASSOCIEES :\n(Comorbidites pertinentes — omets si aucune)\n\n" +
-    "RETENTISSEMENT FONCTIONNEL :\n(Impact dans les AVQ : mobilite, autonomie, communication, cognition, vie pro/sociale. Sois exhaustif et concret.)\n\n" +
-    "TRAITEMENTS EN COURS :\n(Medicaments, reeducation, hospitalisations)\n\n" +
-    "PRONOSTIC :\n(Evolution, caractere permanent/temporaire)\n\n" +
-    "BESOINS EN COMPENSATION :\n(Aide humaine, technique, amenagement — si applicable)\n\n" +
-    "FORMAT : pas de Markdown. Sections separees par sauts de ligne. Jamais de champ vide ni 'Non renseigne'.";
+    "DIAGNOSTIC PRINCIPAL :\n(Pathologie, éléments diagnostiques, CIM-10, facteurs de gravité)\n\n" +
+    "PATHOLOGIES ASSOCIÉES :\n(Comorbidités pertinentes — omets si aucune)\n\n" +
+    "RETENTISSEMENT FONCTIONNEL :\n(Impact dans les AVQ : mobilité, autonomie, communication, cognition, vie professionnelle/sociale. Sois exhaustif et concret.)\n\n" +
+    "TRAITEMENTS EN COURS :\n(Médicaments, rééducation, hospitalisations)\n\n" +
+    "PRONOSTIC :\n(Évolution, caractère permanent/temporaire)\n\n" +
+    "BESOINS EN COMPENSATION :\n(Aide humaine, technique, aménagement — si applicable)\n\n" +
+    "FORMAT : pas de Markdown. Sections séparées par sauts de ligne. Jamais de champ vide ni 'Non renseigné'.";
 
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
@@ -828,25 +832,25 @@ app.post('/api/generate/ald', authenticateJWT, async (req, res) => {
     return res.status(400).json({ error: "Renseignez l'affection longue duree ou les notes medicales." });
   }
 
-  const spec = (req.user && req.user.specialite) || 'medecine generale';
+  const spec = (req.user && req.user.specialite) || 'médecine générale';
   const system =
-    `Tu es un medecin expert en ${spec}, exercant en liberal en France. ` +
-    "Tu rediges le volet medecin traitant d'un protocole de soins ALD conforme au Cerfa 11626*07 et aux recommandations HAS. " +
-    "Destine au medecin conseil AM pour accord de prise en charge a 100%. Sois precis et exhaustif. " +
+    `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
+    "Tu rédiges le volet médecin traitant d'un protocole de soins ALD conforme au Cerfa 11626*07 et aux recommandations HAS. " +
+    "Destiné au médecin conseil AM pour accord de prise en charge à 100%. Sois précis et exhaustif. " +
     "N'invente aucune information — enrichis avec les recommandations HAS pour cette affection. " +
     enteteConsigne(req.user) +
     "Sections en MAJUSCULES suivi de deux-points :\n" +
-    "AFFECTION LONGUE DUREE :\n(Numero ALD si connu, intitule exact selon liste ALD 30)\n\n" +
-    "DIAGNOSTIC :\n(Diagnostic precis, elements cliniques/paracliniques, CIM-10)\n\n" +
-    "ACTES ET PRESTATIONS NECESSAIRES :\n" +
-    "Consultations medicales : (specialites et frequence)\n" +
+    "AFFECTION LONGUE DURÉE :\n(Numéro ALD si connu, intitulé exact selon liste ALD 30)\n\n" +
+    "DIAGNOSTIC :\n(Diagnostic précis, éléments cliniques/paracliniques, CIM-10)\n\n" +
+    "ACTES ET PRESTATIONS NÉCESSAIRES :\n" +
+    "Consultations médicales : (spécialités et fréquence)\n" +
     "Examens biologiques : (bilans selon recommandations HAS)\n" +
     "Imagerie et explorations : (si applicable)\n" +
-    "Medicaments de l'ALD : (DCI, indication)\n" +
-    "Soins paramedicaux : (si applicable)\n" +
-    "Materiel medical : (si applicable)\n\n" +
-    "DUREE DU PROTOCOLE :\n(1 a 5 ans selon evolution previsible)\n\n" +
-    "FORMAT : pas de Markdown. Sections separees par sauts de ligne. Pas de champ vide.";
+    "Médicaments de l'ALD : (DCI, indication)\n" +
+    "Soins paramédicaux : (si applicable)\n" +
+    "Matériel médical : (si applicable)\n\n" +
+    "DURÉE DU PROTOCOLE :\n(1 à 5 ans selon évolution prévisible)\n\n" +
+    "FORMAT : pas de Markdown. Sections séparées par sauts de ligne. Pas de champ vide.";
 
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
@@ -895,46 +899,85 @@ app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
     res.json({ document });
   } catch (err) { aiError(res, err); }
 });
-// POST /api/generate/ordonnance — ordonnance médicale structurée
+// POST /api/generate/ordonnance — ordonnance médicale structurée (standard ou bizone ALD)
 app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
   const patient     = txt(req.body.patient, 500);
   const ddn         = s(req.body.ddn, 20);
   const medicaments = txt(req.body.medicaments);
+  const medicamentsAld = txt(req.body.medicamentsAld, 5000);
+  const bizone      = req.body.bizone === true || req.body.bizone === 'true';
   const complement  = txt(req.body.complement, 2000);
 
-  if (!medicaments) {
+  if (!medicaments && !medicamentsAld) {
     return res.status(400).json({ error: 'Renseignez les médicaments à prescrire.' });
   }
 
   const spec = (req.user && req.user.specialite) || 'médecine générale';
-  const system =
-    `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
-    "Tu rédiges une ordonnance médicale complète et conforme aux bonnes pratiques françaises (HAS, ANSM). " +
-    "Pour chaque médicament fourni, structure la prescription avec : " +
-    "DCI (Dénomination Commune Internationale) + nom commercial entre parenthèses si utile, " +
-    "forme galénique, dosage unitaire, posologie précise (fréquence, moment de prise), durée de traitement. " +
-    "Si le médicament est un stupéfiant ou psychotrope, ajoute la mention 'en toutes lettres' pour les quantités. " +
-    "Ajoute uniquement les conseils essentiels et validés (prise avec repas, alcool déconseillé, etc.). " +
+
+  const formatRules =
+    "Pour chaque médicament : DCI (Dénomination Commune Internationale) + nom commercial entre parenthèses si pertinent, " +
+    "forme galénique, dosage unitaire, posologie précise (fréquence, moment de prise), durée de traitement ou mention 'traitement continu'. " +
+    "Stupéfiants ou liste I/II : quantité obligatoirement en toutes lettres. " +
     "N'invente aucune posologie non fournie — utilise uniquement ce que le médecin indique. " +
-    enteteConsigne(req.user) +
-    "Structure exacte : " +
-    "1. ORDONNANCE MÉDICALE (en majuscules, centré) " +
-    "2. Date : [date du jour] " +
-    "3. Patient : [nom], né(e) le [date naissance si fournie] " +
-    "4. Numérotation des médicaments (1., 2., ...) — un paragraphe par médicament " +
-    "5. Conseils au patient si pertinents " +
-    "6. Signature : Dr [nom], [spécialité], RPPS [numéro si disponible] " +
     "FORMAT : texte brut, aucun Markdown. " +
     "N'écris jamais de champs vides entre crochets si l'information est absente — omets simplement le champ.";
 
-  const user =
-    (patient ? `Patient : ${patient}\n` : '') +
-    (ddn ? `Date de naissance : ${ddn}\n` : '') +
-    `\nMédicaments à prescrire :\n${medicaments}\n` +
-    (complement ? `\nÉléments additionnels : ${complement}\n` : '');
+  let system, userMsg;
+
+  if (bizone) {
+    system =
+      `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
+      "Tu rédiges une ORDONNANCE BIZONE conforme au format légal français pour patient en ALD (arrêté du 4 octobre 1985). " +
+      "Une ordonnance bizone comporte deux zones distinctes : " +
+      "ZONE HAUTE (en rapport avec l'ALD) : médicaments pris en charge à 100% par l'Assurance Maladie. " +
+      "ZONE BASSE (sans rapport avec l'ALD) : médicaments à la charge habituelle du patient. " +
+      enteteConsigne(req.user) +
+      "Structure EXACTE de l'ordonnance bizone :\n" +
+      "ORDONNANCE BIZONE\n" +
+      "Date : [date du jour]\n" +
+      "Patient : [nom complet], né(e) le [date naissance si fournie]\n\n" +
+      "─────────────────────────────────────────────────\n" +
+      "PRESCRIPTIONS EN RAPPORT AVEC L'ALD\n" +
+      "(Prise en charge à 100% — exonération du ticket modérateur)\n" +
+      "─────────────────────────────────────────────────\n" +
+      "[médicaments zone ALD numérotés 1., 2., ...]\n\n" +
+      "─────────────────────────────────────────────────\n" +
+      "PRESCRIPTIONS SANS RAPPORT AVEC L'ALD\n" +
+      "(Remboursement au taux habituel)\n" +
+      "─────────────────────────────────────────────────\n" +
+      "[médicaments zone standard numérotés 1., 2., ...]\n\n" +
+      "Signature : Dr [nom], [spécialité], RPPS [numéro si disponible]\n\n" +
+      formatRules;
+
+    userMsg =
+      (patient ? `Patient : ${patient}\n` : '') +
+      (ddn ? `Date de naissance : ${ddn}\n` : '') +
+      (medicamentsAld ? `\nMédicaments en rapport avec l'ALD (zone haute) :\n${medicamentsAld}\n` : '') +
+      (medicaments ? `\nMédicaments sans rapport avec l'ALD (zone basse) :\n${medicaments}\n` : '') +
+      (complement ? `\nÉléments additionnels : ${complement}\n` : '');
+  } else {
+    system =
+      `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
+      "Tu rédiges une ordonnance médicale complète et conforme aux bonnes pratiques françaises (HAS, ANSM). " +
+      enteteConsigne(req.user) +
+      "Structure exacte :\n" +
+      "ORDONNANCE MÉDICALE\n" +
+      "Date : [date du jour]\n" +
+      "Patient : [nom complet], né(e) le [date naissance si fournie]\n\n" +
+      "[médicaments numérotés 1., 2., ... — un paragraphe par médicament]\n\n" +
+      "[Conseils au patient si pertinents]\n\n" +
+      "Signature : Dr [nom], [spécialité], RPPS [numéro si disponible]\n\n" +
+      formatRules;
+
+    userMsg =
+      (patient ? `Patient : ${patient}\n` : '') +
+      (ddn ? `Date de naissance : ${ddn}\n` : '') +
+      `\nMédicaments à prescrire :\n${medicaments}\n` +
+      (complement ? `\nÉléments additionnels : ${complement}\n` : '');
+  }
 
   try {
-    const document = await generateDocument({ system, user, maxTokens: 1500 });
+    const document = await generateDocument({ system, user: userMsg, maxTokens: 1800 });
     res.json({ document });
   } catch (err) { aiError(res, err); }
 });
