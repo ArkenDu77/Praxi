@@ -1354,14 +1354,30 @@ const SPECIALTY_TEMPLATES = {
   },
   ordonnance: {
     'Médecin généraliste': [
-      { label: 'Infection ORL — angine', target: 'ord-medicaments', text: 'Amoxicilline 1g — 1 cp 3 fois/jour — 6 jours\nParacétamol 1g — 1 cp 3 fois/jour si fièvre ou douleur\nIbuprofène 400mg — 1 cp 3 fois/jour pendant les repas si douleurs importantes (max 5 jours)' },
+      { label: 'Infection ORL — angine', target: 'ord-medicaments', text: 'Amoxicilline 1g — 1 cp 3 fois/jour — 6 jours\nParacétamol 1g — 1 cp toutes les 6h si fièvre ou douleur\nIbuprofène 400mg — 1 cp 3 fois/jour au cours des repas si douleurs (max 5 jours)' },
       { label: 'Sinusite — antibiothérapie', target: 'ord-medicaments', text: 'Amoxicilline-acide clavulanique 1g — 1 cp 3 fois/jour — 5 jours\nParacétamol 1g — 1 cp toutes les 6h si douleur — max 4/jour\nSpray nasal isotonique — 2 pulvérisations par narine 3 fois/jour' },
-      { label: 'Cystite non compliquée', target: 'ord-medicaments', text: 'Fosfomycine trométamol 3g — 1 sachet en prise unique (le soir)\nConseils : bien s\'hydrater, vider complètement la vessie' },
-      { label: 'Renouvellement HTA + statine', target: 'ord-medicaments', text: 'Ramipril 5mg — 1 cp/jour le matin\nAmlodipine 5mg — 1 cp/jour le soir\nAtorvasta-tine 20mg — 1 cp/jour le soir\nAspégic 75mg — 1 cp/jour (si prescrit)\nRenouvellement 3 mois — non substituable si mentionné' },
+      { label: 'Cystite non compliquée', target: 'ord-medicaments', text: 'Fosfomycine trométamol 3g — 1 sachet en prise unique le soir\nConseils : bien s\'hydrater, vider complètement la vessie' },
+      { label: 'Renouvellement HTA + statine', target: 'ord-medicaments', text: 'Ramipril 5mg — 1 cp/jour le matin\nAmlodipine 5mg — 1 cp/jour le soir\nAtorvasta-tine 20mg — 1 cp/jour le soir\nAspégic 75mg — 1 cp/jour\nRenouvellement 3 mois' },
     ],
     'Cardiologue': [
-      { label: 'Post-IDM — traitement de sortie', target: 'ord-medicaments', text: 'Aspirine 75mg — 1 cp/jour (antiagrégant plaquettaire)\nTicagrélor 90mg — 1 cp 2 fois/jour (à vie si DES)\nBisoprolol 5mg — 1 cp/jour le matin\nPérinopril 5mg — 1 cp/jour le matin\nAtorvasta-tine 40mg — 1 cp/jour le soir\nPantoprazole 20mg — 1 cp/jour le matin' },
+      { label: 'Post-IDM — traitement de sortie', target: 'ord-medicaments', text: 'Aspirine 75mg — 1 cp/jour\nTicagrélor 90mg — 1 cp 2 fois/jour\nBisoprolol 5mg — 1 cp/jour le matin\nRamipril 5mg — 1 cp/jour le matin\nAtorvasta-tine 40mg — 1 cp/jour le soir\nPantoprazole 20mg — 1 cp/jour le matin' },
       { label: 'Insuffisance cardiaque FER réduite', target: 'ord-medicaments', text: 'Ramipril 5mg — 1 cp/jour (titration en cours)\nBisoprolol 5mg — 1 cp/jour\nÉplérénone 25mg — 1 cp/jour\nFurosémide 40mg — 1 cp/jour le matin si œdèmes' },
+    ],
+    'Pneumologue': [
+      { label: 'BPCO stable — bronchodilatateurs', target: 'ord-medicaments', text: 'Tiotropium 18µg — 1 inhalation/jour le matin (Spiriva)\nFormotérol 12µg — 1 inhalation 2 fois/jour (Foradil)\nSalbutamol 100µg — 2 bouffées à la demande si dyspnée' },
+      { label: 'Asthme — palier 3', target: 'ord-medicaments', text: 'Fluticasone/Salmétérol 500/50µg — 1 inhalation 2 fois/jour\nSalbutamol 100µg — 2 bouffées à la demande (maximum 8/jour)\nConseils : rinçage de bouche après CSI, tenir un journal des symptômes' },
+    ],
+    'Diabétologue': [
+      { label: 'Diabète T2 — initiation metformine', target: 'ord-medicaments', text: 'Metformine 500mg — 1 cp 3 fois/jour au cours des repas\nMonitoring glycémique : à jeun + post-prandial 2h\nObjectif HbA1c < 7% en consultation de contrôle à 3 mois' },
+      { label: 'Diabète T2 — escalade thérapeutique', target: 'ord-medicaments', text: 'Metformine 1000mg — 1 cp 2 fois/jour au cours des repas\nSitagliptine 100mg — 1 cp/jour le matin\nAutosurveil-lance glycémique : 2 fois/jour' },
+    ],
+    'Psychiatre': [
+      { label: 'Dépression — ISRS initiation', target: 'ord-medicaments', text: 'Escitalopram 10mg — 1 cp/jour le matin (débuter à 5mg la 1ère semaine)\nConseils : délai d\'action 2-4 semaines, ne pas arrêter brutalement\nZolpidem 10mg — 1 cp au coucher si insomnie sévère (max 4 semaines)' },
+      { label: 'Anxiété — traitement de fond', target: 'ord-medicaments', text: 'Sertraline 50mg — 1 cp/jour le matin au cours des repas\nAlprazolam 0,25mg — 1 cp 2 fois/jour si attaque de panique (max 4 semaines, liste IV)\nPropranolol 40mg — 1 cp avant situation anxiogène si besoin' },
+    ],
+    'Rhumatologue': [
+      { label: 'Polyarthrite rhumatoïde — traitement de fond', target: 'ord-medicaments', text: 'Méthotrexate 15mg — 1 prise/semaine (le lundi) — voie orale ou SC\nAcide folique 5mg — 1 cp/semaine (le vendredi, à distance du MTX)\nPrednisone 5mg — 1 cp/jour le matin au long cours (décroissance à planifier)' },
+      { label: 'Gonarthrose — poussée congestive', target: 'ord-medicaments', text: 'Célécoxib 200mg — 1 cp/jour au cours du repas (max 14 jours)\nParacétamol 1g — 1 cp 3 fois/jour\nOméprazole 20mg — 1 cp/jour le matin (gastroprotection)' },
     ],
   },
 };
@@ -1371,13 +1387,14 @@ function getSpecialtyKey() {
   const specs = Array.isArray(me.specialites) && me.specialites.length ? me.specialites : (me.specialite ? [me.specialite] : []);
   const all = SPECIALTY_TEMPLATES;
   for (const sp of specs) {
-    if (all.liaison && all.liaison[sp]) return sp;
-    if (all.cr && all.cr[sp]) return sp;
+    if ((all.liaison && all.liaison[sp]) || (all.cr && all.cr[sp]) || (all.ordonnance && all.ordonnance[sp])) return sp;
   }
-  // fallback : partial match
+  // fallback : partial match sur tous les buckets
   for (const sp of specs) {
-    for (const key of Object.keys(all.liaison || {})) {
-      if (key.toLowerCase().includes(sp.toLowerCase().slice(0, 6))) return key;
+    for (const bucket of Object.values(all)) {
+      for (const key of Object.keys(bucket || {})) {
+        if (key.toLowerCase().includes(sp.toLowerCase().slice(0, 6))) return key;
+      }
     }
   }
   return specs[0] || null;
