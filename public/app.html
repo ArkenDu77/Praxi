@@ -2157,58 +2157,97 @@ function downloadPdf(cfg, key) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  const M = 18;             // marge
-  const headerY = M;
+  const M = 20;
+  let pageNum = 1;
 
-  // En-tête : Dr [nom], spécialité, date
-  doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(20, 30, 45);
-  doc.text('Dr ' + ((me && me.prenom) || '') + ' ' + ((me && me.nom) || ''), M, headerY);
+  function startPage() {
+    // En-tête médecin (gauche)
+    doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(20, 30, 45);
+    doc.text('Dr ' + ((me && me.prenom) || '') + ' ' + ((me && me.nom) || ''), M, M);
 
-  doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(95, 110, 125);
-  let y = headerY + 5;
-  if (me && me.specialite) { doc.text(me.specialite, M, y); y += 4.6; }
-  if (me && me.adresse)    { doc.text(me.adresse, M, y); y += 4.6; }
-  const contact = [];
-  if (me && me.telephone) contact.push('Tél. ' + me.telephone);
-  if (me && me.emailPro)  contact.push(me.emailPro);
-  if (contact.length) { doc.text(contact.join(' · '), M, y); y += 4.6; }
-  if (me && me.rpps) { doc.text('RPPS ' + me.rpps, M, y); y += 4.6; }
+    doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(95, 110, 125);
+    let hy = M + 4.8;
+    if (me && me.specialite) { doc.text(me.specialite, M, hy); hy += 4.2; }
+    if (me && me.adresse)    { doc.text(me.adresse, M, hy); hy += 4.2; }
+    const contact = [];
+    if (me && me.telephone) contact.push('Tél. ' + me.telephone);
+    if (me && me.emailPro)  contact.push(me.emailPro);
+    if (contact.length) { doc.text(contact.join(' · '), M, hy); hy += 4.2; }
+    if (me && me.rpps) { doc.text('N° RPPS : ' + me.rpps, M, hy); }
 
-  const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
-  doc.setFontSize(10).setTextColor(95, 110, 125);
-  doc.text(dateStr, W - M, headerY, { align: 'right' });
+    // Date (droite)
+    const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+    doc.setFontSize(9).setTextColor(95, 110, 125);
+    doc.text(dateStr, W - M, M, { align: 'right' });
 
-  // Trait séparateur
-  y += 2;
-  doc.setDrawColor(220, 230, 240).setLineWidth(0.2);
-  doc.line(M, y, W - M, y);
-  y += 7;
-
-  // Corps : largeur disponible, wrap correct des sauts de ligne
-  doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(20, 30, 45);
-  const maxW   = W - 2 * M;
-  const lineH  = 5.4;
-  const lines  = doc.splitTextToSize(text, maxW);
-  const footerH = 12;
-
-  for (let i = 0; i < lines.length; i++) {
-    if (y + lineH > H - footerH) {
-      addFooter(doc, W, H, M);
-      doc.addPage();
-      y = M;
-    }
-    doc.text(lines[i], M, y);
-    y += lineH;
+    // Trait
+    const sepY = M + 23;
+    doc.setDrawColor(200, 215, 230).setLineWidth(0.3);
+    doc.line(M, sepY, W - M, sepY);
+    return sepY + 7;
   }
-  addFooter(doc, W, H, M);
 
+  function addFooter() {
+    doc.setDrawColor(200, 215, 230).setLineWidth(0.2);
+    doc.line(M, H - 13, W - M, H - 13);
+    doc.setFont('helvetica', 'italic').setFontSize(8).setTextColor(155, 165, 175);
+    doc.text('Document généré par Praxi · praxi-production.up.railway.app', W / 2, H - 8, { align: 'center' });
+    doc.text('Page ' + pageNum, W - M, H - 8, { align: 'right' });
+  }
+
+  let y = startPage();
+
+  // Titre du document centré
+  const docTitle = cfg.label || 'Document médical';
+  const patient  = cfg.getPatient();
+  doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(10, 20, 40);
+  doc.text(docTitle.toUpperCase(), W / 2, y, { align: 'center' });
+  y += 5;
+  if (patient) {
+    doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(70, 90, 110);
+    doc.text('Patient : ' + patient, W / 2, y, { align: 'center' });
+    y += 4;
+  }
+  y += 4;
+  doc.setDrawColor(56, 189, 248).setLineWidth(0.4);
+  doc.line(M + 20, y, W - M - 20, y);
+  y += 8;
+
+  // Corps — sections en MAJUSCULES rendues en gras
+  const maxW  = W - 2 * M;
+  const lineH = 5.2;
+  const footerH = 16;
+  const sectionRe = /^[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ\s\/\-]{5,}[:\s]*$/;
+
+  const rawLines = text.split('\n');
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    const isSection = sectionRe.test(line.trim()) && line.trim().length > 0;
+    const isBlank   = line.trim() === '';
+
+    if (isSection) {
+      if (y + lineH * 2 > H - footerH) {
+        addFooter(); doc.addPage(); pageNum++; y = startPage();
+      }
+      doc.setFont('helvetica', 'bold').setFontSize(10.5).setTextColor(20, 30, 45);
+      doc.text(line, M, y);
+      y += lineH;
+    } else if (isBlank) {
+      y += lineH * 0.5;
+    } else {
+      doc.setFont('helvetica', 'normal').setFontSize(10.5).setTextColor(20, 30, 45);
+      const wrapped = doc.splitTextToSize(line, maxW);
+      for (const wl of wrapped) {
+        if (y + lineH > H - footerH) {
+          addFooter(); doc.addPage(); pageNum++; y = startPage();
+        }
+        doc.text(wl, M, y);
+        y += lineH;
+      }
+    }
+  }
+  addFooter();
   doc.save(fileBaseName(cfg, key) + '.pdf');
-}
-function addFooter(doc, W, H, M) {
-  doc.setDrawColor(220, 230, 240).setLineWidth(0.2);
-  doc.line(M, H - 12, W - M, H - 12);
-  doc.setFont('helvetica', 'italic').setFontSize(9).setTextColor(140, 150, 165);
-  doc.text('Généré par Praxi', W / 2, H - 7, { align: 'center' });
 }
 
 // ═══════════════════════════════════════════════════════════════════════
