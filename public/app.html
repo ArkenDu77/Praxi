@@ -1058,40 +1058,54 @@ body {
   <!-- ── PATIENTS ── -->
   <section class="view" id="view-patients">
     <h1 class="page-title">Mes patients</h1>
-    <p class="page-sub">Fiches patients réutilisables — stockées localement sur votre appareil.</p>
+    <p class="page-sub">Fiches patients réutilisables — stockées localement sur votre appareil. Cliquez sur "Utiliser" pour pré-remplir n'importe quel formulaire.</p>
 
-    <div class="field-row" style="align-items:flex-end">
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-title" style="margin-bottom:14px">Nouveau patient</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="label">Nom complet</label>
+          <input class="input" id="pt-nom" placeholder="Ex. M. Dupont Jean" />
+        </div>
+        <div class="field" style="max-width:160px">
+          <label class="label">Date de naissance</label>
+          <input class="input" id="pt-ddn" type="date" />
+        </div>
+      </div>
       <div class="field">
-        <label class="label">Nom complet</label>
-        <input class="input" id="pt-nom" placeholder="Ex. M. Dupont Jean" />
+        <label class="label">Pathologies chroniques <span class="label-opt">Antécédents, comorbidités</span></label>
+        <input class="input" id="pt-patho" placeholder="Ex. HTA, Diabète T2, FA, Insuffisance rénale CKD3..." />
       </div>
-      <div class="field" style="max-width:160px">
-        <label class="label">Date de naissance</label>
-        <input class="input" id="pt-ddn" type="date" />
-      </div>
-    </div>
-    <div class="field-row" style="align-items:flex-end">
       <div class="field">
-        <label class="label">Pathologies chroniques</label>
-        <input class="input" id="pt-patho" placeholder="Ex. HTA, Diabète T2, Insuffisance rénale..." />
+        <label class="label">Traitements en cours <span class="label-opt">Médicaments habituels</span></label>
+        <input class="input" id="pt-traitements" placeholder="Ex. Ramipril 5mg, Metformine 1g, Bisoprolol 5mg..." />
       </div>
-      <div class="field" style="max-width:180px">
-        <label class="label">Médecin traitant (si spécialiste)</label>
-        <input class="input" id="pt-mt" placeholder="Dr Nom Prénom" />
+      <div class="field-row">
+        <div class="field">
+          <label class="label">Allergies <span class="label-opt">Médicaments, autres</span></label>
+          <input class="input" id="pt-allergies" placeholder="Ex. Pénicillines, AINS..." />
+        </div>
+        <div class="field" style="max-width:200px">
+          <label class="label">Médecin traitant <span class="label-opt">Si spécialiste</span></label>
+          <input class="input" id="pt-mt" placeholder="Dr Nom Prénom" />
+        </div>
       </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="btn btn-primary" id="pt-add-btn">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
+          <span class="btn-label">Enregistrer ce patient</span>
+        </button>
+      </div>
+      <div class="alert alert-error" id="pt-error" style="display:none"></div>
     </div>
-    <div class="actions" style="margin-top:12px">
-      <button class="btn btn-primary" id="pt-add-btn">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
-        <span class="btn-label">Ajouter ce patient</span>
-      </button>
-    </div>
-    <div class="alert alert-error" id="pt-error" style="display:none"></div>
 
-    <div style="margin-top:24px">
-      <div class="label" style="margin-bottom:12px">Patients enregistrés</div>
-      <div id="patients-list"></div>
+    <div style="margin-bottom:14px">
+      <div style="position:relative">
+        <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input class="input" id="pt-search" placeholder="Rechercher un patient…" style="padding-left:36px" />
+      </div>
     </div>
+    <div id="patients-list"></div>
   </section>
 
   <!-- ── PROFIL ── -->
