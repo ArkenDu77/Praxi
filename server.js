@@ -8,6 +8,7 @@ const jwt       = require('jsonwebtoken');
 const Anthropic  = require('@anthropic-ai/sdk');
 const crypto     = require('crypto');
 const nodemailer = require('nodemailer');
+const helmet     = require('helmet');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +17,18 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'praxi-admin-dev';
 // ── AUTH (JWT) ──
 const JWT_SECRET     = process.env.JWT_SECRET || 'praxi-dev-secret-change-me';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+// Fail fast en production si les secrets critiques ne sont pas définis
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.JWT_SECRET) {
+    console.error('[FATAL] JWT_SECRET non défini — arrêt du serveur');
+    process.exit(1);
+  }
+  if (!process.env.ADMIN_TOKEN) {
+    console.error('[FATAL] ADMIN_TOKEN non défini — arrêt du serveur');
+    process.exit(1);
+  }
+}
 
 // ── CLIENT IA (Anthropic) ──
 const anthropic = process.env.ANTHROPIC_API_KEY
@@ -151,19 +164,61 @@ function verifyResetToken(token) {
   return { user };
 }
 
+// ── HELPERS SÉCURITÉ ──
+function maskEmail(email) {
+  const [local, domain] = (email || '').split('@');
+  if (!domain) return '***';
+  return local.slice(0, 2) + '***@' + domain;
+}
+
 // ── MIDDLEWARE ──
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+}));
+
+// CORS : autoriser uniquement l'origine de production + localhost dev
+const ALLOWED_ORIGINS = [
+  process.env.APP_URL || 'http://localhost:3001',
+  'http://localhost:3000',
+  'http://localhost:3001',
+].filter(Boolean);
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (!origin || ALLOWED_ORIGINS.some(o => origin.startsWith(o))) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-admin-token');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Rate limit (mémoire)
+// Rate limit (mémoire) — chaque route a son propre compteur via le namespace `ns`
 const rlMap = new Map();
-function rateLimit(ip, max = 3) {
+function rateLimit(ip, max = 3, ns = 'default') {
+  const key = ns + ':' + ip;
   const now = Date.now();
   const win = 60 * 60 * 1000;
-  const r   = rlMap.get(ip) || { n: 0, reset: now + win };
+  const r   = rlMap.get(key) || { n: 0, reset: now + win };
   if (now > r.reset) { r.n = 0; r.reset = now + win; }
   r.n++;
-  rlMap.set(ip, r);
+  rlMap.set(key, r);
   return r.n <= max;
 }
 
@@ -210,7 +265,7 @@ function parseSpecialites(body) {
 app.post('/api/waitlist', (req, res) => {
   const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
 
-  if (!rateLimit(ip)) {
+  if (!rateLimit(ip, 3, 'waitlist')) {
     return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
   }
 
@@ -319,7 +374,11 @@ function signToken(user) {
 
 // POST /api/auth/register
 app.post('/api/auth/register', async (req, res) => {
-  console.log('[auth] register :', s(req.body.email, 200).toLowerCase());
+  const ipReg = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (!rateLimit(ipReg, 5, 'register')) {
+    return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
+  }
+  console.log('[auth] register :', maskEmail(s(req.body.email, 200).toLowerCase()));
   const prenom     = s(req.body.prenom);
   const nom        = s(req.body.nom);
   const email      = s(req.body.email, 200).toLowerCase();
@@ -334,6 +393,8 @@ app.post('/api/auth/register', async (req, res) => {
   if (!nom)                  errors.push('Nom requis');
   if (!EMAIL_RE.test(email)) errors.push('Email invalide');
   if (password.length < 8)   errors.push('Mot de passe : 8 caractères minimum');
+  if (password.length >= 8 && !/[A-Z]/.test(password) && !/[0-9]/.test(password))
+    errors.push('Mot de passe : doit contenir au moins une majuscule ou un chiffre');
   if (!specialites.length)   errors.push('Spécialité requise');
   if (!ville)                errors.push('Ville requise');
   if (errors.length) return res.status(400).json({ error: errors.join(', ') });
@@ -362,7 +423,11 @@ app.post('/api/auth/register', async (req, res) => {
 
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
-  console.log('[auth] login :', s(req.body.email, 200).toLowerCase());
+  const ipLogin = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (!rateLimit(ipLogin, 10, 'login')) {
+    return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
+  }
+  console.log('[auth] login :', maskEmail(s(req.body.email, 200).toLowerCase()));
   const email    = s(req.body.email, 200).toLowerCase();
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   if (!email || !password) {
@@ -656,8 +721,12 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
 
 // POST /api/auth/forgot-password — génère un token de réinitialisation et l'envoie par email
 app.post('/api/auth/forgot-password', async (req, res) => {
+  const ipFwd = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (!rateLimit(ipFwd, 3, 'forgot-password')) {
+    return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
+  }
   const email = s(req.body.email, 200).toLowerCase();
-  console.log('[auth] forgot-password :', email);
+  console.log('[auth] forgot-password :', maskEmail(email));
 
   const user = readUsers().users.find(u => u.email === email);
   if (user) {
@@ -665,7 +734,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     const token = makeResetToken(user);
     try {
       await sendPasswordResetEmail(email, user.prenom, token);
-      console.log('[auth] email de réinitialisation envoyé à', email);
+      console.log('[auth] email de réinitialisation envoyé à', maskEmail(email));
     } catch (err) {
       // On loggue l'erreur réelle (visible dans les logs Railway) au lieu de la masquer.
       console.error('[auth] ÉCHEC envoi email réinitialisation :', err && err.message);
@@ -685,6 +754,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
   if (!token)              return res.status(400).json({ error: 'Token manquant.' });
   if (password.length < 8) return res.status(400).json({ error: 'Mot de passe : 8 caractères minimum.' });
+  if (password.length >= 8 && !/[A-Z]/.test(password) && !/[0-9]/.test(password))
+    return res.status(400).json({ error: 'Mot de passe : doit contenir au moins une majuscule ou un chiffre.' });
 
   console.log('[auth] reset-password : token', token.slice(0, 12) + '… (' + token.length + ' chars)');
 
@@ -702,8 +773,170 @@ app.post('/api/auth/reset-password', async (req, res) => {
   delete db.users[idx].resetTokenExpiry;
   writeUsers(db);
 
-  console.log('[auth] mot de passe réinitialisé pour', user.email);
+  console.log('[auth] mot de passe réinitialisé pour', maskEmail(user.email));
   res.json({ ok: true });
+});
+
+
+// POST /api/generate/mdph
+app.post('/api/generate/mdph', authenticateJWT, async (req, res) => {
+  const patient    = txt(req.body.patient, 500);
+  const diagnostic = txt(req.body.diagnostic, 2000);
+  const notes      = txt(req.body.notes);
+  const complement = txt(req.body.complement, 2000);
+
+  if (!diagnostic && !notes) {
+    return res.status(400).json({ error: 'Renseignez le diagnostic ou les notes medicales.' });
+  }
+
+  const spec = (req.user && req.user.specialite) || 'medecine generale';
+  const system =
+    `Tu es un medecin expert en ${spec}, exercant en liberal en France. ` +
+    "Tu rediges un certificat medical destine a la MDPH, conforme au Cerfa 15695*01. " +
+    "Sois precis sur le retentissement fonctionnel dans la vie quotidienne. " +
+    "N'invente aucune information absente des notes — enrichis et structure ce qui est fourni. " +
+    enteteConsigne(req.user) +
+    "Sections en MAJUSCULES suivi de deux-points :\n" +
+    "DIAGNOSTIC PRINCIPAL :\n(Pathologie, elements diagnostiques, CIM-10, facteurs gravite)\n\n" +
+    "PATHOLOGIES ASSOCIEES :\n(Comorbidites pertinentes — omets si aucune)\n\n" +
+    "RETENTISSEMENT FONCTIONNEL :\n(Impact dans les AVQ : mobilite, autonomie, communication, cognition, vie pro/sociale. Sois exhaustif et concret.)\n\n" +
+    "TRAITEMENTS EN COURS :\n(Medicaments, reeducation, hospitalisations)\n\n" +
+    "PRONOSTIC :\n(Evolution, caractere permanent/temporaire)\n\n" +
+    "BESOINS EN COMPENSATION :\n(Aide humaine, technique, amenagement — si applicable)\n\n" +
+    "FORMAT : pas de Markdown. Sections separees par sauts de ligne. Jamais de champ vide ni 'Non renseigne'.";
+
+  const user =
+    (patient ? `Patient : ${patient}\n` : '') +
+    (diagnostic ? `Diagnostic : ${diagnostic}\n` : '') +
+    `\nNotes medicales :\n${notes || '(voir diagnostic)'}\n` +
+    (complement ? `\nElements additionnels : ${complement}\n` : '');
+
+  try {
+    const document = await generateDocument({ system, user, maxTokens: 2000 });
+    res.json({ document });
+  } catch (err) { aiError(res, err); }
+});
+
+// POST /api/generate/ald
+app.post('/api/generate/ald', authenticateJWT, async (req, res) => {
+  const patient    = txt(req.body.patient, 500);
+  const affection  = txt(req.body.affection, 500);
+  const notes      = txt(req.body.notes);
+  const complement = txt(req.body.complement, 2000);
+
+  if (!affection && !notes) {
+    return res.status(400).json({ error: "Renseignez l'affection longue duree ou les notes medicales." });
+  }
+
+  const spec = (req.user && req.user.specialite) || 'medecine generale';
+  const system =
+    `Tu es un medecin expert en ${spec}, exercant en liberal en France. ` +
+    "Tu rediges le volet medecin traitant d'un protocole de soins ALD conforme au Cerfa 11626*07 et aux recommandations HAS. " +
+    "Destine au medecin conseil AM pour accord de prise en charge a 100%. Sois precis et exhaustif. " +
+    "N'invente aucune information — enrichis avec les recommandations HAS pour cette affection. " +
+    enteteConsigne(req.user) +
+    "Sections en MAJUSCULES suivi de deux-points :\n" +
+    "AFFECTION LONGUE DUREE :\n(Numero ALD si connu, intitule exact selon liste ALD 30)\n\n" +
+    "DIAGNOSTIC :\n(Diagnostic precis, elements cliniques/paracliniques, CIM-10)\n\n" +
+    "ACTES ET PRESTATIONS NECESSAIRES :\n" +
+    "Consultations medicales : (specialites et frequence)\n" +
+    "Examens biologiques : (bilans selon recommandations HAS)\n" +
+    "Imagerie et explorations : (si applicable)\n" +
+    "Medicaments de l'ALD : (DCI, indication)\n" +
+    "Soins paramedicaux : (si applicable)\n" +
+    "Materiel medical : (si applicable)\n\n" +
+    "DUREE DU PROTOCOLE :\n(1 a 5 ans selon evolution previsible)\n\n" +
+    "FORMAT : pas de Markdown. Sections separees par sauts de ligne. Pas de champ vide.";
+
+  const user =
+    (patient ? `Patient : ${patient}\n` : '') +
+    (affection ? `Affection longue duree : ${affection}\n` : '') +
+    `\nNotes medicales :\n${notes || '(voir affection)'}\n` +
+    (complement ? `\nElements additionnels : ${complement}\n` : '');
+
+  try {
+    const document = await generateDocument({ system, user, maxTokens: 2000 });
+    res.json({ document });
+  } catch (err) { aiError(res, err); }
+});
+
+// POST /api/generate/certificat
+app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
+  const patient    = txt(req.body.patient, 500);
+  const type       = txt(req.body.type, 200);
+  const notes      = txt(req.body.notes);
+  const complement = txt(req.body.complement, 2000);
+
+  if (!type && !notes) {
+    return res.status(400).json({ error: 'Renseignez le type de certificat.' });
+  }
+
+  const spec = (req.user && req.user.specialite) || 'medecine generale';
+  const typeLabel = type || 'medical';
+  const system =
+    `Tu es un medecin expert en ${spec}, exercant en liberal en France. ` +
+    `Tu rediges un certificat medical (${typeLabel}) conforme au Code de deontologie medicale (art. 28 CNOM). ` +
+    "Objectif, precis, limite aux elements medicaux necessaires. N'invente rien. " +
+    enteteConsigne(req.user) +
+    "Structure : en-tete medecin / Date et lieu / CERTIFICAT MEDICAL [TYPE EN MAJ] / " +
+    "Corps en prose professionnelle a la 3e personne / " +
+    "Mention : Certificat etabli a la demande de l'interesse et remis en main propre / " +
+    "Je soussigne(e), Docteur [nom], certifie que... / Signature. " +
+    "FORMAT : prose fluide, pas de Markdown. N'ecris jamais de champs vides entre crochets.";
+
+  const user =
+    (patient ? `Patient : ${patient}\n` : '') +
+    (type ? `Type de certificat : ${type}\n` : '') +
+    `\nElements medicaux :\n${notes || '(voir type)'}\n` +
+    (complement ? `\nElements additionnels : ${complement}\n` : '');
+
+  try {
+    const document = await generateDocument({ system, user, maxTokens: 1200 });
+    res.json({ document });
+  } catch (err) { aiError(res, err); }
+});
+// POST /api/generate/ordonnance — ordonnance médicale structurée
+app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
+  const patient     = txt(req.body.patient, 500);
+  const ddn         = s(req.body.ddn, 20);
+  const medicaments = txt(req.body.medicaments);
+  const complement  = txt(req.body.complement, 2000);
+
+  if (!medicaments) {
+    return res.status(400).json({ error: 'Renseignez les médicaments à prescrire.' });
+  }
+
+  const spec = (req.user && req.user.specialite) || 'médecine générale';
+  const system =
+    `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
+    "Tu rédiges une ordonnance médicale complète et conforme aux bonnes pratiques françaises (HAS, ANSM). " +
+    "Pour chaque médicament fourni, structure la prescription avec : " +
+    "DCI (Dénomination Commune Internationale) + nom commercial entre parenthèses si utile, " +
+    "forme galénique, dosage unitaire, posologie précise (fréquence, moment de prise), durée de traitement. " +
+    "Si le médicament est un stupéfiant ou psychotrope, ajoute la mention 'en toutes lettres' pour les quantités. " +
+    "Ajoute uniquement les conseils essentiels et validés (prise avec repas, alcool déconseillé, etc.). " +
+    "N'invente aucune posologie non fournie — utilise uniquement ce que le médecin indique. " +
+    enteteConsigne(req.user) +
+    "Structure exacte : " +
+    "1. ORDONNANCE MÉDICALE (en majuscules, centré) " +
+    "2. Date : [date du jour] " +
+    "3. Patient : [nom], né(e) le [date naissance si fournie] " +
+    "4. Numérotation des médicaments (1., 2., ...) — un paragraphe par médicament " +
+    "5. Conseils au patient si pertinents " +
+    "6. Signature : Dr [nom], [spécialité], RPPS [numéro si disponible] " +
+    "FORMAT : texte brut, aucun Markdown. " +
+    "N'écris jamais de champs vides entre crochets si l'information est absente — omets simplement le champ.";
+
+  const user =
+    (patient ? `Patient : ${patient}\n` : '') +
+    (ddn ? `Date de naissance : ${ddn}\n` : '') +
+    `\nMédicaments à prescrire :\n${medicaments}\n` +
+    (complement ? `\nÉléments additionnels : ${complement}\n` : '');
+
+  try {
+    const document = await generateDocument({ system, user, maxTokens: 1500 });
+    res.json({ document });
+  } catch (err) { aiError(res, err); }
 });
 
 // SPA fallback
@@ -711,22 +944,26 @@ app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ── START ──
-app.listen(PORT, () => {
-  console.log(`\n  Praxi backend ✓`);
-  console.log(`  → http://localhost:${PORT}`);
-  console.log(`  → Admin : x-admin-token: ${ADMIN_TOKEN}`);
-  console.log(`  → Data  : waitlist.json · users.json`);
-  console.log(`  → Auth  : JWT (${JWT_EXPIRES_IN})${process.env.JWT_SECRET ? '' : ' — ⚠ JWT_SECRET par défaut'}`);
-  console.log(`  → IA    : ${anthropic ? `activée (${AI_MODEL})` : 'désactivée — ANTHROPIC_API_KEY manquante'}`);
-  console.log(`  → Data  : ${DATA_DIR}${process.env.DATA_DIR ? '' : ' — ⚠ stockage éphémère (définis DATA_DIR + volume pour persister)'}`);
+// ── START (uniquement si lancé directement, pas via require() en test) ──
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n  Praxi backend ✓`);
+    console.log(`  → http://localhost:${PORT}`);
+    console.log(`  → Admin : x-admin-token: ${ADMIN_TOKEN}`);
+    console.log(`  → Data  : waitlist.json · users.json`);
+    console.log(`  → Auth  : JWT (${JWT_EXPIRES_IN})${process.env.JWT_SECRET ? '' : ' — ⚠ JWT_SECRET par défaut'}`);
+    console.log(`  → IA    : ${anthropic ? `activée (${AI_MODEL})` : 'désactivée — ANTHROPIC_API_KEY manquante'}`);
+    console.log(`  → Data  : ${DATA_DIR}${process.env.DATA_DIR ? '' : ' — ⚠ stockage éphémère (définis DATA_DIR + volume pour persister)'}`);
 
-  // Vérifie la connexion SMTP au démarrage : le résultat apparaît dans les logs Railway.
-  if (SMTP_USER && SMTP_PASS) {
-    transporter.verify()
-      .then(() => console.log(`  → SMTP  : connecté (${SMTP_USER})\n`))
-      .catch(err => console.error(`  → SMTP  : ÉCHEC — ${err && err.message}\n`));
-  } else {
-    console.log('  → SMTP  : désactivé — SMTP_USER / SMTP_PASS manquants\n');
-  }
-});
+    // Vérifie la connexion SMTP au démarrage : le résultat apparaît dans les logs Railway.
+    if (SMTP_USER && SMTP_PASS) {
+      transporter.verify()
+        .then(() => console.log(`  → SMTP  : connecté (${SMTP_USER})\n`))
+        .catch(err => console.error(`  → SMTP  : ÉCHEC — ${err && err.message}\n`));
+    } else {
+      console.log('  → SMTP  : désactivé — SMTP_USER / SMTP_PASS manquants\n');
+    }
+  });
+}
+
+module.exports = app;
