@@ -1227,8 +1227,10 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
   }
 
   const specialiteRedacteur = (req.user && req.user.specialite) || 'médecine générale';
+    const authorVoice = authorVoiceConstraint(specialiteRedacteur, specialiste);
   const system =
     `Tu es un médecin expert en ${specialiteRedacteur}, exerçant en libéral en France. ` +
+    authorVoice +
     "Tu rédiges une lettre de liaison confraternelle destinée à un confrère spécialiste, " +
     "comme tu l'écrirais toi-même dans ta pratique quotidienne. " +
     "Structure la lettre avec rigueur clinique : évoque uniquement les éléments sémiologiques fournis " +
@@ -1701,6 +1703,42 @@ if (require.main === module) {
       console.log('  → SMTP  : désactivé — SMTP_USER / SMTP_PASS manquants\n');
     }
   });
+}
+
+
+// ─── Perspective auteur ──────────────────────────────────────────────────────
+// Contrôle la voix de la lettre selon qui écrit (auteur) vers qui (destinataire).
+// Un généraliste expose les faits et demande un avis — jamais la stratégie spécialisée.
+function authorVoiceConstraint(authorSpec, destSpec) {
+  const norm = t => (t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const isGeneral = /g[eé]n[eé]ral|mg\b|omniprat/i.test(authorSpec);
+  const authorNorm = norm(authorSpec);
+  const destNorm   = norm(destSpec || '');
+  // Remove "médecin" prefix to get specialty keyword
+  const destKey = destNorm.replace(/m[eé]decin\s*/, '').split(/[\s-]/)[0];
+  const isSameSpec = destKey.length > 3 && authorNorm.includes(destKey);
+  if (isSameSpec) return ''; // même spécialité → pas de contrainte
+  if (!isGeneral && !destSpec) return ''; // spécialiste sans destinataire → pas de contrainte
+
+  const examples = {
+    algolog: "Formulation correcte : 'Malgré les antalgiques de palier 2, le soulagement reste insuffisant, je vous sollicite pour optimiser la stratégie antalgique.' " +
+      "À éviter absolument : 'Un DN4 devrait être réalisé', 'composante neuropathique à suspecter', 'introduction de prégabaline', 'blocs antalgiques à discuter'.",
+    cardio:  "Formulation correcte : 'L'ECG est normal, je vous sollicite pour un bilan rythmologique complet.' " +
+      "À éviter : 'Un Holter est indiqué', 'la cardioversion pourrait être envisagée'.",
+    neuro:   "À éviter : ne reformulez pas l'interprétation EEG ni les modifications du traitement antiépileptique comme des décisions du médecin adresseur.",
+    dermato: "À éviter : 'La dermoscopie est nécessaire', 'le score PASI est à calculer'.",
+    default: "Exposez les faits cliniques, les traitements essayés et leur résultat, et formulez explicitement votre demande d'avis."
+  };
+  const k = Object.keys(examples).find(key => key !== 'default' && destNorm.includes(key)) || 'default';
+
+  return "PERSPECTIVE DE L'AUTEUR : vous rédigez en tant que " + authorSpec +
+    " qui adresse un patient à un spécialiste. " +
+    "Votre rôle est d'exposer objectivement ce que vous avez observé, essayé, et ce qui reste sans réponse. " +
+    "N'empiétez JAMAIS sur les décisions du spécialiste destinataire : " +
+    "n'utilisez pas son jargon technique spécialisé, " +
+    "ne formulez pas de plan thérapeutique relevant de sa compétence, " +
+    "ne présentez pas ses examens spécialisés comme des décisions acquises. " +
+    examples[k] + " ";
 }
 
 module.exports = app;

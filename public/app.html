@@ -558,7 +558,129 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;touch-action:
   .clinical-head{padding:18px 22px}.clinical-body{padding:20px 22px}
   .clinical-foot{justify-content:flex-end}.clinical-foot .btn{flex:0 1 auto;min-width:160px}
 }
-@media(max-width:700px){.generation-settings{width:100%;margin:4px 0 0}.clinical-v2-control{flex:1}.clinical-v2-control select{width:100%}.clinical-head h2{font-size:16px}.final-row{flex-direction:column;gap:6px}.final-row input{width:100%;text-align:left}}
+
+/* ── Pistes spécialiste (section informative) ── */
+.specialist-insights {
+  margin-top: 14px; padding: 12px 14px; border-radius: 10px;
+  background: rgba(168,85,247,.06); border: 1px solid rgba(168,85,247,.2);
+}
+.specialist-insights-header {
+  display: flex; align-items: center; gap: 7px; font-size: 11.5px;
+  color: #a855f7; font-weight: 600; letter-spacing: .02em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.specialist-insights-list { display: flex; flex-direction: column; gap: 6px; }
+.specialist-insight-item {
+  display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px;
+  color: var(--text-muted); line-height: 1.5;
+}
+.specialist-insight-item svg { flex-shrink: 0; margin-top: 2px; color: #a855f7; }
+@media (max-width: 700px) {
+  /* ── Variables mobile ── */
+  :root { --sidebar-w: 0px; }
+
+  /* ── Overlay et toggle ── */
+  .menu-toggle {
+    display: flex; position: fixed; top: 12px; left: 12px; z-index: 200;
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    align-items: center; justify-content: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,.18); cursor: pointer;
+  }
+  .sidebar {
+    transform: translateX(-100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
+    z-index: 300; width: min(80vw, 280px);
+  }
+  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 40px rgba(0,0,0,.4); }
+  .sidebar-overlay { display: block; }
+
+  /* ── Main layout ── */
+  .main {
+    margin-left: 0; padding: 68px 16px 120px;
+    min-height: 100dvh; width: 100%; box-sizing: border-box;
+  }
+  .page-title { font-size: 22px; margin-bottom: 20px; }
+
+  /* ── Forms ── */
+  .form-section { gap: 14px; }
+  .form-row, .final-row { flex-direction: column; gap: 10px; }
+  .final-row input { width: 100%; text-align: left; }
+  input[type="text"], input[type="email"], input[type="date"], select, textarea {
+    font-size: 16px !important; /* prevents iOS auto-zoom */
+  }
+  label { font-size: 13px; }
+
+  /* ── Multi-select dropdown ── */
+  .ms-panel {
+    position: fixed !important; left: 16px !important; right: 16px !important;
+    top: auto !important; width: auto !important;
+    max-height: 55dvh; z-index: 500; border-radius: 14px;
+    box-shadow: 0 8px 40px rgba(0,0,0,.35);
+  }
+  .ms-trigger { min-height: 48px; font-size: 15px; }
+  .ms-opt { padding: 12px 14px; font-size: 14px; }
+
+  /* ── Generation settings ── */
+  .generation-settings { width: 100%; margin: 6px 0 0; flex-wrap: wrap; gap: 8px; }
+  .clinical-v2-control { flex: 1 1 140px; }
+  .clinical-v2-control select { width: 100%; }
+
+  /* ── Generate button ── */
+  .generate-btn, button.generate-btn {
+    width: 100%; min-height: 52px; font-size: 16px;
+    border-radius: 14px; margin-top: 6px;
+  }
+
+  /* ── Result area ── */
+  .result { margin-top: 24px; }
+  .result-head { flex-wrap: wrap; gap: 8px; }
+  .result-head .result-actions { flex-wrap: wrap; }
+  .result-body {
+    font-size: 14px; min-height: 180px; padding: 16px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .edit-hint { font-size: 11.5px; }
+
+  /* ── Chips ── */
+  .complete-box { padding: 12px; gap: 8px; }
+  .chip { font-size: 12.5px; padding: 7px 12px; }
+  .complete-update { width: 100%; justify-content: center; margin-top: 4px; }
+
+  /* ── Clinical shield modal ── */
+  body.clinical-modal-open { overflow: hidden; position: fixed; width: 100%; touch-action: none; }
+  .clinical-modal { background: rgba(2,6,10,.95); }
+  .clinical-dialog {
+    width: 100%; height: 100dvh; max-height: 100dvh;
+    border-radius: 0; border: 0;
+  }
+  .clinical-head { padding: 12px 14px 10px; }
+  .clinical-head h2 { font-size: 15px; }
+  .clinical-body { padding: 12px 14px; }
+  .clinical-foot { padding: 10px 14px 12px; gap: 8px; }
+  .clinical-foot .btn {
+    flex: 1 1 0; min-width: 0; height: 48px; font-size: 14px;
+    border-radius: 12px; justify-content: center;
+  }
+  .clinical-grid { gap: 12px; }
+  .clinical-block { padding: 12px 14px; }
+  .clinical-block.full { grid-column: 1; }
+  .clinical-block h3 { font-size: 12px; }
+
+  /* ── Clinical suggestions ── */
+  .clinical-suggestion { gap: 8px; padding: 8px 0; }
+  .suggestion-toggle { min-width: 48px; height: 32px; font-size: 12.5px; border-radius: 8px; }
+  .specialist-insights { padding: 10px 12px; }
+  .specialist-insight-item { font-size: 12px; }
+
+  /* ── Score bar ── */
+  .clinical-score-bar { gap: 8px; }
+  #clinical-score { font-size: 28px; }
+
+  /* ── Quick input ── */
+  .quick-answer { flex-direction: column; gap: 6px; }
+  .quick-answer input { font-size: 15px; }
+  .quick-answer .btn { width: 100%; justify-content: center; }
+}
 </style>
 </head>
 <body>
@@ -1384,7 +1506,14 @@ function switchView(name) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 document.querySelectorAll('.side-link[data-view]').forEach(b => {
-  b.addEventListener('click', () => switchView(b.dataset.view));
+  b.addEventListener('click', () => {
+    switchView(b.dataset.view);
+    // Ferme la sidebar sur mobile après navigation
+    if (window.innerWidth <= 880) {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    }
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2072,12 +2201,32 @@ function confidenceBreakdownHtml(items) {
     return `<div class="confidence-line"><span>${escapeHtml(item.label)}</span><strong class="${cls}">${item.value >= 0 ? '+' : ''}${item.value} %</strong></div>`;
   }).join('');
 }
-function suggestionsHtml(items) {
-  return items.map((s, index) => `<div class="clinical-suggestion">
+function suggestionItemHtml(s, index) {
+  return `<div class="clinical-suggestion">
     <button type="button" class="suggestion-toggle" aria-pressed="false">Non</button>
     <input type="checkbox" id="suggestion-${index}" data-clinical-suggestion value="${escapeHtml(s.label)}" hidden />
-    <span class="suggestion-body"><label for="suggestion-${index}">${escapeHtml(s.label)}</label><small class="clinical-confidence">Confiance ${Number(s.confidence) || 70} %</small><small class="clinical-rationale">Raison : ${escapeHtml(s.rationale)}</small></span>
-  </div>`).join('');
+    <span class="suggestion-body"><label for="suggestion-${index}">${escapeHtml(s.label)}</label><small class="clinical-confidence">Confiance ${Number(s.confidence) || 70} %</small><small class="clinical-rationale">${escapeHtml(s.rationale)}</small></span>
+  </div>`;
+}
+function suggestionsHtml(items) {
+  const auteur = items.filter(s => s.role !== 'specialiste');
+  const specialiste = items.filter(s => s.role === 'specialiste');
+  let html = '';
+  if (auteur.length) {
+    html += auteur.map((s, i) => suggestionItemHtml(s, i)).join('');
+  }
+  if (specialiste.length) {
+    html += `<div class="specialist-insights">
+      <div class="specialist-insights-header">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Ce que le spécialiste pourra envisager — non inclus dans la lettre
+      </div>
+      <div class="specialist-insights-list">
+        ${specialiste.map(s => `<div class="specialist-insight-item"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>${escapeHtml(s.label)}</div>`).join('')}
+      </div>
+    </div>`;
+  }
+  return html || '<div style="font-size:13px;color:var(--text-dim)">Suggestions en cours de chargement…</div>';
 }
 function deductionsHtml(items) {
   return items && items.length ? items.map((item, index) => `<div class="clinical-deduction"><input type="checkbox" data-clinical-deduction id="deduction-${index}" checked aria-label="Conserver cette interprétation"><textarea spellcheck="true" aria-label="Modifier l’interprétation clinique">${escapeHtml(item)}</textarea></div>`).join('') : '<div style="font-size:13px;color:var(--text-dim)">Aucune interprétation nécessaire.</div>';
@@ -2159,7 +2308,7 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
     <div class="clinical-block"><h3>À compléter si possible</h3>${clinicalList(recommended, optional.length ? 'Éléments facultatifs restants : ' + optional.join(', ') : 'Éléments essentiels présents.')}</div>
     <div class="clinical-block full"><h3>Interprétations proposées · cochez celles à intégrer</h3>${deductionsHtml(analysis.deductions)}</div>
     <div class="clinical-block"><h3>Compléter rapidement</h3>${questions}</div>
-    <div class="clinical-block full"><h3>Suggestions — tapez Oui pour intégrer à la lettre</h3>${suggestions || '<div style="font-size:13px;color:var(--text-dim)">Chargement des suggestions…</div>'}</div>
+    <div class="clinical-block full"><h3>Suggestions pour votre lettre</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 10px">Activez “ Oui ” pour intégrer l’élément dans votre lettre. Les pistes du spécialiste sont affichées à titre informatif uniquement.</p>${suggestions || ''}</div>
   </div>`;
   bindSuggestionToggles(modal);
   const next = document.getElementById('clinical-quick-next'); if (next) next.addEventListener('click', submitQuickClinicalAnswer);
@@ -3086,7 +3235,23 @@ function initMultiSelect(root, options) {
     });
   }
 
-  const open  = () => { root.classList.add('open');  trigger.setAttribute('aria-expanded', 'true');  };
+  function positionPanel() {
+    if (window.innerWidth <= 700) {
+      const rect = trigger.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom - 12;
+      const spaceAbove = rect.top - 12;
+      if (spaceBelow >= 200 || spaceBelow >= spaceAbove) {
+        panel.style.top = (rect.bottom + 6) + 'px';
+        panel.style.bottom = 'auto';
+      } else {
+        panel.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+        panel.style.top = 'auto';
+      }
+    } else {
+      panel.style.top = ''; panel.style.bottom = '';
+    }
+  }
+  const open  = () => { positionPanel(); root.classList.add('open');  trigger.setAttribute('aria-expanded', 'true');  };
   const close = () => { root.classList.remove('open'); trigger.setAttribute('aria-expanded', 'false'); };
   const toggle = () => root.classList.contains('open') ? close() : open();
 
