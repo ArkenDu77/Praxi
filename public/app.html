@@ -518,35 +518,37 @@ body {
 }
 .generation-settings{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:4px}.clinical-v2-control{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-dim)}
 .clinical-v2-control .select{width:auto;min-width:150px;padding-top:8px;padding-bottom:8px;font-size:12px}
-body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;touch-action:none}
-.clinical-modal{position:fixed;inset:0;z-index:1000;display:none;background:rgba(2,6,10,.9);backdrop-filter:blur(6px);overscroll-behavior:none;touch-action:none}
+body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:0}
+.clinical-modal{position:fixed;inset:0;z-index:1000;display:none;background:rgba(2,6,10,.9);backdrop-filter:blur(6px)}
 .clinical-modal.show{display:flex;align-items:stretch;justify-content:center}
-.clinical-dialog{width:100%;height:100dvh;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-card);border:0;box-shadow:none}
+.clinical-dialog{width:100%;height:100dvh;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-card);border:0;box-shadow:none;touch-action:auto}
 .clinical-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:14px 16px 12px;background:var(--bg-card);border-bottom:1px solid var(--border)}
 .clinical-head h2{font-size:17px;margin:0;line-height:1.25}.clinical-score{margin-left:auto;min-width:108px;padding:8px 10px;border-radius:10px;border:1px solid var(--accent);text-align:center;flex:none}
 .clinical-score small{display:block;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim);line-height:1.3}
 .clinical-score strong{display:block;font-size:20px;line-height:1.15}.clinical-score em{display:block;font-style:normal;font-size:10px;color:var(--text-muted);margin-top:2px}
 .clinical-summary{margin:0 0 12px;padding:10px 12px;border-radius:8px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.22);font-size:12.5px;line-height:1.55;color:var(--text-muted)}
-.clinical-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:14px 16px 18px}
+.clinical-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:14px 16px 18px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
 .clinical-grid{display:grid;grid-template-columns:1fr;gap:12px}
 .clinical-block{padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
 .clinical-block.full{grid-column:1/-1}.clinical-block h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;color:var(--text-muted)}
 .clinical-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.clinical-alert{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.06)}
-.clinical-suggestion{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.clinical-suggestion{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .clinical-suggestion:last-child{border-bottom:0}
-.suggestion-toggle{flex:none;border:1px solid var(--border2);background:var(--bg-card2);color:var(--text-muted);border-radius:999px;padding:6px 12px;font:600 11px Inter,sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap}
+.suggestion-toggle{flex:none;border:1px solid var(--border2);background:var(--bg-card2);color:var(--text-muted);border-radius:10px;min-width:52px;min-height:44px;padding:0 14px;font:600 12px Inter,sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .suggestion-toggle.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
-.suggestion-body{flex:1;min-width:0}.suggestion-body label{display:block;font-weight:500;cursor:pointer}
+.suggestion-body{flex:1;min-width:0;padding-top:10px}.suggestion-body .suggestion-text{display:block;font-weight:500;line-height:1.45;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(56,189,248,.1);color:var(--accent)}
 .confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04)}.confidence-line:last-child{border:0}.confidence-plus{color:#22c55e}.confidence-minus{color:#f59e0b}.confidence-optional{color:#94a3b8}
 .quick-answer{display:flex;gap:8px;margin-top:10px}.quick-answer input{flex:1;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px 10px;font:13px Inter,sans-serif}.quick-progress{font-size:11px;color:var(--text-dim);margin-bottom:5px}
-.clinical-deduction{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:9px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}.clinical-deduction:last-child{border:0}.clinical-deduction input{margin-top:10px;accent-color:var(--accent)}
-.clinical-deduction textarea{width:100%;min-height:42px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:7px 8px;font:13px/1.45 Inter,sans-serif}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.3)}
+.clinical-deduction{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}.clinical-deduction:last-child{border:0}.clinical-deduction.selected{background:rgba(56,189,248,.04);border-radius:8px;padding-left:6px;padding-right:6px}
+.deduction-hit{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-top:2px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.deduction-hit input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer;flex:none}
+.clinical-deduction textarea{width:100%;min-height:48px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:10px 8px;font:13px/1.45 Inter,sans-serif;touch-action:manipulation}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.3)}
 .mini-apply{margin-left:7px;border:1px solid rgba(56,189,248,.35);background:rgba(56,189,248,.08);color:var(--accent);border-radius:6px;padding:4px 8px;font:600 10px Inter,sans-serif;cursor:pointer}
 .final-check{display:grid;gap:12px}.final-row{display:flex;justify-content:space-between;gap:20px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px}.final-row span:first-child{color:var(--text-muted)}
 .final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px Inter,sans-serif}.final-row input:focus{outline:none;border-color:var(--accent)}
-.clinical-foot{flex:none;display:flex;align-items:center;justify-content:stretch;gap:10px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg-card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.35)}
-.clinical-foot .btn{flex:1;justify-content:center;min-height:44px}
+.clinical-foot{flex:none;display:flex;align-items:center;justify-content:stretch;gap:10px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg-card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.35);position:relative;z-index:2}
+.clinical-foot .btn{flex:1;justify-content:center;min-height:48px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .praxi-verification{margin:14px 0 0;padding:13px 15px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.25);border-radius:9px}
 .praxi-verification strong{display:block;font-size:12px;color:#22c55e;margin-bottom:7px}.praxi-verification div{font-size:11px;color:var(--text-muted);line-height:1.7}
 .safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
@@ -646,18 +648,29 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;touch-action:
   .complete-update { width: 100%; justify-content: center; margin-top: 4px; }
 
   /* ── Clinical shield modal ── */
-  body.clinical-modal-open { overflow: hidden; position: fixed; width: 100%; touch-action: none; }
+  body.clinical-modal-open { overflow: hidden; position: fixed; width: 100%; left: 0; right: 0; }
   .clinical-modal { background: rgba(2,6,10,.95); }
   .clinical-dialog {
     width: 100%; height: 100dvh; max-height: 100dvh;
     border-radius: 0; border: 0;
+    display: flex; flex-direction: column;
   }
-  .clinical-head { padding: 12px 14px 10px; }
-  .clinical-head h2 { font-size: 15px; }
-  .clinical-body { padding: 12px 14px; }
-  .clinical-foot { padding: 10px 14px 12px; gap: 8px; }
+  .clinical-head {
+    flex: none; padding: max(12px, env(safe-area-inset-top)) 14px 10px;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .clinical-head h2 { font-size: 15px; flex: 1 1 160px; }
+  .clinical-score { min-width: 84px; margin-left: 0; }
+  .clinical-body {
+    flex: 1 1 auto; min-height: 0; padding: 12px 14px 24px;
+    overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+  }
+  .clinical-foot {
+    flex: none; padding: 10px 14px max(14px, env(safe-area-inset-bottom)); gap: 8px;
+    position: sticky; bottom: 0;
+  }
   .clinical-foot .btn {
-    flex: 1 1 0; min-width: 0; height: 48px; font-size: 14px;
+    flex: 1 1 0; min-width: 0; min-height: 50px; font-size: 15px;
     border-radius: 12px; justify-content: center;
   }
   .clinical-grid { gap: 12px; }
@@ -665,20 +678,25 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;touch-action:
   .clinical-block.full { grid-column: 1; }
   .clinical-block h3 { font-size: 12px; }
 
-  /* ── Clinical suggestions ── */
-  .clinical-suggestion { gap: 8px; padding: 8px 0; }
-  .suggestion-toggle { min-width: 48px; height: 32px; font-size: 12.5px; border-radius: 8px; }
+  /* ── Clinical suggestions & deductions ── */
+  .clinical-suggestion { gap: 10px; padding: 10px 0; align-items: flex-start; }
+  .suggestion-toggle { min-width: 56px; min-height: 44px; font-size: 13px; border-radius: 10px; }
+  .suggestion-body { padding-top: 8px; }
+  .deduction-hit { min-width: 48px; min-height: 48px; }
+  .deduction-hit input { width: 24px; height: 24px; }
+  .clinical-deduction textarea { min-height: 52px; font-size: 15px; }
   .specialist-insights { padding: 10px 12px; }
   .specialist-insight-item { font-size: 12px; }
 
   /* ── Score bar ── */
   .clinical-score-bar { gap: 8px; }
-  #clinical-score { font-size: 28px; }
+  #clinical-score { font-size: 24px; }
 
   /* ── Quick input ── */
-  .quick-answer { flex-direction: column; gap: 6px; }
-  .quick-answer input { font-size: 15px; }
-  .quick-answer .btn { width: 100%; justify-content: center; }
+  .quick-answer { flex-direction: column; gap: 8px; }
+  .quick-answer input { font-size: 16px; min-height: 44px; }
+  .quick-answer .btn { width: 100%; min-height: 44px; justify-content: center; }
+  .mini-apply { min-height: 36px; padding: 8px 12px; }
 }
 </style>
 </head>
@@ -2145,9 +2163,14 @@ function ensureClinicalModal() {
   let modal = document.getElementById('clinical-modal');
   if (modal) return modal;
   modal = document.createElement('div'); modal.id = 'clinical-modal'; modal.className = 'clinical-modal';
-  modal.innerHTML = '<div class="clinical-dialog" role="dialog" aria-modal="true" aria-labelledby="clinical-title"><div class="clinical-head"><div><div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.08em">COPILOTE MÉDICAL</div><h2 id="clinical-title">Analyse clinique</h2></div><div class="clinical-score"><small>Score dossier</small><strong id="clinical-score">—</strong><em id="clinical-score-label">À évaluer</em></div></div><div class="clinical-body" id="clinical-body"></div><div class="clinical-foot"><button class="btn btn-ghost" id="clinical-cancel">Revenir aux notes</button><button class="btn btn-primary" id="clinical-continue">Vérifier avant génération</button></div></div>';
+  modal.innerHTML = '<div class="clinical-dialog" role="dialog" aria-modal="true" aria-labelledby="clinical-title"><div class="clinical-head"><div><div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:.08em">COPILOTE MÉDICAL</div><h2 id="clinical-title">Analyse clinique</h2></div><div class="clinical-score"><small>Score dossier</small><strong id="clinical-score">—</strong><em id="clinical-score-label">À évaluer</em></div></div><div class="clinical-body" id="clinical-body"></div><div class="clinical-foot"><button type="button" class="btn btn-ghost" id="clinical-cancel">Revenir aux notes</button><button type="button" class="btn btn-primary" id="clinical-continue">Vérifier avant génération</button></div></div>';
   document.body.appendChild(modal);
-  const closeModal = () => { modal.classList.remove('show'); document.body.classList.remove('clinical-modal-open'); };
+  const closeModal = () => {
+    modal.classList.remove('show');
+    document.body.classList.remove('clinical-modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, clinicalScrollY);
+  };
   modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
   modal.querySelector('#clinical-cancel').addEventListener('click', () => {
     if (modal.querySelector('#clinical-continue').dataset.step === 'final' && clinicalPending) {
@@ -2178,15 +2201,40 @@ function ensureClinicalModal() {
   return modal;
 }
 
+let clinicalScrollY = 0;
+function openClinicalModal(modal) {
+  if (!modal.classList.contains('show')) {
+    clinicalScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.body.classList.add('clinical-modal-open');
+    document.body.style.top = `-${clinicalScrollY}px`;
+  }
+  modal.classList.add('show');
+}
+
 function bindSuggestionToggles(root) {
-  root.querySelectorAll('.suggestion-toggle').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const on = btn.classList.toggle('on');
+  root.querySelectorAll('.clinical-suggestion').forEach(row => {
+    const btn = row.querySelector('.suggestion-toggle');
+    const box = row.querySelector('[data-clinical-suggestion]');
+    const text = row.querySelector('.suggestion-text');
+    if (!btn || !box) return;
+    const setOn = on => {
+      btn.classList.toggle('on', on);
       btn.textContent = on ? 'Oui' : 'Non';
       btn.setAttribute('aria-pressed', on ? 'true' : 'false');
-      const box = btn.parentElement.querySelector('[data-clinical-suggestion]');
-      if (box) box.checked = on;
-    });
+      box.checked = on;
+    };
+    btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); setOn(!box.checked); });
+    if (text) text.addEventListener('click', e => { e.preventDefault(); setOn(!box.checked); });
+  });
+}
+
+function bindDeductionRows(root) {
+  root.querySelectorAll('.clinical-deduction').forEach(row => {
+    const box = row.querySelector('[data-clinical-deduction]');
+    if (!box) return;
+    const sync = () => row.classList.toggle('selected', box.checked);
+    box.addEventListener('change', sync);
+    sync();
   });
 }
 
@@ -2204,7 +2252,7 @@ function suggestionItemHtml(s, index) {
   return `<div class="clinical-suggestion">
     <button type="button" class="suggestion-toggle" aria-pressed="false">Non</button>
     <input type="checkbox" id="suggestion-${index}" data-clinical-suggestion value="${escapeHtml(s.label)}" hidden />
-    <span class="suggestion-body"><label for="suggestion-${index}">${escapeHtml(s.label)}</label><small class="clinical-confidence">Confiance ${Number(s.confidence) || 70} %</small><small class="clinical-rationale">${escapeHtml(s.rationale)}</small></span>
+    <span class="suggestion-body"><span class="suggestion-text" role="button" tabindex="0">${escapeHtml(s.label)}</span><small class="clinical-confidence">Confiance ${Number(s.confidence) || 70} %</small><small class="clinical-rationale">${escapeHtml(s.rationale)}</small></span>
   </div>`;
 }
 function suggestionsHtml(items) {
@@ -2228,7 +2276,7 @@ function suggestionsHtml(items) {
   return html || '<div style="font-size:13px;color:var(--text-dim)">Suggestions en cours de chargement…</div>';
 }
 function deductionsHtml(items) {
-  return items && items.length ? items.map((item, index) => `<div class="clinical-deduction"><input type="checkbox" data-clinical-deduction id="deduction-${index}" checked aria-label="Conserver cette interprétation"><textarea spellcheck="true" aria-label="Modifier l’interprétation clinique">${escapeHtml(item)}</textarea></div>`).join('') : '<div style="font-size:13px;color:var(--text-dim)">Aucune interprétation nécessaire.</div>';
+  return items && items.length ? items.map((item, index) => `<div class="clinical-deduction"><label class="deduction-hit"><input type="checkbox" data-clinical-deduction id="deduction-${index}" aria-label="Intégrer cette interprétation"></label><textarea spellcheck="true" aria-label="Modifier l’interprétation clinique">${escapeHtml(item)}</textarea></div>`).join('') : '<div style="font-size:13px;color:var(--text-dim)">Aucune interprétation proposée.</div>';
 }
 function renderFinalClinicalCheck(modal) {
   const built = GEN[clinicalPending.key].build();
@@ -2245,6 +2293,7 @@ function renderFinalClinicalCheck(modal) {
   </div></div>`;
   modal.querySelector('#clinical-cancel').textContent = 'Retour à l’analyse';
   const button = modal.querySelector('#clinical-continue'); button.textContent = 'Générer'; button.dataset.step = 'final';
+  modal.querySelector('#clinical-body').scrollTop = 0;
 }
 function applyFinalIdentityEdits(key) {
   const patientIds = { liaison:'l-patient', cr:'c-patient', mdph:'m-patient', ald:'a-patient', certificat:'cert-patient', ordonnance:'ord-patient' };
@@ -2310,13 +2359,14 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
     <div class="clinical-block full"><h3>Suggestions pour votre lettre</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 10px">Activez “ Oui ” pour intégrer l’élément dans votre lettre. Les pistes du spécialiste sont affichées à titre informatif uniquement.</p>${suggestions || ''}</div>
   </div>`;
   bindSuggestionToggles(modal);
+  bindDeductionRows(modal);
   const next = document.getElementById('clinical-quick-next'); if (next) next.addEventListener('click', submitQuickClinicalAnswer);
   const applyFormat = document.getElementById('apply-recommended-format'); if (applyFormat) applyFormat.addEventListener('click', () => applyRecommendedFormat(analysis.recommendedLength));
   const quickInput = document.getElementById('clinical-quick-input'); if (quickInput) quickInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submitQuickClinicalAnswer(); } });
   modal.querySelector('#clinical-cancel').textContent = 'Revenir aux notes';
   const continueBtn = modal.querySelector('#clinical-continue'); continueBtn.textContent = 'Vérifier avant génération'; delete continueBtn.dataset.step;
-  modal.classList.add('show');
-  document.body.classList.add('clinical-modal-open');
+  openClinicalModal(modal);
+  modal.querySelector('#clinical-body').scrollTop = 0;
 }
 
 async function prepareClinicalGeneration(key, btn) {
