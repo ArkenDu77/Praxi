@@ -875,24 +875,44 @@ app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
     return res.status(400).json({ error: 'Renseignez le type de certificat.' });
   }
 
-  const spec = (req.user && req.user.specialite) || 'medecine generale';
-  const typeLabel = type || 'medical';
+  const spec = (req.user && req.user.specialite) || 'médecine générale';
+  const typeLabel = type || 'médical';
+
+  // Adapte les contraintes légales selon le type de certificat
+  const typeLower = typeLabel.toLowerCase();
+  let legalNote = '';
+  if (/sport|aptitude/i.test(typeLower)) {
+    legalNote = "Pour un certificat d'aptitude au sport, mentionner : l'absence de contre-indication clinique à la pratique sportive au vu de l'examen du jour, le sport concerné, et la durée de validité (1 an pour les fédérations agréées). Ne pas mentionner le diagnostic précis, seulement l'aptitude. ";
+  } else if (/arr[eê]t|travail|incapacité/i.test(typeLower)) {
+    legalNote = "Pour un certificat d'arrêt de travail/incapacité temporaire, préciser la durée et le motif médical général (sans détail diagnostique sauf accord patient), et mentionner si le patient peut sortir ou non. ";
+  } else if (/décès|mort/i.test(typeLower)) {
+    legalNote = "Pour un certificat de décès, respecter le formulaire Cerfa 7-78 : heure et lieu du décès, cause apparente, caractère naturel/non naturel/indéterminé, obstacle médico-légal (oui/non). ";
+  } else if (/garde|divorce|justice|tribunal/i.test(typeLower)) {
+    legalNote = "Ce certificat peut être produit en justice. Soyez particulièrement factuel et objectif, limité aux seuls constats cliniques vérifiables. Pas d'interprétation, pas de prise de position. ";
+  }
+
   const system =
-    `Tu es un medecin expert en ${spec}, exercant en liberal en France. ` +
-    `Tu rediges un certificat medical (${typeLabel}) conforme au Code de deontologie medicale (art. 28 CNOM). ` +
-    "Objectif, precis, limite aux elements medicaux necessaires. N'invente rien. " +
+    `Tu es un médecin expert en ${spec}, exerçant en libéral en France. ` +
+    `Tu rédiges un certificat médical (${typeLabel}) conforme au Code de déontologie médicale (art. 28 CNOM). ` +
+    "Objectif, précis, limité aux éléments médicaux nécessaires. N'invente rien — base-toi uniquement sur les éléments fournis. " +
+    legalNote +
     enteteConsigne(req.user) +
-    "Structure : en-tete medecin / Date et lieu / CERTIFICAT MEDICAL [TYPE EN MAJ] / " +
-    "Corps en prose professionnelle a la 3e personne / " +
-    "Mention : Certificat etabli a la demande de l'interesse et remis en main propre / " +
-    "Je soussigne(e), Docteur [nom], certifie que... / Signature. " +
-    "FORMAT : prose fluide, pas de Markdown. N'ecris jamais de champs vides entre crochets.";
+    "Structure exacte :\n" +
+    "En-tête médecin\n" +
+    "[Ville], le [date du jour]\n\n" +
+    "CERTIFICAT MÉDICAL — [TYPE EN MAJUSCULES]\n\n" +
+    "Je soussigné(e), Docteur [nom], [spécialité], certifie avoir examiné ce jour :\n" +
+    "[Corps du certificat en prose professionnelle à la 3e personne]\n\n" +
+    "Certificat établi à la demande de l'intéressé(e) et remis en main propre, pour valoir ce que de droit.\n\n" +
+    "Signature\n\n" +
+    "FORMAT : prose fluide, pas de Markdown. " +
+    "N'écris jamais de champs vides entre crochets si l'information est absente — omets simplement le champ.";
 
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
     (type ? `Type de certificat : ${type}\n` : '') +
-    `\nElements medicaux :\n${notes || '(voir type)'}\n` +
-    (complement ? `\nElements additionnels : ${complement}\n` : '');
+    `\nÉléments médicaux :\n${notes || '(voir type)'}\n` +
+    (complement ? `\nÉléments additionnels : ${complement}\n` : '');
 
   try {
     const document = await generateDocument({ system, user, maxTokens: 1200 });
