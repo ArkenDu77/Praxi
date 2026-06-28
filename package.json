@@ -5,14 +5,20 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node --watch server.js"
+    "dev": "node --watch server.js",
+    "test": "jest tests/ --forceExit --testTimeout=15000"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.0.0",
     "express": "^4.21.2",
+    "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.3",
     "nodemailer": "^9.0.1"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0"
   }
 }
