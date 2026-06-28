@@ -2852,6 +2852,77 @@ function mockPatient(name) {
     motif
   };
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+//  AUTO-COMPLÉTION PATIENT sur tous les champs patient
+// ═══════════════════════════════════════════════════════════════════════
+(function initPatientAutocomplete() {
+  const PATIENT_IDS = ['l-patient','c-patient','m-patient','a-patient','cert-patient','ord-patient'];
+  let acBox = null;
+
+  function closeAc() { if (acBox) { acBox.remove(); acBox = null; } }
+
+  function openAc(input, patients) {
+    closeAc();
+    if (!patients.length) return;
+    acBox = document.createElement('div');
+    acBox.style.cssText = [
+      'position:absolute','z-index:200','background:#0D1520',
+      'border:1px solid #1A2535','border-radius:8px','box-shadow:0 8px 24px rgba(0,0,0,.5)',
+      'max-height:220px','overflow-y:auto','min-width:260px','width:100%'
+    ].join(';');
+
+    patients.forEach(p => {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13.5px;color:#EDF2F7;border-bottom:1px solid #1A2535;transition:background .12s';
+      item.onmouseenter = () => item.style.background = '#1A2535';
+      item.onmouseleave = () => item.style.background = '';
+      const age = p.ddn ? ' · ' + (new Date().getFullYear() - new Date(p.ddn).getFullYear()) + ' ans' : '';
+      const patho = p.patho ? '<div style="font-size:11px;color:#6B8299;margin-top:2px">' + escapeHtml(p.patho.slice(0, 60)) + '</div>' : '';
+      item.innerHTML = '<strong>' + escapeHtml(p.nom) + '</strong><span style="color:#6B8299">' + escapeHtml(age) + '</span>' + patho;
+      item.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = p.nom;
+        // Remplir DDN si ordonnance
+        const ddnEl = document.getElementById('ord-ddn');
+        if (ddnEl && p.ddn) ddnEl.value = p.ddn;
+        // Pré-remplir pathologies dans notes si vide
+        if (p.patho) {
+          const view = input.closest('.view');
+          if (view) {
+            const notesEl = view.querySelector('textarea[id$="-notes"]');
+            if (notesEl && !notesEl.value.trim()) notesEl.value = 'ATCD : ' + p.patho;
+          }
+        }
+        closeAc();
+      });
+      acBox.appendChild(item);
+    });
+
+    const wrap = input.parentElement;
+    wrap.style.position = 'relative';
+    wrap.appendChild(acBox);
+  }
+
+  PATIENT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', function() {
+      const q = this.value.trim().toLowerCase();
+      if (q.length < 2) { closeAc(); return; }
+      const matches = loadPatients().filter(p => p.nom.toLowerCase().includes(q)).slice(0, 6);
+      openAc(this, matches);
+    });
+    el.addEventListener('blur', () => setTimeout(closeAc, 150));
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Escape') closeAc();
+    });
+  });
+
+  document.addEventListener('click', e => {
+    if (acBox && !acBox.contains(e.target)) closeAc();
+  });
+})();
 </script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>lucide.createIcons();</script>
