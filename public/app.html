@@ -274,6 +274,42 @@ body {
 }
 .file-remove:hover { color: var(--danger); }
 
+/* ── Avis spécialisé : galerie de photos et références ── */
+.photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.photo-thumb {
+  position: relative; width: 92px; height: 92px; border-radius: 8px;
+  overflow: hidden; border: 1px solid var(--border); background: var(--bg-card);
+}
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb .file-remove {
+  position: absolute; top: 2px; right: 4px; color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.7);
+}
+.photo-thumb .photo-size {
+  position: absolute; bottom: 0; left: 0; right: 0; padding: 2px 5px;
+  font-size: 10px; color: #fff; background: rgba(0,0,0,.55);
+}
+.rag-badge {
+  display: inline-flex; align-items: center; gap: 6px; margin-left: auto;
+  font-size: 11px; color: var(--text-dim);
+}
+.references {
+  margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 12.5px; color: var(--text-muted);
+}
+.references h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--text-dim); margin: 0 0 10px; font-weight: 600; }
+.references ol { margin: 0; padding-left: 20px; }
+.references li { margin-bottom: 7px; line-height: 1.5; }
+.references a { color: var(--accent); text-decoration: none; }
+.references a:hover { text-decoration: underline; }
+.references .ref-source { color: var(--text-dim); }
+.avis-disclaimer {
+  margin-top: 14px; padding: 11px 14px; border-radius: 8px;
+  background: var(--accent-dim); border: 1px solid var(--border);
+  font-size: 12.5px; color: var(--text-muted); line-height: 1.55;
+}
+
 /* ─── BOUTONS ─── */
 .actions { margin-top: 22px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .btn {
@@ -750,6 +786,12 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   <button class="side-link" data-view="ordonnance">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 12h6M9 16h3"/></svg>
     Ordonnance
+  </button>
+
+  <div class="side-section">Aide à la décision</div>
+  <button class="side-link" data-view="avis">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35M11 8v3M11 14h.01"/></svg>
+    Avis spécialisé
   </button>
 
   <div class="side-section">Mon espace</div>
@@ -1237,6 +1279,73 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     </div>
   </section>
 
+  <!-- ── AVIS SPÉCIALISÉ ── -->
+  <section class="view" id="view-avis">
+    <h1 class="page-title">Avis spécialisé</h1>
+    <p class="page-sub">Décrivez un cas, joignez des photos : Praxi interroge une base de connaissances médicale indexée et vous rend un avis argumenté et sourcé.</p>
+
+    <div class="field">
+      <label class="label">
+        <span>Spécialité</span>
+        <span class="label-opt" id="av-base-info"></span>
+      </label>
+      <select class="select" id="av-specialite">
+        <option value="">Chargement…</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label class="label">
+        <span>Description du cas</span>
+        <span class="label-opt">Histoire, symptômes, terrain, traitements essayés</span>
+      </label>
+      <div class="with-mic">
+        <textarea class="textarea" id="av-cas" style="min-height:190px" placeholder="Homme de 34 ans, plaques érythémato-squameuses des coudes et genoux depuis 2 ans, poussées hivernales, prurit modéré. Dermocorticoïdes d'activité forte partiellement efficaces. Pas d'atteinte unguéale ni articulaire…"></textarea>
+        <button type="button" class="mic-btn" data-mic="av-cas" title="Dictée vocale">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+        </button>
+      </div>
+      <p class="anon-hint"><i data-lucide="lock"></i> N'indiquez aucune donnée identifiante : ni nom, ni date de naissance, ni NIR</p>
+    </div>
+
+    <div class="field" id="av-photos-field">
+      <label class="label">
+        <span>Photos cliniques</span>
+        <span class="label-opt">Facultatif — 4 maximum</span>
+      </label>
+      <div class="dropzone" id="av-dropzone">
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 16l5-5 4 4 3-3 6 6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"/><circle cx="9" cy="8" r="1.5"/>
+        </svg>
+        <div class="dropzone-title">Glissez vos photos ici ou cliquez pour parcourir</div>
+        <div class="dropzone-hint">JPEG, PNG ou WebP — redimensionnées sur votre appareil avant envoi</div>
+        <input type="file" id="av-photo-input" accept="image/jpeg,image/png,image/webp" multiple hidden />
+      </div>
+      <div class="photo-grid" id="av-photo-grid"></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" id="av-submit">
+        <span class="btn-label">Demander l'avis</span>
+      </button>
+    </div>
+    <div class="alert alert-error" id="av-error"></div>
+
+    <div class="result" id="av-result">
+      <div class="result-head">
+        <span class="result-title">Avis spécialisé</span>
+        <span class="rag-badge" id="av-rag-badge"></span>
+        <div class="result-tools" data-result-tools="avis"></div>
+      </div>
+      <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
+      <div class="result-body" id="av-out"></div>
+      <div class="references" id="av-references"></div>
+      <div class="avis-disclaimer">
+        Aide à la décision entre confrères, fondée sur les sources listées ci-dessus. Ne constitue ni une consultation spécialisée, ni un diagnostic établi, ni une prescription. La décision thérapeutique reste celle du médecin qui suit le patient.
+      </div>
+    </div>
+  </section>
+
   <!-- ── HISTORIQUE ── -->
   <section class="view" id="view-history">
     <h1 class="page-title">Historique</h1>
@@ -1509,6 +1618,7 @@ function switchView(name) {
     v.classList.toggle('active', v.id === 'view-' + name));
   if (name === 'patients') renderPatients();
   if (name === 'profile') renderUsageStats();
+  if (name === 'avis') initAvis();
   placeClinicalSettings(name);
   if (['liaison', 'cr', 'ordonnance'].includes(name)) setTimeout(() => renderQuickTemplates(name), 0);
   if (name === 'history') {
@@ -2108,6 +2218,20 @@ const GEN = {
         bizone
       }};
     }
+  },
+  // L'avis spécialisé n'utilise pas runGeneration (photos + pipeline RAG), mais
+  // il déclare la même configuration pour réutiliser les outils d'export,
+  // d'impression et d'historique.
+  avis: {
+    btnLabel: "Demander l'avis",
+    endpoint: 'avis-specialise',
+    errId: 'av-error', resId: 'av-result', outId: 'av-out',
+    label: 'Avis spécialisé',
+    getPatient: () => {
+      const select = document.getElementById('av-specialite');
+      const option = select && select.options[select.selectedIndex];
+      return (option && option.textContent.trim()) || 'Avis';
+    },
   }
 };
 
@@ -2149,6 +2273,9 @@ function placeClinicalSettings(viewName) {
   const settings = document.getElementById('generation-settings');
   const view = document.getElementById('view-' + (viewName || 'liaison'));
   if (!settings || !view) return;
+  // L'avis spécialisé n'est pas un document à signer : ni longueur imposée, ni
+  // style rédactionnel appris. Ces réglages n'ont pas de sens ici.
+  if (viewName === 'avis') { settings.style.display = 'none'; return; }
   const action = view.querySelector('.actions');
   if (action) { action.appendChild(settings); settings.style.display = 'flex'; }
   else settings.style.display = 'none';
@@ -2678,6 +2805,7 @@ function fileBaseName(cfg, key) {
     'ald':        'protocole-ald',
     'certificat': 'certificat-medical',
     'ordonnance': 'ordonnance',
+    'avis':       'avis-specialise',
   };
   const labelSlug = slugMap[key] || key;
   const patient   = slug(cfg.getPatient());
@@ -3078,6 +3206,13 @@ function reopenHistory(id) {
   renderResult(outEl, it.contenu);
   renderTools(it.type);
   clearChips(it.type);
+  // Les sources et le compteur affichés concernent la requête en cours, pas un
+  // avis relu depuis l'historique : on les vide plutôt que de laisser un
+  // sourçage qui ne correspond plus au texte affiché.
+  if (it.type === 'avis') {
+    avisRenderReferences([]);
+    document.getElementById('av-rag-badge').textContent = '';
+  }
   document.getElementById(cfg.resId).classList.add('show');
   setTimeout(() => {
     document.getElementById(cfg.resId).scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3522,6 +3657,228 @@ function mockPatient(name) {
     if (acBox && !acBox.contains(e.target)) closeAc();
   });
 })();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  AVIS SPÉCIALISÉ — cas clinique + photos, réponse sourcée
+// ═══════════════════════════════════════════════════════════════════════
+const AVIS_MAX_PHOTOS = 4;
+const AVIS_MAX_EDGE   = 1568;   // grand côté : au-delà, l'API redimensionne de toute façon
+const AVIS_JPEG_Q     = 0.85;
+
+let avisPhotos = [];        // [{ dataUrl, mediaType, bytes, nom }]
+let avisInitialise = false;
+
+// Redimensionne et recompresse côté navigateur : une photo de smartphone fait
+// 4 à 8 Mo, la même en 1568 px tombe sous 400 Ko sans perte de lisibilité
+// diagnostique. Évite de transporter des dizaines de Mo pour rien.
+function avisRedimensionner(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Lecture du fichier impossible.'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Image illisible.'));
+      img.onload = () => {
+        const ratio = Math.min(1, AVIS_MAX_EDGE / Math.max(img.width, img.height));
+        const w = Math.round(img.width * ratio);
+        const h = Math.round(img.height * ratio);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        // JPEG systématique : la transparence n'apporte rien sur une photo
+        // clinique et le PNG serait 5 à 10 fois plus lourd.
+        const dataUrl = canvas.toDataURL('image/jpeg', AVIS_JPEG_Q);
+        resolve({
+          dataUrl,
+          mediaType: 'image/jpeg',
+          bytes: Math.floor((dataUrl.length - dataUrl.indexOf(',') - 1) * 3 / 4),
+          nom: file.name,
+        });
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function avisRenderPhotos() {
+  const grid = document.getElementById('av-photo-grid');
+  grid.innerHTML = '';
+  avisPhotos.forEach((photo, index) => {
+    const cell = document.createElement('div');
+    cell.className = 'photo-thumb';
+    const img = document.createElement('img');
+    img.src = photo.dataUrl;
+    img.alt = photo.nom || 'Photo clinique';
+    const size = document.createElement('span');
+    size.className = 'photo-size';
+    size.textContent = Math.round(photo.bytes / 1024) + ' Ko';
+    const remove = document.createElement('button');
+    remove.className = 'file-remove';
+    remove.type = 'button';
+    remove.title = 'Retirer';
+    remove.textContent = '×';
+    remove.addEventListener('click', () => { avisPhotos.splice(index, 1); avisRenderPhotos(); });
+    cell.append(img, size, remove);
+    grid.appendChild(cell);
+  });
+}
+
+async function avisAjouterFichiers(fileList) {
+  clearError('av-error');
+  const files = [...fileList].filter(f => /^image\//.test(f.type));
+  if (!files.length) return;
+  if (avisPhotos.length + files.length > AVIS_MAX_PHOTOS) {
+    showError('av-error', AVIS_MAX_PHOTOS + ' photos au maximum.');
+    return;
+  }
+  for (const file of files) {
+    try {
+      avisPhotos.push(await avisRedimensionner(file));
+    } catch (err) {
+      showError('av-error', 'Photo ignorée (' + file.name + ') : ' + err.message);
+    }
+  }
+  avisRenderPhotos();
+}
+
+function avisRenderReferences(references) {
+  const host = document.getElementById('av-references');
+  host.innerHTML = '';
+  if (!references || !references.length) return;
+
+  const titre = document.createElement('h4');
+  titre.textContent = 'Sources consultées';
+  const liste = document.createElement('ol');
+  for (const ref of references) {
+    const li = document.createElement('li');
+    if (ref.url) {
+      const a = document.createElement('a');
+      a.href = ref.url; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.textContent = ref.titre;
+      li.appendChild(a);
+    } else {
+      li.appendChild(document.createTextNode(ref.titre));
+    }
+    const meta = [ref.source, ref.annee].filter(Boolean).join(', ');
+    if (meta) {
+      const span = document.createElement('span');
+      span.className = 'ref-source';
+      span.textContent = ' — ' + meta;
+      li.appendChild(span);
+    }
+    liste.appendChild(li);
+  }
+  host.append(titre, liste);
+}
+
+async function avisChargerSpecialites() {
+  const select = document.getElementById('av-specialite');
+  const info   = document.getElementById('av-base-info');
+  try {
+    const data = await api('/api/avis-specialise/specialites');
+    select.innerHTML = '';
+    if (!data.specialites.length) {
+      select.innerHTML = '<option value="">Aucune spécialité disponible</option>';
+      return;
+    }
+    for (const specialite of data.specialites) {
+      const option = document.createElement('option');
+      option.value = specialite.key;
+      option.textContent = specialite.label;
+      option.dataset.baseIndexee = specialite.baseIndexee ? '1' : '';
+      option.dataset.passages = specialite.passages;
+      option.dataset.recherche = specialite.recherche;
+      option.dataset.accepteImages = specialite.accepteImages ? '1' : '';
+      select.appendChild(option);
+    }
+    const majInfo = () => {
+      const option = select.options[select.selectedIndex];
+      if (!option) { info.textContent = ''; return; }
+      info.textContent = option.dataset.baseIndexee
+        ? `Base indexée : ${option.dataset.passages} passages, recherche ${option.dataset.recherche}`
+        : 'Base non indexée sur ce serveur';
+      document.getElementById('av-photos-field').style.display =
+        option.dataset.accepteImages ? '' : 'none';
+    };
+    select.addEventListener('change', majInfo);
+    majInfo();
+  } catch (err) {
+    select.innerHTML = '<option value="">Indisponible</option>';
+    info.textContent = '';
+    showError('av-error', err.message);
+  }
+}
+
+async function avisDemander(btn) {
+  clearError('av-error');
+  const specialite = document.getElementById('av-specialite').value;
+  const cas = document.getElementById('av-cas').value.trim();
+
+  if (!specialite) { showError('av-error', 'Choisissez une spécialité.'); return; }
+  if (cas.length < 30) { showError('av-error', 'Décrivez le cas en quelques phrases (30 caractères minimum).'); return; }
+
+  document.getElementById('av-result').classList.remove('show');
+  setLoading(btn, true);
+  try {
+    const data = await api('/api/avis-specialise', {
+      method: 'POST',
+      body: JSON.stringify({
+        specialite,
+        cas,
+        photos: avisPhotos.map(p => ({ mediaType: p.mediaType, data: p.dataUrl })),
+      }),
+    });
+
+    const out = document.getElementById('av-out');
+    renderResult(out, data.document || '');
+    renderTools('avis');
+    avisRenderReferences(data.references);
+
+    const badge = document.getElementById('av-rag-badge');
+    badge.textContent = data.rag
+      ? `${data.rag.passages} passages · recherche ${data.rag.mode} · corpus ${data.rag.corpus}`
+      : '';
+
+    document.getElementById('av-result').classList.add('show');
+    document.getElementById('av-result').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (err) {
+    showError('av-error', err.message);
+  } finally {
+    setLoading(btn, false, "Demander l'avis");
+  }
+}
+
+function initAvis() {
+  if (avisInitialise) return;
+  avisInitialise = true;
+
+  avisChargerSpecialites();
+
+  const dropzone = document.getElementById('av-dropzone');
+  const input    = document.getElementById('av-photo-input');
+
+  dropzone.addEventListener('click', () => input.click());
+  input.addEventListener('change', () => { avisAjouterFichiers(input.files); input.value = ''; });
+
+  ['dragenter', 'dragover'].forEach(type =>
+    dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.add('drag'); }));
+  ['dragleave', 'drop'].forEach(type =>
+    dropzone.addEventListener(type, e => { e.preventDefault(); dropzone.classList.remove('drag'); }));
+  dropzone.addEventListener('drop', e => {
+    if (e.dataTransfer && e.dataTransfer.files) avisAjouterFichiers(e.dataTransfer.files);
+  });
+
+  const submit = document.getElementById('av-submit');
+  submit.addEventListener('click', () => avisDemander(submit));
+
+  // Ctrl/Cmd+Enter : même raccourci que les autres modules, qui passent eux par
+  // [data-gen] — l'avis a son propre bouton, on le câble explicitement.
+  document.getElementById('av-cas').addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submit.click(); }
+  });
+}
 </script>
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 <script>lucide.createIcons();</script>

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "jest tests/ --forceExit --testTimeout=15000"
+    "test": "jest tests/ --forceExit --testTimeout=15000",
+    "ingest": "node scripts/ingest.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.65.0",
