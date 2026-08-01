@@ -35,6 +35,13 @@ const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
 const AI_MODEL = 'claude-sonnet-4-6';
+// L'avis spécialisé combine raisonnement diagnostique et lecture de photos :
+// il tourne sur un modèle plus capable que les générateurs de documents.
+const AI_MODEL_AVIS = 'claude-opus-5';
+
+// ── RAG (base de connaissances médicale) ──
+const { ragSearch, ragStats } = require('./lib/rag');
+const { getSpecialite, listSpecialites } = require('./lib/specialites');
 
 // ── SMTP (Nodemailer — Gmail App Password) ──
 // On nettoie les identifiants : les variables d'env (surtout sur Railway) peuvent
@@ -210,7 +217,28 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: '2mb' }));
+// Le plafond reste à 2 Mo partout, sauf sur l'avis spécialisé qui transporte des
+// photos en base64. Le front redimensionne déjà côté navigateur (1568 px max,
+// 4 photos) : 20 Mo est une marge, pas une cible.
+const jsonStandard = express.json({ limit: '2mb' });
+const jsonAvecPhotos = express.json({ limit: '20mb' });
+app.use((req, res, next) => {
+  const parser = req.path.startsWith('/api/avis-specialise') ? jsonAvecPhotos : jsonStandard;
+  parser(req, res, next);
+});
+
+// body-parser renvoie du HTML sur dépassement : on rend une erreur JSON lisible
+// par le front, qui n'attend que du JSON.
+app.use((err, req, res, next) => {
+  if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+    return res.status(413).json({ error: 'Fichiers trop volumineux. Réduisez le nombre ou la taille des photos.' });
+  }
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ error: 'Requête mal formée.' });
+  }
+  next(err);
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limit (mémoire) — chaque route a son propre compteur via le namespace `ns`
@@ -1676,6 +1704,253 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
     const document = finalizeDocument(await generateDocument({ system, user: userMsg, maxTokens: 1800 }));
     res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
   } catch (err) { aiError(res, err); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+//  AVIS SPÉCIALISÉ — cas clinique + photos, enrichi par la base de connaissances
+// ═══════════════════════════════════════════════════════════════════════════════
+// Ce module ne « joue » pas un spécialiste : la réponse est ancrée sur des
+// passages réellement extraits d'une base indexée (littérature, recommandations
+// de sociétés savantes, référentiel médicament officiel). Les passages retenus
+// sont renvoyés au front pour que le médecin puisse remonter à la source.
+
+const MEDIA_TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_PHOTOS = 4;
+const MAX_PHOTO_BYTES = 4_500_000;   // limite API par image, marge comprise
+const BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
+
+/**
+ * Valide et convertit les photos reçues en blocs d'image pour l'API.
+ * Accepte une data URL (« data:image/jpeg;base64,… ») ou { mediaType, data }.
+ * @returns {{blocks:object[], erreur:string|null}}
+ */
+function parsePhotos(raw) {
+  if (!raw) return { blocks: [], erreur: null };
+  if (!Array.isArray(raw)) return { blocks: [], erreur: 'Format de photos invalide.' };
+  if (raw.length > MAX_PHOTOS) {
+    return { blocks: [], erreur: `${MAX_PHOTOS} photos au maximum.` };
+  }
+
+  const blocks = [];
+  for (const photo of raw) {
+    let mediaType = '';
+    let data = '';
+
+    if (typeof photo === 'string') {
+      const match = /^data:([a-z]+\/[a-z0-9.+-]+);base64,(.+)$/i.exec(photo.trim());
+      if (!match) return { blocks: [], erreur: 'Photo illisible (data URL attendue).' };
+      mediaType = match[1].toLowerCase();
+      data = match[2];
+    } else if (photo && typeof photo === 'object') {
+      mediaType = String(photo.mediaType || photo.media_type || '').toLowerCase();
+      data = String(photo.data || '');
+      const inline = /^data:([a-z]+\/[a-z0-9.+-]+);base64,(.+)$/i.exec(data.trim());
+      if (inline) { mediaType = mediaType || inline[1].toLowerCase(); data = inline[2]; }
+    } else {
+      return { blocks: [], erreur: 'Photo illisible.' };
+    }
+
+    data = data.replace(/\s+/g, '');
+    if (!MEDIA_TYPES_PHOTO.includes(mediaType)) {
+      return { blocks: [], erreur: 'Formats acceptés : JPEG, PNG, WebP, GIF.' };
+    }
+    if (!data || !BASE64_RE.test(data)) {
+      return { blocks: [], erreur: 'Photo corrompue ou mal encodée.' };
+    }
+    // Taille décodée approchée — évite de décoder le buffer pour rien.
+    if (Math.floor(data.length * 3 / 4) > MAX_PHOTO_BYTES) {
+      return { blocks: [], erreur: 'Photo trop lourde (5 Mo maximum par image).' };
+    }
+
+    blocks.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data } });
+  }
+  return { blocks, erreur: null };
+}
+
+/** Mise en forme des passages retenus pour injection dans le prompt. */
+function formatPassages(passages) {
+  return passages.map((p, i) => {
+    const meta = p.meta || {};
+    const entete = [
+      `[${i + 1}]`,
+      meta.title || 'Sans titre',
+      meta.sourceLabel ? `— ${meta.sourceLabel}` : '',
+      meta.year ? `(${meta.year})` : '',
+      meta.journal ? `— ${meta.journal}` : '',
+    ].filter(Boolean).join(' ');
+    return `${entete}\n${p.text}`;
+  }).join('\n\n———\n\n');
+}
+
+/** Références compactes renvoyées au front, sans le texte intégral. */
+function formatReferences(passages) {
+  const vues = new Set();
+  const references = [];
+  for (const p of passages) {
+    const meta = p.meta || {};
+    const cle = meta.docId || p.id;
+    if (vues.has(cle)) continue;
+    vues.add(cle);
+    references.push({
+      n: references.length + 1,
+      titre: meta.title || 'Sans titre',
+      source: meta.sourceLabel || meta.source || '',
+      url: meta.url || '',
+      annee: meta.year || '',
+    });
+  }
+  return references;
+}
+
+/** Appel multimodal : photos d'abord, puis le texte. */
+async function generateAvisMultimodal({ system, blocks, maxTokens = 6000 }) {
+  if (!anthropic) {
+    const err = new Error('Clé API non configurée sur le serveur (ANTHROPIC_API_KEY).');
+    err.status = 503;
+    throw err;
+  }
+  const msg = await anthropic.messages.create({
+    model: AI_MODEL_AVIS,
+    max_tokens: maxTokens,
+    system,
+    messages: [{ role: 'user', content: blocks }],
+  });
+  const texte = (msg.content || [])
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('\n')
+    .trim();
+  if (!texte) throw new Error('Réponse vide du modèle.');
+  return texte;
+}
+
+// GET /api/avis-specialise/specialites — alimente le menu déroulant du front.
+app.get('/api/avis-specialise/specialites', authenticateJWT, (_req, res) => {
+  const specialites = listSpecialites().map(s => {
+    const stats = ragStats(s.key);
+    return Object.assign({}, s, {
+      baseIndexee: Boolean(stats),
+      passages: stats ? stats.count : 0,
+      recherche: stats ? (stats.hasVectors ? 'hybride' : 'lexicale') : 'indisponible',
+    });
+  });
+  res.json({ specialites });
+});
+
+// POST /api/avis-specialise — cas clinique + photos → avis argumenté et sourcé.
+app.post('/api/avis-specialise', authenticateJWT, async (req, res) => {
+  const specialite = getSpecialite(req.body.specialite);
+  if (!specialite) {
+    return res.status(400).json({ error: 'Spécialité non disponible.' });
+  }
+
+  const cas = txt(req.body.cas, 12000);
+  if (!cas || cas.length < 30) {
+    return res.status(400).json({ error: 'Décrivez le cas en quelques phrases (histoire, symptômes, terrain).' });
+  }
+
+  const { blocks: photoBlocks, erreur } = parsePhotos(req.body.photos);
+  if (erreur) return res.status(400).json({ error: erreur });
+
+  // Les appels vision + Opus sont coûteux : garde-fou par utilisateur.
+  const ipAvis = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (!rateLimit(`${req.user.id}:${ipAvis}`, 12, 'avis-specialise')) {
+    return res.status(429).json({ error: 'Trop de demandes d\'avis. Réessayez dans quelques minutes.' });
+  }
+
+  // ── Recherche dans la base de connaissances ──
+  // La requête combine le cas et les termes pivots de la spécialité : ces
+  // derniers orientent le rappel lexical vers le bon champ sémantique.
+  const requete = `${specialite.termesPivots.join(' ')} ${cas}`.slice(0, 4000);
+  let recherche = { passages: [], mode: 'vide', stats: null };
+  try {
+    recherche = await ragSearch({ collection: specialite.collection, query: requete, topK: 8 });
+  } catch (err) {
+    console.error('[avis] recherche RAG échouée —', err.message);
+  }
+
+  const passages = recherche.passages;
+  if (!passages.length) {
+    // Sans base indexée, cette fonctionnalité se réduirait à du prompting pur —
+    // exactement ce qu'elle est censée dépasser. On refuse plutôt que de livrer
+    // un avis qui aurait l'apparence d'être sourcé sans l'être.
+    return res.status(503).json({
+      error: `La base de connaissances « ${specialite.label} » n'est pas encore indexée sur ce serveur. `
+        + 'Lancez l\'ingestion (npm run ingest ' + specialite.key + ') avant d\'utiliser l\'avis spécialisé.',
+    });
+  }
+
+  const contexte = formatPassages(passages);
+  const references = formatReferences(passages);
+
+  const system =
+    specialite.cadrage + ' ' +
+    "Tu réponds à un confrère médecin, pas à un patient : le registre est technique et direct.\n\n" +
+
+    "SOURCES : des extraits de littérature scientifique, de recommandations de sociétés savantes et du " +
+    "référentiel officiel du médicament te sont fournis. Ils constituent ta base factuelle. " +
+    "Appuie chaque affirmation notable sur ces extraits en citant leur numéro entre crochets, par exemple [2]. " +
+    "Si les extraits ne couvrent pas un point, dis-le explicitement plutôt que de combler avec des " +
+    "connaissances générales non sourcées, et signale que ce point mérite vérification.\n\n" +
+
+    (photoBlocks.length
+      ? "PHOTOS : une ou plusieurs images cliniques précèdent le texte. Décris d'abord ce que tu observes " +
+        "objectivement (lésion élémentaire, couleur, bordure, topographie, distribution), en distinguant " +
+        "nettement l'observation de l'interprétation. Si la qualité de l'image ne permet pas de conclure " +
+        "sur un point, dis-le au lieu de supposer.\n\n"
+      : "Aucune photo n'est fournie : ne décris aucun aspect visuel que le texte ne mentionne pas.\n\n") +
+
+    "STRUCTURE de la réponse, dans cet ordre exact, chaque titre en majuscules suivi de deux points :\n" +
+    "CE QUE MONTRENT LES ÉLÉMENTS FOURNIS : constats objectifs, texte et photos, sans interprétation.\n" +
+    "HYPOTHÈSES DIAGNOSTIQUES : de la plus à la moins probable, chacune avec les arguments pour et contre " +
+    "tirés du cas.\n" +
+    "CAUSES ET MÉCANISMES POSSIBLES : ce qui explique le tableau, y compris les facteurs favorisants.\n" +
+    "ÉLÉMENTS MANQUANTS ET EXAMENS UTILES : ce qui départagerait les hypothèses.\n" +
+    "PISTES DE PRISE EN CHARGE : stratégies documentées, avec leur niveau de preuve quand les extraits le " +
+    "précisent. Les produits ou molécules sont cités à titre d'information documentaire pour éclairer le " +
+    "confrère — jamais sous forme de prescription, de posologie personnalisée ou de conseil au patient. " +
+    "La décision thérapeutique appartient au médecin qui suit le patient.\n" +
+    "SIGNAUX D'ALERTE : ce qui imposerait un avis spécialisé rapide ou un adressage en urgence. " +
+    "Omets cette section s'il n'y en a aucun.\n\n" +
+
+    "LIMITES : termine par une phrase rappelant qu'il s'agit d'une aide à la décision fondée sur la " +
+    "littérature fournie, et non d'une consultation spécialisée ni d'un diagnostic établi.\n\n" +
+
+    "INTERDITS : n'invente aucun élément clinique absent du cas ou des photos (âge, sexe, antécédent, " +
+    "traitement, durée, résultat d'examen). N'attribue à une source un contenu qu'elle ne porte pas. " +
+    "Ne produis aucune ordonnance ni posologie nominative.\n\n" +
+
+    "FORMAT : français, jamais de Markdown — pas d'astérisques, pas de dièses, pas de tirets de liste. " +
+    "Sépare les sections par une ligne vide. Les énumérations se font en début de ligne, sans puce.\n\n" +
+
+    "Médecin demandeur :\n" + medecinContext(req.user);
+
+  const texteUtilisateur =
+    `CAS CLINIQUE SOUMIS PAR LE CONFRÈRE :\n${cas}\n\n` +
+    (photoBlocks.length ? `${photoBlocks.length} photo(s) clinique(s) jointe(s), ci-dessus.\n\n` : '') +
+    `EXTRAITS DE LA BASE DE CONNAISSANCES ${specialite.label.toUpperCase()} ` +
+    `(${passages.length} passages, recherche ${recherche.mode}) :\n\n${contexte}`;
+
+  const blocks = [...photoBlocks, { type: 'text', text: texteUtilisateur }];
+
+  try {
+    const avis = finalizeDocument(await generateAvisMultimodal({ system, blocks }));
+    res.json({
+      document: avis,
+      specialite: { key: specialite.key, label: specialite.label },
+      references,
+      rag: {
+        mode: recherche.mode,
+        passages: passages.length,
+        corpus: recherche.stats ? recherche.stats.count : 0,
+      },
+      // Le contrôle des valeurs chiffrées inclut les extraits : un dosage cité
+      // depuis la base est sourcé, il ne doit pas être signalé comme inventé.
+      safety: documentSafety(avis, `${cas}\n${contexte}`, req.user),
+    });
+  } catch (err) {
+    aiError(res, err);
+  }
 });
 
 // SPA fallback
