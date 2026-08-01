@@ -304,6 +304,25 @@ body {
 .references a { color: var(--accent); text-decoration: none; }
 .references a:hover { text-decoration: underline; }
 .references .ref-source { color: var(--text-dim); }
+/* Bascule résumé / détail complet */
+.vue-switch {
+  display: none; gap: 6px; margin: 0 0 14px;
+  padding: 4px; background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 9px; width: fit-content;
+}
+.result.show .vue-switch { display: flex; }
+.vue-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 13px; border: none; border-radius: 6px;
+  background: transparent; color: var(--text-muted);
+  font-size: 12.5px; font-family: inherit; cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.vue-btn svg { width: 14px; height: 14px; }
+.vue-btn:hover:not(.active) { color: var(--text); }
+.vue-btn.active { background: var(--accent-dim); color: var(--accent); }
+.vue-btn:disabled { opacity: .55; cursor: default; }
+
 .avis-disclaimer {
   margin-top: 14px; padding: 11px 14px; border-radius: 8px;
   background: var(--accent-dim); border: 1px solid var(--border);
@@ -1333,9 +1352,19 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
     <div class="result" id="av-result">
       <div class="result-head">
-        <span class="result-title">Avis spécialisé</span>
+        <span class="result-title" id="av-result-title">Avis spécialisé</span>
         <span class="rag-badge" id="av-rag-badge"></span>
         <div class="result-tools" data-result-tools="avis"></div>
+      </div>
+      <div class="vue-switch" id="av-vue-switch">
+        <button type="button" class="vue-btn" id="av-vue-resume">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h10M4 18h6"/></svg>
+          Résumé
+        </button>
+        <button type="button" class="vue-btn active" id="av-vue-detail">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h12"/></svg>
+          Voir le détail
+        </button>
       </div>
       <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
       <div class="result-body" id="av-out"></div>
@@ -3212,6 +3241,11 @@ function reopenHistory(id) {
   if (it.type === 'avis') {
     avisRenderReferences([]);
     document.getElementById('av-rag-badge').textContent = '';
+    // Le document relu devient la base d'un éventuel résumé ; celui de la
+    // requête précédente ne correspondrait plus au texte affiché.
+    avisTextes = { complet: it.contenu || '', resume: '' };
+    avisSpecialiteCourante = '';
+    avisAfficher('complet');
   }
   document.getElementById(cfg.resId).classList.add('show');
   setTimeout(() => {
@@ -3668,6 +3702,13 @@ const AVIS_JPEG_Q     = 0.85;
 let avisPhotos = [];        // [{ dataUrl, mediaType, bytes, nom }]
 let avisInitialise = false;
 
+// Les deux versions d'un même avis. Le détail complet reste toujours accessible :
+// c'est lui qui porte le raisonnement et les renvois vers les sources, le résumé
+// n'en est qu'une lecture rapide.
+let avisTextes = { complet: '', resume: '' };
+let avisVue = 'complet';
+let avisSpecialiteCourante = '';
+
 // Redimensionne et recompresse côté navigateur : une photo de smartphone fait
 // 4 à 8 Mo, la même en 1568 px tombe sous 400 Ko sans perte de lisibilité
 // diagnostique. Évite de transporter des dizaines de Mo pour rien.
@@ -3811,6 +3852,53 @@ async function avisChargerSpecialites() {
   }
 }
 
+// Le corps du résultat est éditable : avant toute bascule, on récupère l'état
+// courant pour ne pas perdre les corrections du médecin.
+function avisMemoriserVueCourante() {
+  const out = document.getElementById('av-out');
+  const texte = (out.dataset.plain || out.innerText || '').trim();
+  if (texte) avisTextes[avisVue] = texte;
+}
+
+function avisAfficher(vue) {
+  avisVue = vue;
+  const out = document.getElementById('av-out');
+  renderResult(out, avisTextes[vue] || '');
+  document.getElementById('av-result-title').textContent =
+    vue === 'resume' ? 'Avis spécialisé — résumé' : 'Avis spécialisé';
+  document.getElementById('av-vue-resume').classList.toggle('active', vue === 'resume');
+  document.getElementById('av-vue-detail').classList.toggle('active', vue === 'complet');
+  // Les sources restent affichées dans les deux vues : le résumé conserve les
+  // renvois numérotés, ils doivent rester résolvables.
+}
+
+async function avisResumer() {
+  const boutonResume = document.getElementById('av-vue-resume');
+  clearError('av-error');
+
+  avisMemoriserVueCourante();
+  if (avisTextes.resume) { avisAfficher('resume'); return; }
+  if (!avisTextes.complet) return;
+
+  const libelle = boutonResume.lastChild;
+  const original = libelle.textContent;
+  libelle.textContent = ' Synthèse…';
+  boutonResume.disabled = true;
+  try {
+    const data = await api('/api/avis-specialise/resume', {
+      method: 'POST',
+      body: JSON.stringify({ avis: avisTextes.complet, specialite: avisSpecialiteCourante }),
+    });
+    avisTextes.resume = data.resume || '';
+    avisAfficher('resume');
+  } catch (err) {
+    showError('av-error', err.message);
+  } finally {
+    libelle.textContent = original;
+    boutonResume.disabled = false;
+  }
+}
+
 async function avisDemander(btn) {
   clearError('av-error');
   const specialite = document.getElementById('av-specialite').value;
@@ -3831,8 +3919,10 @@ async function avisDemander(btn) {
       }),
     });
 
-    const out = document.getElementById('av-out');
-    renderResult(out, data.document || '');
+    // Nouvel avis : le résumé précédent n'a plus lieu d'être.
+    avisTextes = { complet: data.document || '', resume: '' };
+    avisSpecialiteCourante = specialite;
+    avisAfficher('complet');
     renderTools('avis');
     avisRenderReferences(data.references);
 
@@ -3872,6 +3962,12 @@ function initAvis() {
 
   const submit = document.getElementById('av-submit');
   submit.addEventListener('click', () => avisDemander(submit));
+
+  document.getElementById('av-vue-resume').addEventListener('click', avisResumer);
+  document.getElementById('av-vue-detail').addEventListener('click', () => {
+    avisMemoriserVueCourante();
+    avisAfficher('complet');
+  });
 
   // Ctrl/Cmd+Enter : même raccourci que les autres modules, qui passent eux par
   // [data-gen] — l'avis a son propre bouton, on le câble explicitement.
