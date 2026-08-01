@@ -14,10 +14,16 @@ const path = require('path');
 const fs   = require('fs');
 const request = require('supertest');
 
-// Index de test isolé — surtout pas le volume de données réel.
+// Index et données de test isolés — surtout pas le volume réel.
+//
+// DATA_DIR doit être propre à cette suite : Jest exécute les fichiers de test en
+// parallèle, et deux suites qui pointent le même dossier se marchent dessus sur
+// users.json (lecture-modification-écriture du fichier entier). C'est ce qui
+// rendait « rejette un email déjà utilisé » instable dans tests/api.test.js.
 const RAG_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'praxi-rag-'));
+const TEST_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'praxi-data-'));
 process.env.RAG_DIR       = RAG_DIR;
-process.env.DATA_DIR      = os.tmpdir();
+process.env.DATA_DIR      = TEST_DATA_DIR;
 process.env.JWT_SECRET    = 'test-secret-key-min-32-chars-000000';
 process.env.ADMIN_TOKEN   = 'test-admin-token';
 process.env.NODE_ENV      = 'test';
@@ -34,6 +40,7 @@ const app = require('../server');
 
 afterAll(() => {
   fs.rmSync(RAG_DIR, { recursive: true, force: true });
+  fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
 });
 
 // ─── DÉCOUPAGE ─────────────────────────────────────────────────────────────
@@ -484,5 +491,39 @@ describe('GET /admin/ingest', () => {
       .get('/admin/ingest/job-qui-nexiste-pas')
       .set('x-admin-token', ADMIN)
       .expect(404);
+  });
+});
+
+// ─── EMBEDDINGS : GESTION DES LIMITES DE DÉBIT ─────────────────────────────
+
+describe('embeddings — retry-after et 429', () => {
+  const { parseRetryAfter } = require('../lib/rag/embeddings');
+  const entetes = valeur => ({ get: nom => (nom === 'retry-after' ? valeur : null) });
+
+  test('lit un retry-after en secondes', () => {
+    expect(parseRetryAfter(entetes('30'))).toBe(30000);
+    expect(parseRetryAfter(entetes(' 5 '))).toBe(5000);
+  });
+
+  test('lit un retry-after au format date HTTP', () => {
+    const dans10s = new Date(Date.now() + 10000).toUTCString();
+    const attente = parseRetryAfter(entetes(dans10s));
+    expect(attente).toBeGreaterThan(5000);
+    expect(attente).toBeLessThanOrEqual(11000);
+  });
+
+  test('plafonne une attente déraisonnable', () => {
+    expect(parseRetryAfter(entetes('99999'))).toBe(60000);
+  });
+
+  test('ne se laisse pas piéger par une valeur absente ou absurde', () => {
+    expect(parseRetryAfter(entetes(null))).toBeNull();
+    expect(parseRetryAfter(entetes('bientôt'))).toBeNull();
+    expect(parseRetryAfter(null)).toBeNull();
+  });
+
+  test('une date déjà passée ne produit pas d\'attente négative', () => {
+    const passe = new Date(Date.now() - 60000).toUTCString();
+    expect(parseRetryAfter(entetes(passe))).toBe(0);
   });
 });
