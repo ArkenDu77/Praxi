@@ -40,7 +40,7 @@ const AI_MODEL = 'claude-sonnet-4-6';
 const AI_MODEL_AVIS = 'claude-opus-5';
 
 // ── RAG (base de connaissances médicale) ──
-const { ragSearch, ragStats, DEFAULT_WEIGHTS } = require('./lib/rag');
+const { ragSearch, ragStats, DEFAULT_WEIGHTS, DEFAULT_MAX_PER_DOC } = require('./lib/rag');
 const { getSpecialite, listSpecialites } = require('./lib/specialites');
 
 // ── SMTP (Nodemailer — Gmail App Password) ──
@@ -555,12 +555,21 @@ app.post(['/admin/rag/search', '/api/admin/rag/search'], requireAdmin, async (re
   }
   const topK = nombre(params.topK) || 8;
 
+  // Nombre maximal de passages retenus par document source. Exposé ici parce
+  // qu'il pèse plus lourd qu'il n'y paraît : un document découpé en plusieurs
+  // passages peut occuper autant de rangs, et évincer des sources pertinentes.
+  const maxPerDoc = nombre(params.maxPerDoc);
+  if (maxPerDoc !== null && (!Number.isInteger(maxPerDoc) || maxPerDoc < 1)) {
+    return res.status(400).json({ error: 'Paramètre « maxPerDoc » invalide (entier ≥ 1).' });
+  }
+
   try {
     const recherche = await ragSearch({
       collection: specialite.collection,
       query,
       topK: Math.min(Math.max(topK, 1), 30),
       weights: { vector: poidsVectoriel, lexical: poidsLexical },
+      maxPerDoc: maxPerDoc == null ? undefined : maxPerDoc,
     });
     res.json({
       mode: recherche.mode,
@@ -569,6 +578,7 @@ app.post(['/admin/rag/search', '/api/admin/rag/search'], requireAdmin, async (re
         vectoriel: poidsVectoriel == null ? DEFAULT_WEIGHTS.vector : poidsVectoriel,
         lexical:   poidsLexical   == null ? DEFAULT_WEIGHTS.lexical : poidsLexical,
       },
+      maxPerDoc: maxPerDoc == null ? DEFAULT_MAX_PER_DOC : maxPerDoc,
       // `parts` indique le rang obtenu par chaque moteur : c'est ce qui montre
       // lequel des deux a fait remonter un passage donné.
       passages: recherche.passages.map(p => ({

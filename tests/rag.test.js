@@ -591,3 +591,56 @@ describe('POST /admin/rag/search', () => {
     expect(res.body.poids).toEqual({ vectoriel: 3, lexical: 0.5 });
   });
 });
+
+describe('POST /admin/rag/search — maxPerDoc', () => {
+  const ADMIN = 'test-admin-token';
+  const { DEFAULT_MAX_PER_DOC } = require('../lib/rag');
+
+  test('renvoie la valeur par défaut quand le paramètre est absent', async () => {
+    const res = await request(app)
+      .post('/admin/rag/search?specialite=dermatologie&query=plaques squameuses')
+      .set('x-admin-token', ADMIN)
+      .expect(200);
+    expect(res.body.maxPerDoc).toBe(DEFAULT_MAX_PER_DOC);
+  });
+
+  test('accepte une valeur explicite', async () => {
+    const res = await request(app)
+      .post('/admin/rag/search?specialite=dermatologie&query=plaques squameuses&maxPerDoc=1')
+      .set('x-admin-token', ADMIN)
+      .expect(200);
+    expect(res.body.maxPerDoc).toBe(1);
+  });
+
+  test('refuse zéro, un négatif ou un non-entier', async () => {
+    for (const valeur of ['0', '-2', '1.5', 'beaucoup']) {
+      await request(app)
+        .post(`/admin/rag/search?specialite=dermatologie&query=test&maxPerDoc=${valeur}`)
+        .set('x-admin-token', ADMIN)
+        .expect(400);
+    }
+  });
+
+  test('plafonne réellement le nombre de passages par document', async () => {
+    const collection = 'test-maxperdoc';
+    // Un document assez long pour produire plusieurs passages.
+    await ragIngest({
+      collection,
+      documents: [{
+        id: 'doc:unique',
+        title: 'Psoriasis en plaques',
+        text: 'Le psoriasis en plaques réalise des lésions érythémato-squameuses bien limitées. '.repeat(120),
+        meta: { source: 'test' },
+      }],
+    });
+    expect(ragStats(collection).count).toBeGreaterThan(2);
+
+    const un    = await ragSearch({ collection, query: 'psoriasis plaques squameuses', topK: 8, maxPerDoc: 1 });
+    const trois = await ragSearch({ collection, query: 'psoriasis plaques squameuses', topK: 8, maxPerDoc: 3 });
+    expect(un.passages).toHaveLength(1);
+    expect(trois.passages.length).toBeGreaterThan(1);
+    expect(trois.passages.length).toBeLessThanOrEqual(3);
+
+    store.drop(collection);
+  });
+});
