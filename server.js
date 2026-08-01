@@ -40,7 +40,7 @@ const AI_MODEL = 'claude-sonnet-4-6';
 const AI_MODEL_AVIS = 'claude-opus-5';
 
 // ── RAG (base de connaissances médicale) ──
-const { ragSearch, ragStats } = require('./lib/rag');
+const { ragSearch, ragStats, DEFAULT_WEIGHTS } = require('./lib/rag');
 const { getSpecialite, listSpecialites } = require('./lib/specialites');
 
 // ── SMTP (Nodemailer — Gmail App Password) ──
@@ -525,6 +525,65 @@ app.get(['/admin/ingest/:id', '/api/admin/ingest/:id'], requireAdmin, (req, res)
   const job = ingestJobs.get(req.params.id);
   if (!job) return res.status(404).json({ error: 'Job inconnu ou expiré.' });
   res.json({ job: jobPublic(job) });
+});
+
+// POST /admin/rag/search — inspection de la recherche, sans appel au modèle.
+// Répond à « pourquoi cette source remonte-t-elle sur ce cas ? » et permet de
+// régler les poids de la fusion hybride sur des cas réels, contre l'index de
+// production, sans consommer d'appel Opus ni redéployer entre deux essais.
+app.post(['/admin/rag/search', '/api/admin/rag/search'], requireAdmin, async (req, res) => {
+  const params = Object.assign({}, req.body, req.query);
+
+  const specialite = getSpecialite(params.specialite);
+  if (!specialite) {
+    return res.status(404).json({
+      error: `Spécialité inconnue ou inactive : ${params.specialite}`,
+      disponibles: listSpecialites().map(s => s.key),
+    });
+  }
+
+  const query = txt(params.query || params.cas, 4000);
+  if (!query) return res.status(400).json({ error: 'Paramètre « query » requis.' });
+
+  const nombre = v => (v == null || v === '' ? null : Number(v));
+  const poidsVectoriel = nombre(params.poidsVectoriel);
+  const poidsLexical   = nombre(params.poidsLexical);
+  for (const [nom, valeur] of [['poidsVectoriel', poidsVectoriel], ['poidsLexical', poidsLexical]]) {
+    if (valeur !== null && (!Number.isFinite(valeur) || valeur < 0)) {
+      return res.status(400).json({ error: `Paramètre « ${nom} » invalide.` });
+    }
+  }
+  const topK = nombre(params.topK) || 8;
+
+  try {
+    const recherche = await ragSearch({
+      collection: specialite.collection,
+      query,
+      topK: Math.min(Math.max(topK, 1), 30),
+      weights: { vector: poidsVectoriel, lexical: poidsLexical },
+    });
+    res.json({
+      mode: recherche.mode,
+      corpus: recherche.stats ? recherche.stats.count : 0,
+      poids: {
+        vectoriel: poidsVectoriel == null ? DEFAULT_WEIGHTS.vector : poidsVectoriel,
+        lexical:   poidsLexical   == null ? DEFAULT_WEIGHTS.lexical : poidsLexical,
+      },
+      // `parts` indique le rang obtenu par chaque moteur : c'est ce qui montre
+      // lequel des deux a fait remonter un passage donné.
+      passages: recherche.passages.map(p => ({
+        titre: p.meta.title,
+        source: p.meta.sourceLabel || p.meta.source,
+        url: p.meta.url,
+        score: Number(p.score.toFixed(5)),
+        rangs: p.parts,
+        extrait: p.text.slice(0, 180),
+      })),
+    });
+  } catch (err) {
+    console.error('[rag/search]', err.message);
+    res.status(500).json({ error: 'Recherche impossible.' });
+  }
 });
 
 // GET /admin/ingest — jobs récents et état des index
@@ -2030,9 +2089,10 @@ app.post('/api/avis-specialise', authenticateJWT, async (req, res) => {
   }
 
   // ── Recherche dans la base de connaissances ──
-  // La requête combine le cas et les termes pivots de la spécialité : ces
-  // derniers orientent le rappel lexical vers le bon champ sémantique.
-  const requete = `${specialite.termesPivots.join(' ')} ${cas}`.slice(0, 4000);
+  // La requête est le cas lui-même, sans enrichissement : la collection étant
+  // déjà restreinte à la spécialité, y préfixer des termes génériques ne
+  // discrimine rien et dégrade le classement lexical.
+  const requete = cas.slice(0, 4000);
   let recherche = { passages: [], mode: 'vide', stats: null };
   try {
     recherche = await ragSearch({ collection: specialite.collection, query: requete, topK: 8 });

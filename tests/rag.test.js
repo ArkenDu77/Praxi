@@ -250,8 +250,10 @@ describe('registre des spécialités', () => {
       expect(typeof specialite.label).toBe('string');
       expect(typeof specialite.collection).toBe('string');
       expect(typeof specialite.cadrage).toBe('string');
-      expect(Array.isArray(specialite.termesPivots)).toBe(true);
       expect(typeof specialite.sources).toBe('object');
+      // Les termes pivots génériques ont été retirés : préfixés à la requête,
+      // ils dégradaient le classement lexical au lieu de l'orienter.
+      expect(specialite.termesPivots).toBeUndefined();
     }
   });
 
@@ -525,5 +527,67 @@ describe('embeddings — retry-after et 429', () => {
   test('une date déjà passée ne produit pas d\'attente négative', () => {
     const passe = new Date(Date.now() - 60000).toUTCString();
     expect(parseRetryAfter(entetes(passe))).toBe(0);
+  });
+});
+
+// ─── PONDÉRATION DE LA FUSION HYBRIDE ──────────────────────────────────────
+
+describe('ragSearch — poids de la fusion', () => {
+  const { DEFAULT_WEIGHTS } = require('../lib/rag');
+
+  test('le vectoriel pèse plus lourd que le lexical par défaut', () => {
+    expect(DEFAULT_WEIGHTS.vector).toBeGreaterThan(DEFAULT_WEIGHTS.lexical);
+    expect(DEFAULT_WEIGHTS.lexical).toBeGreaterThan(0);   // jamais neutralisé
+  });
+});
+
+describe('POST /admin/rag/search', () => {
+  const ADMIN = 'test-admin-token';
+  const { DEFAULT_WEIGHTS } = require('../lib/rag');
+
+  test('refuse sans en-tête admin', async () => {
+    await request(app).post('/admin/rag/search?specialite=dermatologie&query=test').expect(401);
+  });
+
+  test('refuse une spécialité inconnue', async () => {
+    await request(app)
+      .post('/admin/rag/search?specialite=astrologie&query=test')
+      .set('x-admin-token', ADMIN)
+      .expect(404);
+  });
+
+  test('refuse sans requête', async () => {
+    await request(app)
+      .post('/admin/rag/search?specialite=dermatologie')
+      .set('x-admin-token', ADMIN)
+      .expect(400);
+  });
+
+  test('refuse un poids négatif ou non numérique', async () => {
+    await request(app)
+      .post('/admin/rag/search?specialite=dermatologie&query=test&poidsVectoriel=-1')
+      .set('x-admin-token', ADMIN)
+      .expect(400);
+    await request(app)
+      .post('/admin/rag/search?specialite=dermatologie&query=test&poidsLexical=beaucoup')
+      .set('x-admin-token', ADMIN)
+      .expect(400);
+  });
+
+  test('renvoie les poids appliqués, défauts compris', async () => {
+    const res = await request(app)
+      .post('/admin/rag/search?specialite=dermatologie&query=plaques squameuses des coudes')
+      .set('x-admin-token', ADMIN)
+      .expect(200);
+    expect(res.body.poids).toEqual({ vectoriel: DEFAULT_WEIGHTS.vector, lexical: DEFAULT_WEIGHTS.lexical });
+    expect(Array.isArray(res.body.passages)).toBe(true);
+  });
+
+  test('accepte des poids explicites', async () => {
+    const res = await request(app)
+      .post('/admin/rag/search?specialite=dermatologie&query=test&poidsVectoriel=3&poidsLexical=0.5')
+      .set('x-admin-token', ADMIN)
+      .expect(200);
+    expect(res.body.poids).toEqual({ vectoriel: 3, lexical: 0.5 });
   });
 });
