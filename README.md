@@ -279,12 +279,17 @@ autres pistes, ce qui peut être proposé, signaux d'alerte.
 |---|---|
 | Modèle | `claude-sonnet-4-6` — le raisonnement diagnostique est déjà fait, il ne reste qu'à condenser |
 | Entrée | **le texte de l'avis uniquement** : aucune nouvelle recherche RAG |
-| Longueur visée | 1 200 à 1 800 caractères (200-300 mots) |
+| Longueur visée | 1 800 à 2 400 caractères (~300-380 mots), mesurée à ~2 350 en production |
 | Renvois | les numéros `[n]` sont conservés, les sources restent affichées dans les deux vues |
 
 Le prompt interdit d'ajouter la moindre hypothèse, examen ou produit absent du
 texte d'origine, et impose de conserver les réserves : un résumé qui affirme ce
 que l'avis nuançait serait faux tout en paraissant plus utile.
+
+La longueur est contrainte par des **plafonds par rubrique** (3 phrases pour
+l'hypothèse, 3 pistes, 5 propositions, 5 signaux d'alerte) et non par un nombre
+de caractères : un modèle ne compte pas ses signes, et la consigne chiffrée seule
+produisait des résumés 40 % trop longs. Les plafonds, eux, sont tenus.
 
 **L'avis complet reste toujours accessible** (bouton « Voir le détail ») : c'est
 lui qui porte le raisonnement et les renvois vers les sources. Les deux versions

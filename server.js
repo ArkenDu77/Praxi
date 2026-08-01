@@ -2236,18 +2236,24 @@ app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
     "SIGNAUX D'ALERTE : ce qui imposerait d'agir vite. Écris « Aucun signalé » si l'avis complet n'en mentionne pas.\n\n" +
 
     // Un modèle ne compte pas ses caractères : une consigne exprimée en nombre
-    // de signes est un vœu. Mesuré en production, elle produisait des résumés
-    // de 2400 à 2700 caractères pour une cible de 1200 à 1800. Les plafonds par
-    // rubrique, eux, sont vérifiables au fil de la rédaction.
+    // de signes est un vœu. Les plafonds par rubrique, eux, sont vérifiables au
+    // fil de la rédaction — et c'est bien eux qui tiennent : mesuré en production,
+    // le nombre d'éléments est respecté, la longueur de chaque ligne beaucoup moins.
+    //
+    // La cible a été portée de 1200-1800 à 1800-2400 après mesure. Les résumés
+    // obtenus tournent autour de 2350 caractères, avec des lignes de 130 à 170
+    // signes qui portent chacune leur justification clinique. Comprimer davantage
+    // reviendrait à supprimer ces justifications pour tenir un chiffre : c'est
+    // précisément ce qui fait la valeur de la synthèse.
     "LONGUEUR — contrainte la plus importante après l'exactitude. Plafonds par rubrique :\n" +
     "HYPOTHÈSE LA PLUS PROBABLE : trois phrases au maximum.\n" +
     "AUTRES PISTES À NE PAS ÉCARTER : trois au maximum, une ligne chacune.\n" +
     "CE QUI PEUT ÊTRE PROPOSÉ : cinq éléments au maximum, une ligne chacun. Retiens les plus " +
     "déterminants pour la décision, pas la liste exhaustive de l'avis complet.\n" +
-    "SIGNAUX D'ALERTE : quatre au maximum, une ligne chacun.\n" +
-    "Une ligne est une phrase courte, jamais un paragraphe. L'ensemble vise 1200 à 1800 caractères. " +
-    "Quand il faut choisir, garde ce qui change la conduite à tenir et coupe le reste : le médecin a " +
-    "l'avis complet à portée de clic.\n\n" +
+    "SIGNAUX D'ALERTE : cinq au maximum, une ligne chacun.\n" +
+    "Une ligne est une phrase, éventuellement avec sa justification clinique, jamais un paragraphe. " +
+    "L'ensemble vise 1800 à 2400 caractères. Quand il faut choisir, garde ce qui change la conduite " +
+    "à tenir et coupe le reste : le médecin a l'avis complet à portée de clic.\n\n" +
 
     "FIN : termine par une ligne rappelant qu'il s'agit d'une synthèse et que le détail et les sources " +
     "figurent dans l'avis complet.\n\n" +
