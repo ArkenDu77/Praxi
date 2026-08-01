@@ -91,6 +91,7 @@ JWT_EXPIRES_IN=7d
 |---------|-------|-------------|
 | GET    | `/api/avis-specialise/specialites` | Spécialités disponibles + état de la base indexée |
 | POST   | `/api/avis-specialise` | Cas clinique + photos + spécialité → avis argumenté et sourcé |
+| POST   | `/api/avis-specialise/resume` | Synthèse courte d'un avis déjà généré (sans nouvelle recherche) |
 
 Chaque route protégée attend l'en-tête `Authorization: Bearer <token>`.
 Le profil du médecin (prénom, nom, spécialité, adresse, RPPS…) est automatiquement
@@ -266,6 +267,31 @@ Une seule chose à modifier : ajouter une entrée dans `lib/specialites.js`
 l'ingestion. Le moteur RAG, la route API, le script d'ingestion et le front —
 qui alimente son menu déroulant depuis `GET /api/avis-specialise/specialites` —
 n'ont pas besoin d'être touchés. Un gabarit commenté figure en fin de fichier.
+
+### Résumé actionnable
+
+L'avis complet fait ~10 000 caractères : un document de fond. Le bouton
+**Résumé** en produit une lecture rapide, pour le médecin entre deux
+consultations, en quatre rubriques — hypothèse la plus probable et pourquoi,
+autres pistes, ce qui peut être proposé, signaux d'alerte.
+
+| | |
+|---|---|
+| Modèle | `claude-sonnet-4-6` — le raisonnement diagnostique est déjà fait, il ne reste qu'à condenser |
+| Entrée | **le texte de l'avis uniquement** : aucune nouvelle recherche RAG |
+| Longueur visée | 1 200 à 1 800 caractères (200-300 mots) |
+| Renvois | les numéros `[n]` sont conservés, les sources restent affichées dans les deux vues |
+
+Le prompt interdit d'ajouter la moindre hypothèse, examen ou produit absent du
+texte d'origine, et impose de conserver les réserves : un résumé qui affirme ce
+que l'avis nuançait serait faux tout en paraissant plus utile.
+
+**L'avis complet reste toujours accessible** (bouton « Voir le détail ») : c'est
+lui qui porte le raisonnement et les renvois vers les sources. Les deux versions
+sont éditables et les corrections du médecin sont conservées d'une vue à l'autre.
+
+Le texte à résumer est envoyé par le client, qui l'a déjà en mémoire — cohérent
+avec le principe du projet : aucune donnée patient n'est conservée côté serveur.
 
 ### Garde-fous
 

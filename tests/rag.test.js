@@ -680,3 +680,68 @@ describe('ragSearch — diversité des sources', () => {
     expect(Object.keys(parDoc).length).toBe(2);
   });
 });
+
+// ─── RÉSUMÉ D'UN AVIS ──────────────────────────────────────────────────────
+
+describe('POST /api/avis-specialise/resume', () => {
+  let token;
+  const AVIS = 'HYPOTHÈSES DIAGNOSTIQUES : Le tableau évoque en premier lieu un psoriasis en '
+    + 'plaques [1]. Les arguments sont la topographie sur les faces d\'extension et les squames '
+    + 'argentées [2]. PISTES DE PRISE EN CHARGE : Les analogues de la vitamine D sont documentés '
+    + 'en première intention [3]. SIGNAUX D\'ALERTE : Une atteinte articulaire imposerait un avis '
+    + 'rhumatologique [1].';
+
+  beforeAll(async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      prenom: 'Resume', nom: 'Test',
+      email: `resume.${Date.now()}@example.com`,
+      password: 'TestPassword1',
+      specialites: ['Médecin généraliste'],
+      ville: 'Nantes',
+    });
+    token = res.body.token;
+  });
+
+  test('refuse sans authentification', async () => {
+    await request(app).post('/api/avis-specialise/resume').send({ avis: AVIS }).expect(401);
+  });
+
+  test('refuse un avis absent ou trop court pour être résumé', async () => {
+    for (const avis of [undefined, '', 'Trop court.']) {
+      const res = await request(app)
+        .post('/api/avis-specialise/resume')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ avis })
+        .expect(400);
+      expect(res.body.error).toMatch(/avis/i);
+    }
+  });
+
+  test('accepte un avis complet (200 ou 503 sans clé API)', async () => {
+    const res = await request(app)
+      .post('/api/avis-specialise/resume')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ avis: AVIS, specialite: 'dermatologie' });
+    expect([200, 503, 429]).toContain(res.status);
+  });
+
+  test('ne déclenche aucune recherche RAG — fonctionne sans index', async () => {
+    // La collection « dermatologie » n'existe pas dans l'index de test : l'avis
+    // complet répondrait 503 « base non indexée ». Le résumé, lui, ne doit
+    // dépendre que du texte fourni.
+    const res = await request(app)
+      .post('/api/avis-specialise/resume')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ avis: AVIS, specialite: 'dermatologie' });
+    if (res.status !== 200) expect(res.body.error).not.toMatch(/indexée/);
+  });
+
+  test('une spécialité inconnue ne bloque pas le résumé', async () => {
+    // Le champ n'est qu'un indice de cadrage : le texte se suffit à lui-même.
+    const res = await request(app)
+      .post('/api/avis-specialise/resume')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ avis: AVIS, specialite: 'astrologie' });
+    expect([200, 503, 429]).toContain(res.status);
+  });
+});

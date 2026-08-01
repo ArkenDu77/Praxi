@@ -2194,6 +2194,68 @@ app.post('/api/avis-specialise', authenticateJWT, async (req, res) => {
   }
 });
 
+// POST /api/avis-specialise/resume — synthèse courte et actionnable d'un avis
+// déjà généré. Aucune recherche RAG : le résumé se fonde exclusivement sur le
+// texte fourni, celui-là même que le médecin a sous les yeux. Rien d'autre ne
+// doit pouvoir entrer dans la synthèse, sans quoi elle affirmerait des choses
+// que l'avis complet — et ses sources — ne portent pas.
+//
+// Modèle plus léger que l'avis lui-même : le raisonnement diagnostique est déjà
+// fait, il ne reste qu'à condenser.
+app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
+  const avis = txt(req.body.avis, 20000);
+  if (!avis || avis.length < 200) {
+    return res.status(400).json({ error: 'Aucun avis à résumer.' });
+  }
+
+  const specialite = getSpecialite(req.body.specialite);
+
+  const ipResume = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  if (!rateLimit(`${req.user.id}:${ipResume}`, 40, 'avis-resume')) {
+    return res.status(429).json({ error: 'Trop de demandes de résumé. Réessayez dans quelques minutes.' });
+  }
+
+  const system =
+    "Tu condenses un avis médical spécialisé déjà rédigé, à destination du médecin qui l'a demandé. " +
+    (specialite ? `Domaine : ${specialite.label}. ` : '') +
+    "Il le lira entre deux consultations : il doit pouvoir agir après lecture, sans avoir à ouvrir le texte complet.\n\n" +
+
+    "SOURCE EXCLUSIVE : tu ne disposes que du texte fourni. N'ajoute aucune hypothèse, aucun examen, " +
+    "aucun produit, aucun chiffre et aucune précision qui n'y figurent pas déjà. Tu condenses, tu " +
+    "n'enrichis pas. Si l'avis complet exprime une réserve ou une incertitude sur un point que tu " +
+    "reprends, conserve cette réserve : un résumé qui affirme ce que l'original nuançait est faux.\n\n" +
+
+    "RENVOIS : l'avis complet cite ses sources par des numéros entre crochets. Conserve ces numéros " +
+    "sur les éléments que tu reprends, à l'identique, pour que le médecin puisse remonter au détail.\n\n" +
+
+    "STRUCTURE, dans cet ordre exact, chaque titre en majuscules suivi de deux points :\n" +
+    "HYPOTHÈSE LA PLUS PROBABLE : la principale, et en une à deux phrases ce qui la soutient dans ce cas précis.\n" +
+    "AUTRES PISTES À NE PAS ÉCARTER : les alternatives retenues par l'avis, une ligne chacune, sans les arguments détaillés.\n" +
+    "CE QUI PEUT ÊTRE PROPOSÉ : examens utiles, pistes thérapeutiques, produits cités et orientation éventuelle. " +
+    "Reste au registre documentaire entre confrères : pas de posologie nominative, pas de prescription.\n" +
+    "SIGNAUX D'ALERTE : ce qui imposerait d'agir vite. Écris « Aucun signalé » si l'avis complet n'en mentionne pas.\n\n" +
+
+    "LONGUEUR : entre 1200 et 1800 caractères au total. C'est un résumé de consultation, pas un second " +
+    "document. Préfère couper une nuance secondaire plutôt que dépasser.\n\n" +
+
+    "FIN : termine par une ligne rappelant qu'il s'agit d'une synthèse et que le détail et les sources " +
+    "figurent dans l'avis complet.\n\n" +
+
+    "FORMAT : français, jamais de Markdown — pas d'astérisques, pas de dièses, pas de tirets de liste. " +
+    "Sépare les sections par une ligne vide. Les énumérations se font en début de ligne, sans puce.";
+
+  try {
+    const resume = finalizeDocument(await generateDocument({
+      system,
+      user: `Avis spécialisé à condenser :\n\n${avis}`,
+      maxTokens: 1200,
+    }));
+    res.json({ resume, modele: AI_MODEL });
+  } catch (err) {
+    aiError(res, err);
+  }
+});
+
 // SPA fallback
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
