@@ -1,28 +1,26 @@
 #!/usr/bin/env node
-// ─── Ingestion de la base de connaissances ────────────────────────────────────
+// ─── Ingestion de la base de connaissances (CLI) ──────────────────────────────
 //
 //   node scripts/ingest.js dermatologie
 //   node scripts/ingest.js dermatologie --sources=sfd,has
 //   node scripts/ingest.js dermatologie --limit=300 --reset
 //   node scripts/ingest.js --list
 //
-// Le script est idempotent : relancé, il écrase les passages déjà connus (clé =
-// identifiant du document) sans dupliquer le corpus. `--reset` repart de zéro.
+// L'orchestration vit dans lib/ingest.js, partagée avec la route
+// POST /admin/ingest : ce fichier n'est que l'habillage terminal.
+//
+// L'ingestion est idempotente : relancée, elle écrase les passages déjà connus
+// (clé = identifiant du document) sans dupliquer le corpus. `--reset` repart de
+// zéro. Un verrou empêche deux ingestions simultanées sur la même collection.
 //
 // Sans VOYAGE_API_KEY, l'ingestion se fait quand même : l'index est alors
 // purement lexical (BM25) et la recherche fonctionne en mode dégradé.
 
 require('dotenv').config();
 
-const { ragIngest, ragStats, store, embeddings } = require('../lib/rag');
-const { getSpecialite, allSpecialites } = require('../lib/specialites');
-
-const SOURCES = {
-  pubmed: require('../lib/rag/sources/pubmed'),
-  has:    require('../lib/rag/sources/has'),
-  sfd:    require('../lib/rag/sources/sfd'),
-  bdpm:   require('../lib/rag/sources/bdpm'),
-};
+const { runIngestion } = require('../lib/ingest');
+const { ragStats, store, embeddings } = require('../lib/rag');
+const { allSpecialites } = require('../lib/specialites');
 
 function parseArgs(argv) {
   const options = { sources: null, limit: null, reset: false, dryRun: false, list: false };
@@ -70,101 +68,60 @@ async function run() {
     return;
   }
 
-  const specialite = getSpecialite(key);
-  if (!specialite) {
-    console.error(`\n  ✗ Spécialité inconnue ou inactive : ${key}`);
-    console.error(`    Déclarées : ${allSpecialites().map(s => s.key).join(', ')}\n`);
-    process.exitCode = 1;
-    return;
-  }
-
-  const wanted = options.sources || Object.keys(specialite.sources);
-  const unknown = wanted.filter(s => !SOURCES[s] || !specialite.sources[s]);
-  if (unknown.length) {
-    console.error(`\n  ✗ Source(s) non disponible(s) pour ${specialite.label} : ${unknown.join(', ')}`);
-    console.error(`    Disponibles : ${Object.keys(specialite.sources).join(', ')}\n`);
-    process.exitCode = 1;
-    return;
-  }
-
-  console.log(`\n  Ingestion — ${specialite.label} (collection « ${specialite.collection} »)`);
-  console.log(`  Sources : ${wanted.join(', ')}`);
+  console.log(`\n  Ingestion — ${key}`);
   console.log(`  Embeddings : ${embeddings.isAvailable()
     ? `Voyage ${embeddings.VOYAGE_MODEL}`
     : '⚠ VOYAGE_API_KEY absente — index lexical seul (recherche dégradée)'}`);
-
-  if (options.reset) {
-    store.drop(specialite.collection);
-    console.log('  Index précédent supprimé (--reset)');
-  }
   console.log('');
 
-  const started = Date.now();
-  const résumé = [];
-
-  for (const sourceId of wanted) {
-    const source = SOURCES[sourceId];
-    const config = Object.assign({}, specialite.sources[sourceId]);
-    if (options.limit) config.limit = options.limit;
-
-    process.stdout.write(`  ▸ ${source.label} … `);
-    const t0 = Date.now();
-
-    let documents;
-    try {
-      documents = await source.fetchDocuments(Object.assign({}, config, {
-        onProgress: info => {
-          if (info.phase === 'page' && info.done % 10 === 0) process.stdout.write('.');
-          if (info.phase === 'download' || info.phase === 'search') process.stdout.write('·');
-        },
-      }));
-    } catch (err) {
-      console.log(`\n    ✗ échec : ${err.message}`);
-      résumé.push({ source: source.label, error: err.message });
-      continue;
-    }
-
-    if (!documents.length) {
-      console.log('aucun document');
-      résumé.push({ source: source.label, documents: 0, chunks: 0 });
-      continue;
-    }
-
-    if (options.dryRun) {
-      console.log(`${documents.length} documents (dry-run, rien d'indexé)`);
-      console.log(`      exemple : ${documents[0].title.slice(0, 90)}`);
-      résumé.push({ source: source.label, documents: documents.length, chunks: 0 });
-      continue;
-    }
-
-    let result;
-    try {
-      result = await ragIngest({
-        collection: specialite.collection,
-        documents,
-        source: sourceId,
-        onProgress: info => {
-          if (info.phase === 'embed' && info.done % 640 === 0) process.stdout.write('+');
-        },
-      });
-    } catch (err) {
-      console.log(`\n    ✗ indexation échouée : ${err.message}`);
-      résumé.push({ source: source.label, error: err.message });
-      continue;
-    }
-
-    console.log(` ${result.added} documents → ${result.chunks} passages   (${humanDuration(Date.now() - t0)})`);
-    résumé.push({ source: source.label, documents: result.added, chunks: result.chunks });
+  let rapport;
+  try {
+    rapport = await runIngestion({
+      specialite: key,
+      sources: options.sources,
+      limit: options.limit,
+      reset: options.reset,
+      dryRun: options.dryRun,
+      onEvent: event => {
+        switch (event.type) {
+          case 'reset':
+            console.log('  Index précédent supprimé (--reset)');
+            break;
+          case 'source-start':
+            process.stdout.write(`  ▸ ${event.label} … `);
+            break;
+          case 'progress':
+            if (event.phase === 'page' && event.done % 10 === 0) process.stdout.write('.');
+            else if (event.phase === 'embed' && event.done % 640 === 0) process.stdout.write('+');
+            else if (event.phase === 'download' || event.phase === 'search') process.stdout.write('·');
+            break;
+          case 'source-done':
+            console.log(event.dryRun
+              ? `${event.documents} documents (dry-run, rien d'indexé)`
+              : ` ${event.documents} documents → ${event.chunks} passages   (${humanDuration(event.ms)})`);
+            break;
+          case 'source-error':
+            console.log(`\n    ✗ ${event.message}`);
+            break;
+        }
+      },
+    });
+  } catch (err) {
+    console.error(`\n  ✗ ${err.message}`);
+    if (err.disponibles) console.error(`    Disponibles : ${err.disponibles.join(', ')}`);
+    process.exitCode = 1;
+    return;
   }
 
-  console.log(`\n  Terminé en ${humanDuration(Date.now() - started)}`);
-  for (const line of résumé) {
-    console.log(line.error
-      ? `    ✗ ${line.source} — ${line.error}`
-      : `    ✓ ${line.source.padEnd(38)} ${String(line.documents).padStart(5)} doc  ${String(line.chunks).padStart(6)} passages`);
+  console.log(`\n  Terminé en ${humanDuration(rapport.ms)}`);
+  for (const ligne of rapport.resultats) {
+    console.log(ligne.erreur
+      ? `    ✗ ${ligne.label} — ${ligne.erreur}`
+      : `    ✓ ${ligne.label.padEnd(38)} ${String(ligne.documents).padStart(5)} doc  ${String(ligne.chunks).padStart(6)} passages`);
   }
   printStats();
   console.log('');
+  if (rapport.echecs.length) process.exitCode = 1;
 }
 
 run().catch(err => {

@@ -377,6 +377,177 @@ app.patch('/api/admin/status/:id', (req, res) => {
   res.json({ ok: true });
 });
 
+// ═══════════════════════════════════════════════════════════════════════════════
+//  ADMIN — INGESTION DE LA BASE DE CONNAISSANCES
+// ═══════════════════════════════════════════════════════════════════════════════
+// Route permanente : sert à ré-ingérer une spécialité (mise à jour du corpus)
+// comme à en indexer une nouvelle après ajout dans lib/specialites.js.
+//
+// L'ingestion complète dure une dizaine de minutes, bien au-delà du délai d'un
+// proxy HTTP : le travail est donc lancé en arrière-plan et la route rend
+// immédiatement un identifiant de job, consultable via GET /admin/ingest/:id.
+//
+// Le serveur relit son index depuis le disque dès que celui-ci change (contrôle
+// de mtime dans lib/rag/store.js) : une ingestion terminée est prise en compte
+// sans redémarrage.
+
+const { runIngestion, sourcesDisponibles } = require('./lib/ingest');
+
+const JOBS_MAX = 20;                 // historique borné : la carte vit en mémoire
+const ingestJobs = new Map();
+
+function requireAdmin(req, res, next) {
+  if (req.headers['x-admin-token'] !== ADMIN_TOKEN) {
+    return res.status(401).json({ error: 'Non autorisé.' });
+  }
+  next();
+}
+
+function jobPublic(job) {
+  return {
+    id: job.id,
+    specialite: job.specialite,
+    sources: job.sources,
+    statut: job.statut,
+    demarreA: job.demarreA,
+    termineA: job.termineA || null,
+    dureeMs: job.termineA ? Date.parse(job.termineA) - Date.parse(job.demarreA) : Date.now() - Date.parse(job.demarreA),
+    etape: job.etape,
+    rapport: job.rapport || null,
+    erreur: job.erreur || null,
+  };
+}
+
+// POST /admin/ingest?specialite=X[&sources=a,b][&limit=N][&reset=1][&dryRun=1]
+app.post(['/admin/ingest', '/api/admin/ingest'], requireAdmin, (req, res) => {
+  // Les paramètres sont acceptés en query string (comme demandé) ou dans le
+  // corps JSON, pour rester utilisable depuis un client qui préfère un body.
+  const source = Object.assign({}, req.body, req.query);
+
+  const specialite = String(source.specialite || '').trim();
+  if (!specialite) {
+    return res.status(400).json({
+      error: 'Paramètre « specialite » requis.',
+      disponibles: listSpecialites().map(s => s.key),
+    });
+  }
+
+  const specialiteEntry = getSpecialite(specialite);
+  if (!specialiteEntry) {
+    return res.status(404).json({
+      error: `Spécialité inconnue ou inactive : ${specialite}`,
+      disponibles: listSpecialites().map(s => s.key),
+    });
+  }
+
+  const sources = source.sources
+    ? String(source.sources).split(',').map(s => s.trim()).filter(Boolean)
+    : null;
+  const inconnues = (sources || []).filter(id => !sourcesDisponibles(specialiteEntry).includes(id));
+  if (inconnues.length) {
+    return res.status(400).json({
+      error: `Source(s) non disponible(s) pour ${specialiteEntry.label} : ${inconnues.join(', ')}`,
+      disponibles: sourcesDisponibles(specialiteEntry),
+    });
+  }
+
+  const limit = source.limit ? parseInt(source.limit, 10) : null;
+  if (source.limit && (!Number.isFinite(limit) || limit < 1)) {
+    return res.status(400).json({ error: 'Paramètre « limit » invalide.' });
+  }
+  const vrai = v => v === true || v === '1' || v === 'true';
+
+  const job = {
+    id: crypto.randomUUID(),
+    specialite: specialiteEntry.key,
+    sources: sources || sourcesDisponibles(specialiteEntry),
+    statut: 'en-cours',
+    demarreA: new Date().toISOString(),
+    termineA: null,
+    etape: 'démarrage',
+    rapport: null,
+    erreur: null,
+  };
+
+  // Le verrou de lib/ingest.js est pris à l'intérieur de runIngestion, donc de
+  // façon asynchrone : on refuse tout de suite si un job de cette spécialité est
+  // déjà actif dans ce processus, pour rendre un 409 franc plutôt qu'un job qui
+  // échouerait une seconde plus tard.
+  const dejaActif = [...ingestJobs.values()].find(j => j.statut === 'en-cours' && j.specialite === job.specialite);
+  if (dejaActif) {
+    return res.status(409).json({
+      error: `Une ingestion est déjà en cours sur « ${job.specialite} ».`,
+      job: jobPublic(dejaActif),
+    });
+  }
+
+  ingestJobs.set(job.id, job);
+  while (ingestJobs.size > JOBS_MAX) ingestJobs.delete(ingestJobs.keys().next().value);
+
+  // Lancement en arrière-plan : la réponse part sans attendre.
+  runIngestion({
+    specialite: specialiteEntry.key,
+    sources,
+    limit,
+    reset: vrai(source.reset),
+    dryRun: vrai(source.dryRun),
+    onEvent: event => {
+      if (event.type === 'source-start') job.etape = `source ${event.source}`;
+      else if (event.type === 'source-done') job.etape = `source ${event.source} terminée`;
+      else if (event.type === 'source-error') job.etape = `source ${event.source} en échec`;
+    },
+  })
+    .then(rapport => {
+      job.rapport = rapport;
+      job.statut = rapport.echecs.length ? 'termine-avec-erreurs' : 'termine';
+      job.etape = 'terminé';
+      console.log(`[ingest] ${job.specialite} — ${rapport.documents} documents, ${rapport.chunks} passages en ${Math.round(rapport.ms / 1000)} s`
+        + (rapport.echecs.length ? ` — échecs : ${rapport.echecs.join(', ')}` : ''));
+    })
+    .catch(err => {
+      job.statut = err.code === 'VERROU_OCCUPE' ? 'refuse' : 'echec';
+      job.erreur = err.message;
+      job.etape = 'échec';
+      console.error(`[ingest] ${job.specialite} — ${err.message}`);
+    })
+    .finally(() => { job.termineA = new Date().toISOString(); });
+
+  res.status(202).json({
+    ok: true,
+    message: 'Ingestion lancée en arrière-plan. Suivez son avancement sur GET /admin/ingest/:id.',
+    job: jobPublic(job),
+    suivi: `/admin/ingest/${job.id}`,
+  });
+});
+
+// GET /admin/ingest/:id — avancement d'un job
+app.get(['/admin/ingest/:id', '/api/admin/ingest/:id'], requireAdmin, (req, res) => {
+  const job = ingestJobs.get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job inconnu ou expiré.' });
+  res.json({ job: jobPublic(job) });
+});
+
+// GET /admin/ingest — jobs récents et état des index
+app.get(['/admin/ingest', '/api/admin/ingest'], requireAdmin, (_req, res) => {
+  res.json({
+    jobs: [...ingestJobs.values()].map(jobPublic).reverse(),
+    specialites: listSpecialites().map(s => {
+      const stats = ragStats(s.key);
+      return {
+        key: s.key,
+        label: s.label,
+        sources: sourcesDisponibles(getSpecialite(s.key)),
+        index: stats && {
+          passages: stats.count,
+          vectoriel: stats.hasVectors,
+          modele: stats.model,
+          majLe: stats.updatedAt,
+        },
+      };
+    }),
+  });
+});
+
 // ── AUTHENTIFICATION ──
 
 // Middleware : vérifie le JWT présent dans l'en-tête Authorization: Bearer <token>

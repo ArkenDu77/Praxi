@@ -27,6 +27,7 @@ praxi/
 │   ├── cgu.html
 │   └── politique-confidentialite.html
 ├── lib/
+│   ├── ingest.js                        ← Orchestration de l'ingestion (CLI + route admin)
 │   ├── specialites.js                   ← Registre des spécialités « avis spécialisé »
 │   └── rag/                             ← Brique RAG générique (réutilisable)
 │       ├── index.js                     ← API publique : ragIngest / ragSearch
@@ -101,6 +102,9 @@ injecté dans le system prompt — aucun champ vide entre crochets n'apparaît d
 |---------|-------|-------------|
 | GET    | `/api/admin/list` | Liste complète des inscrits waitlist |
 | PATCH  | `/api/admin/status/:id` | Changer le statut d'un inscrit |
+| POST   | `/admin/ingest?specialite=X` | Lancer l'ingestion d'une spécialité (voir section RAG) |
+| GET    | `/admin/ingest/:id` | Avancement d'un job d'ingestion |
+| GET    | `/admin/ingest` | Jobs récents + état des index |
 
 ```bash
 curl http://localhost:3001/api/admin/list -H "x-admin-token: praxi-admin-dev"
@@ -201,6 +205,54 @@ npm run ingest -- dermatologie --reset            # repart d'un index vide
 L'ingestion est idempotente : relancée, elle écrase les passages déjà connus
 (clé = identifiant du document) sans dupliquer le corpus. Comptez ~10 min et
 quelques euros d'embeddings pour un corpus dermatologique complet.
+
+Un verrou fichier (`<collection>.ingest.lock` dans `RAG_DIR`) empêche deux
+ingestions simultanées sur une même collection — le store réécrit les fichiers
+en entier, deux écritures concurrentes se perdraient. Le verrou couvre le CLI
+**et** la route d'administration, qui sont deux processus distincts ; il est
+repris automatiquement s'il est resté orphelin plus de 45 minutes.
+
+### Ingestion par API (administration)
+
+Même moteur que le CLI (`lib/ingest.js`), utilisable à distance sans shell sur
+le service. Utile pour ré-ingérer périodiquement ou pour indexer une nouvelle
+spécialité après l'avoir déclarée.
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| POST   | `/admin/ingest?specialite=X` | Lance l'ingestion en arrière-plan, renvoie `202` + identifiant de job |
+| GET    | `/admin/ingest/:id` | Avancement et rapport d'un job |
+| GET    | `/admin/ingest` | Jobs récents + état des index par spécialité |
+
+Authentification par en-tête `x-admin-token`, comparé à `ADMIN_TOKEN`. Les mêmes
+routes existent sous `/api/admin/ingest`, par cohérence avec les autres routes
+d'administration.
+
+```bash
+# Lancer une ingestion complète
+curl -X POST "https://praxi.up.railway.app/admin/ingest?specialite=dermatologie" \
+  -H "x-admin-token: $ADMIN_TOKEN"
+
+# Suivre l'avancement
+curl "https://praxi.up.railway.app/admin/ingest/<job-id>" -H "x-admin-token: $ADMIN_TOKEN"
+
+# Rafraîchir une seule source, ou repartir d'un index vide
+curl -X POST "…/admin/ingest?specialite=dermatologie&sources=sfd,has" -H "x-admin-token: $ADMIN_TOKEN"
+curl -X POST "…/admin/ingest?specialite=dermatologie&reset=1"        -H "x-admin-token: $ADMIN_TOKEN"
+```
+
+Paramètres, en query string ou dans le corps JSON : `specialite` (requis),
+`sources` (liste séparée par des virgules), `limit`, `reset`, `dryRun`.
+
+**Pourquoi en arrière-plan** — une ingestion complète dépasse largement le délai
+d'attente d'un proxy HTTP. La route rend la main immédiatement avec un
+identifiant de job ; l'avancement se consulte sur `GET /admin/ingest/:id`. Un
+`409` est renvoyé si une ingestion est déjà en cours sur la spécialité.
+
+L'historique des jobs vit **en mémoire** (20 derniers) : il est perdu au
+redémarrage du service. L'index, lui, est sur le volume — c'est ce qui compte.
+Le serveur relit son index dès qu'il change sur le disque (contrôle de mtime) :
+une ingestion terminée est prise en compte sans redémarrage.
 
 > ⚠ **Sur Railway** : définissez `RAG_DIR` dans le volume persistant
 > (ex. `RAG_DIR=/data/rag`), sinon l'index est perdu à chaque redéploiement.

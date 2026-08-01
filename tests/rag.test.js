@@ -25,6 +25,7 @@ process.env.PORT          = '3098';
 delete process.env.VOYAGE_API_KEY;   // force le mode lexical, déterministe
 
 const { chunkText, chunkDocument } = require('../lib/rag/chunk');
+const { runIngestion, acquireLock, sourcesDisponibles } = require('../lib/ingest');
 const lexical = require('../lib/rag/lexical');
 const store   = require('../lib/rag/store');
 const { ragIngest, ragSearch, ragStats } = require('../lib/rag');
@@ -363,5 +364,125 @@ describe('API avis spécialisé', () => {
       });
     expect([503, 429]).toContain(res.status);
     if (res.status === 503) expect(res.body.error).toMatch(/indexée/);
+  });
+});
+
+// ─── ORCHESTRATION DE L'INGESTION ──────────────────────────────────────────
+// Aucun de ces tests ne touche le réseau : on s'arrête aux validations, qui
+// lèvent avant toute récupération de source.
+
+describe('lib/ingest — validation et verrou', () => {
+  test('refuse une spécialité inconnue avant tout appel réseau', async () => {
+    await expect(runIngestion({ specialite: 'astrologie' })).rejects.toMatchObject({
+      code: 'SPECIALITE_INCONNUE',
+    });
+  });
+
+  test('refuse une source non déclarée pour la spécialité', async () => {
+    await expect(runIngestion({ specialite: 'dermatologie', sources: ['vidal'] })).rejects.toMatchObject({
+      code: 'SOURCE_INCONNUE',
+    });
+  });
+
+  test('expose les sources réellement implémentées', () => {
+    const derm = getSpecialite('dermatologie');
+    expect(sourcesDisponibles(derm).sort()).toEqual(['bdpm', 'has', 'pubmed', 'sfd']);
+  });
+
+  test('le verrou empêche une seconde ingestion concurrente', () => {
+    const premier = acquireLock('test-verrou');
+    expect(() => acquireLock('test-verrou')).toThrow(/déjà en cours/);
+    premier.release();
+    // Une fois relâché, le verrou est de nouveau disponible.
+    const second = acquireLock('test-verrou');
+    second.release();
+  });
+
+  test('le verrou est libéré même quand l\'ingestion échoue', async () => {
+    await expect(runIngestion({ specialite: 'dermatologie', sources: ['vidal'] })).rejects.toThrow();
+    const verrou = acquireLock('dermatologie');   // ne doit pas lever
+    verrou.release();
+  });
+});
+
+// ─── ROUTE ADMIN D'INGESTION ───────────────────────────────────────────────
+
+describe('POST /admin/ingest', () => {
+  const ADMIN = 'test-admin-token';
+
+  test('refuse sans en-tête admin', async () => {
+    await request(app).post('/admin/ingest?specialite=dermatologie').expect(401);
+  });
+
+  test('refuse un mauvais token admin', async () => {
+    await request(app)
+      .post('/admin/ingest?specialite=dermatologie')
+      .set('x-admin-token', 'mauvais')
+      .expect(401);
+  });
+
+  test('refuse sans paramètre specialite', async () => {
+    const res = await request(app)
+      .post('/admin/ingest')
+      .set('x-admin-token', ADMIN)
+      .expect(400);
+    expect(res.body.error).toMatch(/specialite/);
+    expect(res.body.disponibles).toContain('dermatologie');
+  });
+
+  test('refuse une spécialité inconnue', async () => {
+    const res = await request(app)
+      .post('/admin/ingest?specialite=astrologie')
+      .set('x-admin-token', ADMIN)
+      .expect(404);
+    expect(res.body.disponibles).toContain('dermatologie');
+  });
+
+  test('refuse une source non disponible', async () => {
+    const res = await request(app)
+      .post('/admin/ingest?specialite=dermatologie&sources=vidal')
+      .set('x-admin-token', ADMIN)
+      .expect(400);
+    expect(res.body.disponibles).toEqual(expect.arrayContaining(['pubmed', 'bdpm']));
+  });
+
+  test('refuse une limite invalide', async () => {
+    await request(app)
+      .post('/admin/ingest?specialite=dermatologie&limit=zero')
+      .set('x-admin-token', ADMIN)
+      .expect(400);
+  });
+
+  test('l\'alias /api/admin/ingest applique les mêmes règles', async () => {
+    await request(app).post('/api/admin/ingest?specialite=dermatologie').expect(401);
+    await request(app)
+      .post('/api/admin/ingest')
+      .set('x-admin-token', ADMIN)
+      .expect(400);
+  });
+});
+
+describe('GET /admin/ingest', () => {
+  const ADMIN = 'test-admin-token';
+
+  test('refuse sans en-tête admin', async () => {
+    await request(app).get('/admin/ingest').expect(401);
+  });
+
+  test('liste les spécialités et l\'état de leur index', async () => {
+    const res = await request(app)
+      .get('/admin/ingest')
+      .set('x-admin-token', ADMIN)
+      .expect(200);
+    expect(Array.isArray(res.body.jobs)).toBe(true);
+    const derm = res.body.specialites.find(s => s.key === 'dermatologie');
+    expect(derm.sources).toEqual(expect.arrayContaining(['pubmed', 'sfd']));
+  });
+
+  test('renvoie 404 sur un identifiant de job inconnu', async () => {
+    await request(app)
+      .get('/admin/ingest/job-qui-nexiste-pas')
+      .set('x-admin-token', ADMIN)
+      .expect(404);
   });
 });
