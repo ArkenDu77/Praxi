@@ -644,3 +644,39 @@ describe('POST /admin/rag/search — maxPerDoc', () => {
     store.drop(collection);
   });
 });
+
+describe('ragSearch — diversité des sources', () => {
+  const { DEFAULT_MAX_PER_DOC } = require('../lib/rag');
+  const collection = 'test-diversite';
+  afterAll(() => store.drop(collection));
+
+  test('par défaut, un seul passage par document source', async () => {
+    expect(DEFAULT_MAX_PER_DOC).toBe(1);
+
+    // Deux documents longs : sans plafond, le mieux classé raflerait plusieurs rangs.
+    await ragIngest({
+      collection,
+      documents: [
+        {
+          id: 'doc:pso',
+          title: 'Psoriasis en plaques',
+          text: 'Le psoriasis réalise des plaques érythémato-squameuses bien limitées des faces d\'extension. '.repeat(120),
+          meta: { source: 'test' },
+        },
+        {
+          id: 'doc:ecz',
+          title: 'Eczéma de contact',
+          text: 'L\'eczéma de contact réalise des plaques érythémateuses vésiculeuses prurigineuses mal limitées. '.repeat(120),
+          meta: { source: 'test' },
+        },
+      ],
+    });
+
+    const r = await ragSearch({ collection, query: 'plaques érythémato-squameuses des faces d\'extension', topK: 6 });
+    const parDoc = {};
+    for (const p of r.passages) parDoc[p.meta.docId] = (parDoc[p.meta.docId] || 0) + 1;
+    for (const n of Object.values(parDoc)) expect(n).toBe(1);
+    // Les deux documents doivent être représentés, pas seulement le mieux classé.
+    expect(Object.keys(parDoc).length).toBe(2);
+  });
+});
