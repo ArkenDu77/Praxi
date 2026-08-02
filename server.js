@@ -2229,7 +2229,20 @@ app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
     "sur les éléments que tu reprends, à l'identique, pour que le médecin puisse remonter au détail.\n\n" +
 
     "STRUCTURE, dans cet ordre exact, chaque titre en majuscules suivi de deux points :\n" +
-    "HYPOTHÈSE LA PLUS PROBABLE : la principale, et en une à deux phrases ce qui la soutient dans ce cas précis.\n" +
+
+    "HYPOTHÈSE LA PLUS PROBABLE : la principale, puis une à deux phrases sur ce qui la soutient dans " +
+    "ce cas précis. Conserve les nuances de l'avis complet — ce qui rend l'hypothèse probable sans la " +
+    "rendre certaine.\n" +
+    "Termine ensuite cette rubrique, et elle seule, par une ligne commençant exactement par " +
+    "« Concrètement, ça veut dire : » suivie du premier réflexe pratique qui découle de cette " +
+    "hypothèse : simplifier une routine de soins, réévaluer un traitement en cours ou une " +
+    "contraception, prioriser un examen, orienter vers un confrère, compléter l'examen sur une zone " +
+    "précise. Un seul réflexe, le plus déterminant, en une phrase.\n" +
+    "Ce réflexe doit déjà figurer dans l'avis complet : tu le mets en avant, tu ne l'inventes pas. " +
+    "Reste au registre du premier geste ou de la première vérification — jamais une prescription, " +
+    "jamais une posologie, jamais une décision thérapeutique présentée comme acquise. " +
+    "Si l'avis complet ne permet pas de dégager un réflexe clair, écris « Concrètement, ça veut " +
+    "dire : confirmer le diagnostic avant toute décision thérapeutique. » plutôt que d'en forcer un.\n" +
     "AUTRES PISTES À NE PAS ÉCARTER : les alternatives retenues par l'avis, une ligne chacune, sans les arguments détaillés.\n" +
     "CE QUI PEUT ÊTRE PROPOSÉ : examens utiles, pistes thérapeutiques, produits cités et orientation éventuelle. " +
     "Reste au registre documentaire entre confrères : pas de posologie nominative, pas de prescription.\n" +
@@ -2246,7 +2259,8 @@ app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
     // reviendrait à supprimer ces justifications pour tenir un chiffre : c'est
     // précisément ce qui fait la valeur de la synthèse.
     "LONGUEUR — contrainte la plus importante après l'exactitude. Plafonds par rubrique :\n" +
-    "HYPOTHÈSE LA PLUS PROBABLE : trois phrases au maximum.\n" +
+    "HYPOTHÈSE LA PLUS PROBABLE : trois phrases au maximum, ligne « Concrètement » comprise. " +
+    "L'argumentation cède la place au réflexe pratique, elle ne s'y ajoute pas.\n" +
     "AUTRES PISTES À NE PAS ÉCARTER : trois au maximum, une ligne chacune.\n" +
     "CE QUI PEUT ÊTRE PROPOSÉ : cinq éléments au maximum, une ligne chacun. Retiens les plus " +
     "déterminants pour la décision, pas la liste exhaustive de l'avis complet.\n" +
@@ -2255,8 +2269,10 @@ app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
     "L'ensemble vise 1800 à 2400 caractères. Quand il faut choisir, garde ce qui change la conduite " +
     "à tenir et coupe le reste : le médecin a l'avis complet à portée de clic.\n\n" +
 
-    "FIN : termine par une ligne rappelant qu'il s'agit d'une synthèse et que le détail et les sources " +
-    "figurent dans l'avis complet.\n\n" +
+    // La ligne « Concrètement » rend le résumé plus directif : la limite qui suit
+    // doit l'être tout autant, et dire explicitement que rien n'est établi.
+    "FIN : termine par une ligne rappelant qu'il s'agit d'une aide à la décision et non d'un " +
+    "diagnostic établi, et que le détail argumenté et les sources figurent dans l'avis complet.\n\n" +
 
     "FORMAT : français, jamais de Markdown — pas d'astérisques, pas de dièses, pas de tirets de liste. " +
     "Sépare les sections par une ligne vide. Les énumérations se font en début de ligne, sans puce.";
