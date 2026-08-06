@@ -4,16 +4,57 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Praxi — Application</title>
+<script>
+// Applique le thème mémorisé avant le premier rendu pour éviter tout flash.
+try { if (localStorage.getItem('praxi_theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (_) {}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Thème clair (défaut) : lisibilité maximale pour l'usage clinique ── */
 :root {
+  --bg:        #F2F6FA;
+  --bg-card:   #FFFFFF;
+  --bg-card2:  #F8FAFD;
+  --bg-hover:  #EDF3F9;
+  --border:    #E2E9F1;
+  --border2:   #CDD9E5;
+  --text:      #16232F;
+  --text-muted:#54687C;
+  /* Gris tertiaire (placeholders, mentions d'aide) : 4,7:1 sur fond blanc.
+     Le gris clair habituel des maquettes tombe à 2,6:1 et devient illisible
+     sur une tablette en cabinet, éclairage ambiant compris. */
+  --text-dim:  #64778A;
+  --accent:    #0284C7;
+  --accent2:   #0369A1;
+  --accent-contrast: #FFFFFF;
+  --accent-dim: rgba(2,132,199,0.08);
+  --accent-glow: rgba(2,132,199,0.22);
+  --accent-border: rgba(2,132,199,0.30);
+  --highlight: #075985;
+  --danger:    #DC2626;
+  --danger-dim: rgba(220,38,38,0.08);
+  --danger-glow: rgba(220,38,38,0.30);
+  --success:   #15803D;
+  --success-dim: rgba(21,128,61,0.10);
+  --warning:   #B45309;
+  --warning-dim: rgba(180,83,9,0.10);
+  --shadow-sm: 0 1px 2px rgba(22,35,47,.06);
+  --shadow-md: 0 8px 24px rgba(22,35,47,.10);
+  --shadow-lg: 0 22px 48px rgba(22,35,47,.18);
+  --overlay:   rgba(22,35,47,.45);
+  --sidebar-w: 264px;
+}
+
+/* ── Thème sombre (optionnel, activable depuis la barre latérale) ── */
+html[data-theme="dark"] {
   --bg:        #080C10;
   --bg-card:   #0D1520;
   --bg-card2:  #0A1018;
+  --bg-hover:  #0F1B2A;
   --border:    #1A2535;
   --border2:   #243040;
   --text:      #EDF2F7;
@@ -21,15 +62,22 @@
   --text-dim:  #3D5166;
   --accent:    #38BDF8;
   --accent2:   #0EA5E9;
-  --accent-dim:rgba(56,189,248,0.10);
-  --accent-glow:rgba(56,189,248,0.22);
+  --accent-contrast: #050A10;
+  --accent-dim: var(--accent-dim);
+  --accent-glow: var(--accent-glow);
+  --accent-border: var(--accent-border);
   --highlight: #BAE6FD;
   --danger:    #F87171;
-  --danger-dim:rgba(248,113,113,0.10);
-  --danger-glow:rgba(248,113,113,0.35);
+  --danger-dim: rgba(248,113,113,0.10);
+  --danger-glow: rgba(248,113,113,0.35);
   --success:   #4ADE80;
+  --success-dim: rgba(74,222,128,0.10);
   --warning:   #F0C060;
-  --sidebar-w: 264px;
+  --warning-dim: rgba(240,192,96,0.10);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-md: 0 8px 24px rgba(0,0,0,.45);
+  --shadow-lg: 0 22px 48px rgba(0,0,0,.5);
+  --overlay:   rgba(4,7,11,.72);
 }
 
 body {
@@ -39,18 +87,42 @@ body {
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   min-height: 100vh;
+  transition: background-color .25s ease, color .25s ease;
 }
+/* Halo très discret : donne de la profondeur sans nuire au contraste du texte */
+body::before {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(900px 500px at 78% -8%, var(--accent-dim), transparent 70%),
+    radial-gradient(700px 420px at 8% 102%, var(--accent-dim), transparent 70%);
+}
+
+/* Barres de défilement discrètes, accordées au thème */
+* { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: var(--text-dim); background-clip: content-box; }
+*::-webkit-scrollbar-track { background: transparent; }
+
+::selection { background: var(--accent); color: var(--accent-contrast); }
+
+/* Focus clavier homogène sur toute l'application */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
 /* ─── SIDEBAR ─── */
 .sidebar {
   position: fixed; top: 0; left: 0; bottom: 0;
   width: var(--sidebar-w);
-  background: var(--bg-card2);
+  background: var(--bg-card);
   border-right: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   display: flex; flex-direction: column;
   padding: 22px 18px; z-index: 50;
   overflow-y: auto;
+  transition: background-color .25s ease;
 }
 .side-logo {
   font-family: 'DM Serif Display', Georgia, serif;
@@ -62,13 +134,13 @@ body {
 .side-user {
   display: flex; align-items: center; gap: 11px;
   padding: 10px 10px; border-radius: 9px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  margin-bottom: 22px; cursor: pointer; transition: border-color .2s;
+  background: var(--bg-card2); border: 1px solid var(--border);
+  margin-bottom: 22px; cursor: pointer; transition: border-color .2s, background .2s;
 }
-.side-user:hover { border-color: var(--border2); }
+.side-user:hover { border-color: var(--accent-border); background: var(--bg-hover); }
 .side-avatar {
   width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.25);
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 600; color: var(--accent);
 }
@@ -82,17 +154,23 @@ body {
   padding: 0 10px; margin: 14px 0 8px;
 }
 .side-link {
+  position: relative;
   display: flex; align-items: center; gap: 11px;
   padding: 9px 11px; border-radius: 8px;
   font-size: 13.5px; color: var(--text-muted); text-decoration: none;
-  cursor: pointer; transition: background .2s, color .2s; border: 1px solid transparent;
+  cursor: pointer; transition: background .18s, color .18s; border: 1px solid transparent;
   font-family: inherit; background: none; width: 100%; text-align: left;
 }
 .side-link svg { width: 16px; height: 16px; flex-shrink: 0; }
-.side-link:hover { background: var(--bg-card); color: var(--text); }
+.side-link:hover { background: var(--bg-hover); color: var(--text); }
 .side-link.active {
-  background: var(--accent-dim); color: var(--accent);
-  border-color: rgba(56,189,248,.18);
+  background: var(--accent-dim); color: var(--accent); font-weight: 600;
+  border-color: var(--accent-glow);
+}
+/* Repère latéral : l'écran courant reste identifiable d'un coup d'œil */
+.side-link.active::before {
+  content: ''; position: absolute; left: -18px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: var(--accent);
 }
 
 .side-spacer { flex: 1; }
@@ -112,11 +190,12 @@ body {
 
 .page-title {
   font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 32px; letter-spacing: -.025em; margin-bottom: 4px;
+  font-size: 33px; letter-spacing: -.025em; margin-bottom: 6px;
+  color: var(--text); line-height: 1.15;
 }
 .page-sub {
-  font-size: 14.5px; color: var(--text-muted); font-weight: 300;
-  margin-bottom: 30px;
+  font-size: 14.5px; color: var(--text-muted); font-weight: 400;
+  margin-bottom: 30px; max-width: 74ch;
 }
 .page-actions {
   display: flex; gap: 10px; align-items: center;
@@ -132,22 +211,26 @@ body {
 .field-row { display: flex; gap: 14px; }
 .field-row .field { flex: 1; }
 .label {
-  display: flex; align-items: center; justify-content: space-between;
-  font-size: 12px; font-weight: 500;
-  letter-spacing: .04em; text-transform: uppercase;
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  font-size: 12px; font-weight: 600;
+  letter-spacing: .045em; text-transform: uppercase;
   color: var(--text-muted); margin-bottom: 8px;
 }
-.label-opt { font-size: 10.5px; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; }
+.label-opt { font-size: 11.5px; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; text-align: right; }
 .input, .textarea, .select {
   width: 100%; background: var(--bg-card);
-  border: 1px solid var(--border2); border-radius: 8px;
+  border: 1px solid var(--border2); border-radius: 9px;
   padding: 11px 14px; font-size: 14px; color: var(--text);
-  outline: none; font-family: inherit; transition: border-color .2s, box-shadow .2s;
+  outline: none; font-family: inherit;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .18s, box-shadow .18s, background .18s;
 }
 .input::placeholder, .textarea::placeholder { color: var(--text-dim); }
+.input:hover:not(:focus), .textarea:hover:not(:focus), .select:hover:not(:focus) { border-color: var(--text-dim); }
 .input:focus, .textarea:focus, .select:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(56,189,248,.08);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+  outline: none;
 }
 .textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
 .anon-hint {
@@ -174,13 +257,13 @@ body {
 .ms-trigger:hover { border-color: var(--border); }
 .ms.open .ms-trigger,
 .ms-trigger:focus-visible {
-  border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56,189,248,.08); outline: none;
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
 }
 .ms-value { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
 .ms-placeholder { color: var(--text-dim); }
 .ms-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(56,189,248,.10); border: 1px solid rgba(56,189,248,.32);
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
   color: var(--accent); border-radius: 999px;
   padding: 3px 5px 3px 11px; font-size: 12.5px; line-height: 1.4;
   animation: chip-in .2s cubic-bezier(.2,.7,.2,1) both;
@@ -189,18 +272,18 @@ body {
 .ms-chip-x {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; border-radius: 50%; border: none;
-  background: rgba(56,189,248,.18); color: var(--accent);
+  background: var(--accent-glow); color: var(--accent);
   font-size: 13px; line-height: 1; cursor: pointer; padding: 0; font-family: inherit;
   transition: background .15s, transform .15s;
 }
-.ms-chip-x:hover { background: var(--accent); color: #050A10; transform: scale(1.12); }
+.ms-chip-x:hover { background: var(--accent); color: var(--accent-contrast); transform: scale(1.12); }
 .ms-caret { flex: none; color: var(--text-muted); transition: transform .28s cubic-bezier(.2,.7,.2,1); }
 .ms.open .ms-caret { transform: rotate(180deg); color: var(--accent); }
 .ms-panel {
   position: absolute; z-index: 40; top: calc(100% + 7px); left: 0; right: 0;
   background: var(--bg-card2); border: 1px solid var(--border2);
   border-radius: 11px; padding: 6px; max-height: 290px; overflow-y: auto;
-  box-shadow: 0 22px 48px rgba(0,0,0,.5);
+  box-shadow: var(--shadow-lg);
   opacity: 0; transform: translateY(-10px) scale(.985); transform-origin: top center;
   visibility: hidden; pointer-events: none;
   transition: opacity .22s ease, transform .22s cubic-bezier(.2,.7,.2,1), visibility .22s;
@@ -213,7 +296,7 @@ body {
   text-transform: none; letter-spacing: 0; font-weight: 400; margin: 0;
   transition: background .15s;
 }
-.ms-opt:hover { background: rgba(56,189,248,.08); }
+.ms-opt:hover { background: var(--accent-dim); }
 .ms-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 .ms-check {
   flex: none; width: 19px; height: 19px; border-radius: 6px;
@@ -221,10 +304,10 @@ body {
   display: flex; align-items: center; justify-content: center;
   transition: background .18s, border-color .18s;
 }
-.ms-check svg { width: 11px; height: 11px; stroke: #050A10; opacity: 0; transform: scale(.4); transition: opacity .18s, transform .18s cubic-bezier(.2,.7,.2,1); }
+.ms-check svg { width: 11px; height: 11px; stroke: var(--accent-contrast); opacity: 0; transform: scale(.4); transition: opacity .18s, transform .18s cubic-bezier(.2,.7,.2,1); }
 .ms-opt input:checked + .ms-check { background: var(--accent); border-color: var(--accent); }
 .ms-opt input:checked + .ms-check svg { opacity: 1; transform: none; }
-.ms-opt input:focus-visible + .ms-check { box-shadow: 0 0 0 3px rgba(56,189,248,.18); }
+.ms-opt input:focus-visible + .ms-check { box-shadow: 0 0 0 3px var(--accent-glow); }
 .ms-panel::-webkit-scrollbar { width: 8px; }
 .ms-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 8px; }
 
@@ -242,7 +325,7 @@ body {
 .mic-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 .mic-btn:disabled { opacity: .45; cursor: not-allowed; }
 .mic-btn.listening {
-  background: var(--danger); border-color: var(--danger); color: #050A10;
+  background: var(--danger); border-color: var(--danger); color: var(--accent-contrast);
   animation: pulseMic 1.2s ease infinite;
 }
 @keyframes pulseMic {
@@ -332,25 +415,33 @@ body {
 /* ─── BOUTONS ─── */
 .actions { margin-top: 22px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  border-radius: 8px; padding: 11px 22px;
-  font-size: 14px; font-weight: 600; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border-radius: 9px; padding: 11px 22px;
+  font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: -.005em;
   font-family: inherit; border: 1px solid transparent;
-  transition: opacity .2s, transform .15s, box-shadow .2s, background .2s, border-color .2s, color .2s;
+  transition: opacity .2s, transform .12s, box-shadow .2s, background .2s, border-color .2s, color .2s, filter .2s;
 }
-.btn-primary { background: var(--accent); color: #050A10; }
-.btn-primary:hover { opacity: .92; box-shadow: 0 6px 22px var(--accent-glow); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn-primary { background: var(--accent); color: var(--accent-contrast); box-shadow: var(--shadow-sm); }
+.btn-primary:hover { background: var(--accent2); box-shadow: 0 6px 22px var(--accent-glow); }
 .btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
-.btn-ghost { background: transparent; border-color: var(--border2); color: var(--text-muted); }
+.btn-ghost { background: var(--bg-card); border-color: var(--border2); color: var(--text-muted); }
 .btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
 .btn-ghost svg { width: 14px; height: 14px; }
+/* Bouton de clôture : action franche, toujours identique partout */
+.btn-success {
+  background: var(--success); color: #fff; box-shadow: var(--shadow-sm);
+}
+.btn-success:hover { filter: brightness(1.08); box-shadow: 0 6px 22px var(--success-dim); }
+.btn-success:disabled { opacity: .5; cursor: not-allowed; }
+.btn-success .spinner { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
 
 .spinner {
   width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid rgba(5,10,16,.3); border-top-color: #050A10;
+  border: 2px solid var(--accent-glow); border-top-color: var(--accent-contrast);
   animation: spin .7s linear infinite;
 }
-.spinner.dark { border: 2px solid rgba(56,189,248,.18); border-top-color: var(--accent); }
+.spinner.dark { border: 2px solid var(--accent-glow); border-top-color: var(--accent); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ─── MODÈLES RAPIDES (quick templates) ─── */
@@ -377,11 +468,12 @@ body {
 /* ─── ALERTS ─── */
 .alert {
   display: none; margin-top: 18px; padding: 12px 16px;
-  border-radius: 8px; font-size: 13.5px; line-height: 1.5;
+  border-radius: 9px; font-size: 13.5px; line-height: 1.5;
+  border-left-width: 3px;
 }
-.alert.show { display: block; }
-.alert-error { background: var(--danger-dim); border: 1px solid rgba(248,113,113,.3); color: #FCA5A5; }
-.alert-info  { background: var(--accent-dim); border: 1px solid rgba(56,189,248,.22); color: var(--highlight); }
+.alert.show { display: block; animation: fade .25s ease; }
+.alert-error { background: var(--danger-dim); border: 1px solid var(--danger-glow); border-left: 3px solid var(--danger); color: var(--danger); }
+.alert-info  { background: var(--accent-dim); border: 1px solid var(--accent-glow); border-left: 3px solid var(--accent); color: var(--highlight); }
 
 /* ─── RESULT ─── */
 .result { display: none; margin-top: 34px; }
@@ -398,10 +490,12 @@ body {
 .tool-btn {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 7px; padding: 6px 12px;
+  border-radius: 8px; padding: 6px 12px;
   font-size: 12.5px; font-weight: 500; color: var(--text-muted);
-  cursor: pointer; font-family: inherit; transition: all .2s;
+  cursor: pointer; font-family: inherit; box-shadow: var(--shadow-sm);
+  transition: border-color .18s, color .18s, background .18s;
 }
+.tool-btn:hover { background: var(--bg-hover); }
 .tool-btn svg { width: 13px; height: 13px; }
 .tool-btn:hover { border-color: var(--accent); color: var(--accent); }
 .tool-btn.copied { border-color: var(--success); color: var(--success); }
@@ -413,8 +507,9 @@ body {
 .result.show .edit-hint { display: flex; }
 .edit-hint svg { width: 12px; height: 12px; }
 .result-body {
-  background: var(--bg-card2);
+  background: var(--bg-card);
   border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
   border-radius: 10px; padding: 26px 30px;
   font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   font-size: 13.5px; line-height: 1.75; color: var(--text);
@@ -424,8 +519,8 @@ body {
 .result-body[contenteditable="true"] { cursor: text; }
 .result-body[contenteditable="true"]:focus {
   outline: none;
-  border: 1px solid rgba(56,189,248,0.4);
-  box-shadow: 0 0 0 3px rgba(56,189,248,.07);
+  border: 1px solid var(--accent-border);
+  box-shadow: 0 0 0 3px var(--accent-dim);
 }
 
 /* ─── Chips de complétion ─── */
@@ -439,13 +534,25 @@ body {
 .complete-title { font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-bottom: 12px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .chip {
-  border: 1px solid var(--border2); background: var(--bg-card2);
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--border2); background: var(--bg-card);
   color: var(--text-muted); border-radius: 999px; padding: 7px 14px;
   font-size: 12.5px; font-family: inherit; cursor: pointer;
-  transition: border-color .18s, color .18s, background .18s;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .18s, color .18s, background .18s, transform .12s;
 }
 .chip:hover { border-color: var(--accent); color: var(--text); }
-.chip.on { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.chip:active { transform: translateY(1px); }
+.chip.on {
+  background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600;
+}
+/* Coche discrète : l'état sélectionné ne repose pas uniquement sur la couleur */
+.chip.on::before {
+  content: ''; width: 12px; height: 12px; flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/contain no-repeat;
+}
 .chip-add { border-style: dashed; color: var(--text-dim); }
 .chip-add:hover { color: var(--accent); }
 .chip-input {
@@ -461,7 +568,7 @@ body {
   font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer;
   transition: background .2s, opacity .2s;
 }
-.complete-update:hover { background: rgba(56,189,248,.18); }
+.complete-update:hover { background: var(--accent-glow); }
 .complete-update:disabled { opacity: .55; cursor: not-allowed; }
 
 /* ─── HISTORIQUE ─── */
@@ -475,12 +582,16 @@ body {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 10px; padding: 16px 20px;
   display: flex; align-items: center; gap: 16px;
-  cursor: pointer; transition: border-color .2s, background .2s;
+  cursor: pointer; box-shadow: var(--shadow-sm);
+  transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
 }
-.hist-item:hover { border-color: var(--accent); background: #0F1B2A; }
+.hist-item:hover {
+  border-color: var(--accent-border); background: var(--bg-hover);
+  transform: translateY(-1px); box-shadow: var(--shadow-md);
+}
 .hist-icon {
   width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
-  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.18);
+  background: var(--accent-dim); border: 1px solid var(--accent-glow);
   display: flex; align-items: center; justify-content: center; color: var(--accent);
 }
 .hist-icon svg { width: 17px; height: 17px; }
@@ -499,8 +610,17 @@ body {
 .card {
   background: var(--bg-card); border: 1px solid var(--border);
   border-radius: 12px; padding: 28px 30px; margin-bottom: 22px;
+  box-shadow: var(--shadow-sm);
 }
-.card-title { font-size: 13px; font-weight: 500; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); margin-bottom: 18px; }
+.card-title {
+  display: flex; align-items: center; gap: 9px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 18px;
+}
+.card-title::before {
+  content: ''; width: 3px; height: 14px; border-radius: 2px;
+  background: var(--accent); flex-shrink: 0;
+}
 .profile-save {
   font-size: 12px; color: var(--success); display: none; align-items: center; gap: 6px;
 }
@@ -509,14 +629,15 @@ body {
 /* ─── MODALES ─── */
 .modal-bg {
   position: fixed; inset: 0; z-index: 500;
-  background: rgba(4,7,11,.78); backdrop-filter: blur(6px);
+  background: var(--overlay); backdrop-filter: blur(6px);
   display: none; align-items: center; justify-content: center; padding: 24px;
 }
 .modal-bg.show { display: flex; }
 .modal {
   background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 14px; padding: 32px; max-width: 460px; width: 100%;
-  animation: rise .25s ease both;
+  border-radius: 16px; padding: 32px; max-width: 460px; width: 100%;
+  box-shadow: var(--shadow-lg);
+  animation: rise .25s cubic-bezier(.2,.7,.2,1) both;
 }
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .modal h2 {
@@ -528,7 +649,7 @@ body {
 
 .doctolib-flag {
   display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(240,192,96,.10); border: 1px solid rgba(240,192,96,.3);
+  background: var(--warning-dim); border: 1px solid var(--warning);
   color: var(--warning); border-radius: 20px;
   padding: 4px 12px; font-size: 11px; font-weight: 500; margin-bottom: 14px;
 }
@@ -544,6 +665,168 @@ body {
 .doctolib-result dt { color: var(--text-muted); }
 .doctolib-result dd { color: var(--text); }
 
+/* ─── SAUVEGARDE AUTOMATIQUE (indicateur global) ─── */
+.autosave-pill {
+  position: fixed; top: 14px; right: 18px; z-index: 80;
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 14px;
+  font-size: 12px; color: var(--text-dim);
+  box-shadow: var(--shadow-sm);
+  opacity: 0; transform: translateY(-6px); pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease, color .2s;
+}
+.autosave-pill.visible { opacity: 1; transform: none; }
+.autosave-pill.saving { color: var(--text-muted); }
+.autosave-pill.saved  { color: var(--success); }
+.autosave-pill svg { width: 13px; height: 13px; flex-shrink: 0; }
+.autosave-pill .autosave-spin {
+  width: 11px; height: 11px; border-radius: 50%;
+  border: 2px solid var(--border2); border-top-color: var(--accent);
+  animation: spin .7s linear infinite;
+}
+
+/* ─── DICTÉE VOCALE : statut visible sous le champ ─── */
+.mic-status {
+  display: none; align-items: flex-start; gap: 8px;
+  margin-top: 8px; padding: 9px 12px; border-radius: 8px;
+  font-size: 12.5px; line-height: 1.5;
+}
+.mic-status.show { display: flex; animation: fade .2s ease; }
+.mic-status svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+.mic-status.listening {
+  background: var(--danger-dim); border: 1px solid var(--danger-glow); color: var(--danger);
+}
+.mic-status.listening .mic-dot {
+  width: 8px; height: 8px; border-radius: 50%; background: var(--danger);
+  flex-shrink: 0; margin-top: 5px; animation: pulseMic 1.2s ease infinite;
+}
+.mic-status.error {
+  background: var(--warning-dim); border: 1px solid var(--warning); color: var(--warning);
+}
+.mic-status .mic-status-body { flex: 1; }
+.mic-status .mic-status-hint { display: block; color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
+
+/* ─── PROGRESSION IA (feedback pendant la génération) ─── */
+.ai-progress {
+  display: none; margin-top: 16px; padding: 14px 16px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.ai-progress.show { display: block; animation: fade .25s ease; }
+.ai-progress-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--text-muted); }
+.ai-progress-bar {
+  margin-top: 10px; height: 4px; border-radius: 4px;
+  background: var(--border); overflow: hidden; position: relative;
+}
+.ai-progress-bar::after {
+  content: ''; position: absolute; top: 0; left: -40%; height: 100%; width: 40%;
+  border-radius: 4px; background: var(--accent);
+  animation: ai-slide 1.4s cubic-bezier(.4,.2,.4,.9) infinite;
+}
+@keyframes ai-slide { to { left: 100%; } }
+
+/* ─── CONSULTATION : parcours en 3 temps ─── */
+.stepper {
+  display: flex; align-items: center; justify-content: center; gap: 0;
+  margin-bottom: 24px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 10px 12px; box-shadow: var(--shadow-sm);
+}
+.step {
+  flex: 1; display: flex; align-items: center; gap: 11px;
+  padding: 8px 12px; border-radius: 10px; cursor: pointer;
+  border: none; background: none; font-family: inherit; text-align: left;
+  transition: background .18s;
+}
+.step:hover { background: var(--bg-hover); }
+.step-num {
+  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  background: var(--bg-card2); border: 1.5px solid var(--border2); color: var(--text-dim);
+  transition: background .2s, border-color .2s, color .2s, box-shadow .2s;
+}
+.step.active .step-num {
+  background: var(--accent); border-color: var(--accent); color: var(--accent-contrast);
+  box-shadow: 0 0 0 4px var(--accent-dim);
+}
+/* Étape franchie : pastille verte cochée, la progression se lit sans lire */
+.step.done .step-num {
+  background: var(--success); border-color: var(--success); color: transparent;
+  position: relative;
+}
+.step.done .step-num::after {
+  content: ''; position: absolute; inset: 0;
+  background: #fff;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/14px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/14px no-repeat;
+}
+.step-info { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.step-label {
+  display: block; font-size: 13.5px; font-weight: 600; line-height: 1.3;
+  color: var(--text-dim); white-space: nowrap;
+}
+.step.active .step-label { color: var(--text); }
+.step.done .step-label { color: var(--text-muted); }
+.step-sub {
+  display: block; font-size: 11px; line-height: 1.3; color: var(--text-dim);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.step-sep { width: 26px; height: 1.5px; background: var(--border2); flex-shrink: 0; }
+
+.consult-pane { display: none; }
+.consult-pane.active { display: block; animation: fade .3s ease; }
+.consult-nav {
+  margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+}
+.consult-patient-banner {
+  display: none; align-items: center; gap: 10px; margin-bottom: 20px;
+  padding: 10px 16px; border-radius: 10px;
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
+  font-size: 13.5px; color: var(--text);
+}
+.consult-patient-banner.show { display: flex; }
+.consult-patient-banner svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
+.consult-patient-banner b { font-weight: 600; }
+
+/* ─── PRESCRIPTIONS (clôture) ─── */
+.rx-cat { margin-bottom: 18px; }
+.rx-cat-title {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 10px;
+}
+.rx-cat-title svg { width: 14px; height: 14px; color: var(--accent); }
+.rx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.rx-free { margin-top: 10px; }
+
+/* ─── BASCULE DE THÈME ─── */
+.theme-toggle {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 11px; border-radius: 8px; width: 100%;
+  font-size: 13.5px; color: var(--text-muted);
+  border: 1px solid transparent; background: none; cursor: pointer;
+  font-family: inherit; text-align: left; transition: background .2s, color .2s;
+}
+.theme-toggle:hover { background: var(--bg-hover); color: var(--text); }
+.theme-toggle svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ─── AUTOCOMPLÉTION PATIENT ─── */
+.ac-box {
+  position: absolute; z-index: 200; background: var(--bg-card);
+  border: 1px solid var(--border2); border-radius: 8px; box-shadow: var(--shadow-md);
+  max-height: 220px; overflow-y: auto; min-width: 260px; width: 100%;
+}
+.ac-item {
+  padding: 10px 14px; cursor: pointer; font-size: 13.5px; color: var(--text);
+  border-bottom: 1px solid var(--border); transition: background .12s;
+}
+.ac-item:hover { background: var(--bg-hover); }
+.ac-item small { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.ac-item .ac-age { color: var(--text-muted); }
+
 /* ─── RESPONSIVE ─── */
 .menu-toggle {
   display: none; position: fixed; top: 14px; left: 14px; z-index: 60;
@@ -554,7 +837,7 @@ body {
 }
 .sidebar-overlay {
   display: none; position: fixed; inset: 0; z-index: 40;
-  background: rgba(4,7,11,.6); backdrop-filter: blur(4px);
+  background: var(--overlay); backdrop-filter: blur(4px);
 }
 .sidebar-overlay.show { display: block; }
 
@@ -574,42 +857,42 @@ body {
 .generation-settings{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:4px}.clinical-v2-control{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-dim)}
 .clinical-v2-control .select{width:auto;min-width:150px;padding-top:8px;padding-bottom:8px;font-size:12px}
 body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:0}
-.clinical-modal{position:fixed;inset:0;z-index:1000;display:none;background:rgba(2,6,10,.9);backdrop-filter:blur(6px)}
+.clinical-modal{position:fixed;inset:0;z-index:1000;display:none;background:var(--overlay);backdrop-filter:blur(6px)}
 .clinical-modal.show{display:flex;align-items:stretch;justify-content:center}
 .clinical-dialog{width:100%;height:100dvh;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-card);border:0;box-shadow:none;touch-action:auto}
 .clinical-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:14px 16px 12px;background:var(--bg-card);border-bottom:1px solid var(--border)}
 .clinical-head h2{font-size:17px;margin:0;line-height:1.25}.clinical-score{margin-left:auto;min-width:108px;padding:8px 10px;border-radius:10px;border:1px solid var(--accent);text-align:center;flex:none}
 .clinical-score small{display:block;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim);line-height:1.3}
 .clinical-score strong{display:block;font-size:20px;line-height:1.15}.clinical-score em{display:block;font-style:normal;font-size:10px;color:var(--text-muted);margin-top:2px}
-.clinical-summary{margin:0 0 12px;padding:10px 12px;border-radius:8px;background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.22);font-size:12.5px;line-height:1.55;color:var(--text-muted)}
+.clinical-summary{margin:0 0 12px;padding:10px 12px;border-radius:8px;background:var(--accent-dim);border:1px solid var(--accent-glow);font-size:12.5px;line-height:1.55;color:var(--text-muted)}
 .clinical-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:14px 16px 18px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
 .clinical-grid{display:grid;grid-template-columns:1fr;gap:12px}
 .clinical-block{padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
 .clinical-block.full{grid-column:1/-1}.clinical-block h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;color:var(--text-muted)}
-.clinical-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.clinical-alert{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.06)}
+.clinical-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.clinical-alert{border-color:var(--danger-glow);background:var(--danger-dim)}
 .clinical-suggestion{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .clinical-suggestion:last-child{border-bottom:0}
 .suggestion-toggle{flex:none;border:1px solid var(--border2);background:var(--bg-card2);color:var(--text-muted);border-radius:10px;min-width:52px;min-height:44px;padding:0 14px;font:600 12px Inter,sans-serif;cursor:pointer;transition:all .15s;white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .suggestion-toggle.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
 .suggestion-body{flex:1;min-width:0;padding-top:10px}.suggestion-body .suggestion-text{display:block;font-weight:500;line-height:1.45;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:rgba(56,189,248,.1);color:var(--accent)}
-.confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid rgba(255,255,255,.04)}.confidence-line:last-child{border:0}.confidence-plus{color:#22c55e}.confidence-minus{color:#f59e0b}.confidence-optional{color:#94a3b8}
+.clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:var(--accent-dim);color:var(--accent)}
+.confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}.confidence-line:last-child{border:0}.confidence-plus{color:var(--success)}.confidence-minus{color:var(--warning)}.confidence-optional{color:var(--text-dim)}
 .quick-answer{display:flex;gap:8px;margin-top:10px}.quick-answer input{flex:1;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px 10px;font:13px Inter,sans-serif}.quick-progress{font-size:11px;color:var(--text-dim);margin-bottom:5px}
-.clinical-deduction{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}.clinical-deduction:last-child{border:0}.clinical-deduction.selected{background:rgba(56,189,248,.04);border-radius:8px;padding-left:6px;padding-right:6px}
+.clinical-deduction{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}.clinical-deduction:last-child{border:0}.clinical-deduction.selected{background:var(--accent-dim);border-radius:8px;padding-left:6px;padding-right:6px}
 .deduction-hit{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-top:2px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .deduction-hit input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer;flex:none}
-.clinical-deduction textarea{width:100%;min-height:48px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:10px 8px;font:13px/1.45 Inter,sans-serif;touch-action:manipulation}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:rgba(56,189,248,.06);border-color:rgba(56,189,248,.3)}
-.mini-apply{margin-left:7px;border:1px solid rgba(56,189,248,.35);background:rgba(56,189,248,.08);color:var(--accent);border-radius:6px;padding:4px 8px;font:600 10px Inter,sans-serif;cursor:pointer}
+.clinical-deduction textarea{width:100%;min-height:48px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:10px 8px;font:13px/1.45 Inter,sans-serif;touch-action:manipulation}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:var(--accent-dim);border-color:var(--accent-border)}
+.mini-apply{margin-left:7px;border:1px solid var(--accent-border);background:var(--accent-dim);color:var(--accent);border-radius:6px;padding:4px 8px;font:600 10px Inter,sans-serif;cursor:pointer}
 .final-check{display:grid;gap:12px}.final-row{display:flex;justify-content:space-between;gap:20px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px}.final-row span:first-child{color:var(--text-muted)}
 .final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px Inter,sans-serif}.final-row input:focus{outline:none;border-color:var(--accent)}
 .clinical-foot{flex:none;display:flex;align-items:center;justify-content:stretch;gap:10px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg-card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.35);position:relative;z-index:2}
 .clinical-foot .btn{flex:1;justify-content:center;min-height:48px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.praxi-verification{margin:14px 0 0;padding:13px 15px;background:rgba(34,197,94,.05);border:1px solid rgba(34,197,94,.25);border-radius:9px}
-.praxi-verification strong{display:block;font-size:12px;color:#22c55e;margin-bottom:7px}.praxi-verification div{font-size:11px;color:var(--text-muted);line-height:1.7}
-.safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.35);color:#fbbf24}
+.praxi-verification{margin:14px 0 0;padding:13px 15px;background:var(--success-dim);border:1px solid var(--success);border-radius:9px}
+.praxi-verification strong{display:block;font-size:12px;color:var(--success);margin-bottom:7px}.praxi-verification div{font-size:11px;color:var(--text-muted);line-height:1.7}
+.safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:var(--warning-dim);border:1px solid var(--warning);color:var(--warning)}
 @media(min-width:701px){
   .clinical-modal{padding:20px;align-items:center}
-  .clinical-dialog{width:min(880px,100%);height:auto;max-height:min(92dvh,900px);border:1px solid var(--border);border-radius:16px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+  .clinical-dialog{width:min(880px,100%);height:auto;max-height:min(92dvh,900px);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg)}
   .clinical-grid{grid-template-columns:1fr 1fr}
   .clinical-block.full{grid-column:1/-1}
   .clinical-head{padding:18px 22px}.clinical-body{padding:20px 22px}
@@ -704,7 +987,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   /* ── Clinical shield modal ── */
   body.clinical-modal-open { overflow: hidden; position: fixed; width: 100%; left: 0; right: 0; }
-  .clinical-modal { background: rgba(2,6,10,.95); }
+  .clinical-modal { background: var(--overlay); }
   .clinical-dialog {
     width: 100%; height: 100dvh; max-height: 100dvh;
     border-radius: 0; border: 0;
@@ -752,6 +1035,21 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   .quick-answer input { font-size: 16px; min-height: 44px; }
   .quick-answer .btn { width: 100%; min-height: 44px; justify-content: center; }
   .mini-apply { min-height: 36px; padding: 8px 12px; }
+
+  /* ── Parcours consultation ── */
+  .stepper { padding: 8px; gap: 2px; }
+  .step { padding: 8px 4px; gap: 7px; flex: 0 1 auto; min-width: 0; }
+  .step-sub { display: none; }
+  .step-label { font-size: 12px; }
+  /* Les étapes non courantes se réduisent à leur pastille : le libellé long
+     ne doit jamais pousser la dernière étape hors de l'écran. */
+  .step:not(.active) .step-label { display: none; }
+  .step-num { width: 26px; height: 26px; font-size: 12px; }
+  .step-sep { width: 10px; }
+  .card { padding: 18px 16px; }
+  .consult-nav { flex-direction: column-reverse; align-items: stretch; }
+  .consult-nav .btn { width: 100%; justify-content: center; min-height: 50px; }
+  .autosave-pill { top: 12px; right: 12px; }
 }
 </style>
 </head>
@@ -765,6 +1063,9 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 </button>
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
+<!-- Indicateur global de sauvegarde automatique -->
+<div class="autosave-pill" id="autosave-pill" role="status" aria-live="polite"></div>
+
 <!-- ─── SIDEBAR ─── -->
 <aside class="sidebar" id="sidebar">
   <a href="/" class="side-logo">Prax<span>i</span></a>
@@ -777,8 +1078,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     </div>
   </div>
 
+  <div class="side-section">Consultation</div>
+  <button class="side-link active" data-view="consult">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6v0a6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3M8 15v1a6 6 0 006 6v0a6 6 0 006-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
+    Nouvelle consultation
+  </button>
+
   <div class="side-section">Rédaction</div>
-  <button class="side-link active" data-view="liaison">
+  <button class="side-link" data-view="liaison">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8M3 8l9-5 9 5"/></svg>
     Lettre de liaison
   </button>
@@ -828,6 +1135,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   </button>
 
   <div class="side-spacer"></div>
+  <button class="theme-toggle" id="theme-toggle" title="Changer de thème">
+    <svg id="theme-icon-moon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+    <svg id="theme-icon-sun" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+    <span id="theme-label">Mode sombre</span>
+  </button>
   <button class="side-link side-logout" id="logout">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
     Déconnexion
@@ -850,8 +1162,209 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     </label>
   </div>
 
+  <!-- ── CONSULTATION : parcours guidé en 3 temps ── -->
+  <section class="view active" id="view-consult">
+    <h1 class="page-title">Consultation</h1>
+    <p class="page-sub">Un parcours guidé du début à la fin : ouvrez le dossier, menez la consultation, clôturez et passez au patient suivant.</p>
+
+    <div class="stepper" id="ct-stepper">
+      <button type="button" class="step active" data-step="1">
+        <span class="step-num">1</span>
+        <span class="step-info"><span class="step-label">Ouverture</span><span class="step-sub">Antécédents · traitements · histoire</span></span>
+      </button>
+      <span class="step-sep"></span>
+      <button type="button" class="step" data-step="2">
+        <span class="step-num">2</span>
+        <span class="step-info"><span class="step-label">Consultation</span><span class="step-sub">Notes · compte-rendu</span></span>
+      </button>
+      <span class="step-sep"></span>
+      <button type="button" class="step" data-step="3">
+        <span class="step-num">3</span>
+        <span class="step-info"><span class="step-label">Clôture</span><span class="step-sub">Prescriptions · patient suivant</span></span>
+      </button>
+    </div>
+
+    <div class="alert alert-info" id="ct-restored" style="margin:0 0 18px"></div>
+
+    <!-- Étape 1 — Ouverture du dossier -->
+    <div class="consult-pane active" id="ct-pane-1">
+      <div class="card">
+      <div class="card-title">Ouverture du dossier</div>
+      <div class="field-row">
+        <div class="field">
+          <label class="label">Nom du patient</label>
+          <input class="input" id="ct-patient" placeholder="Ex. Mme Martin Sophie" autocomplete="off" />
+        </div>
+        <div class="field" style="max-width:160px">
+          <label class="label">Âge</label>
+          <input class="input" id="ct-age" placeholder="Ex. 54 ans" />
+        </div>
+      </div>
+      <div class="field">
+        <label class="label"><span>Antécédents</span><span class="label-opt">Médicaux, chirurgicaux, familiaux</span></label>
+        <div class="with-mic">
+          <textarea class="textarea" id="ct-atcd" style="min-height:96px" placeholder="Ex. HTA, diabète de type 2, appendicectomie 2010…"></textarea>
+          <button type="button" class="mic-btn" data-mic="ct-atcd" title="Dictée vocale">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label"><span>Traitements en cours</span><span class="label-opt">Médicaments habituels, posologies</span></label>
+        <div class="with-mic">
+          <textarea class="textarea" id="ct-ttt" style="min-height:96px" placeholder="Ex. Ramipril 5mg 1/j, Metformine 1g matin et soir…"></textarea>
+          <button type="button" class="mic-btn" data-mic="ct-ttt" title="Dictée vocale">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="field">
+        <label class="label"><span>Histoire de la maladie</span><span class="label-opt">Motif et contexte de la consultation du jour</span></label>
+        <div class="with-mic">
+          <textarea class="textarea" id="ct-histoire" style="min-height:96px" placeholder="Ex. Douleurs épigastriques depuis 3 semaines, majorées après les repas…"></textarea>
+          <button type="button" class="mic-btn" data-mic="ct-histoire" title="Dictée vocale">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+          </button>
+        </div>
+        <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+      </div>
+      </div>
+      <div class="consult-nav">
+        <span></span>
+        <button class="btn btn-primary" id="ct-next-1">
+          <span class="btn-label">Commencer la consultation</span>
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Étape 2 — Consultation -->
+    <div class="consult-pane" id="ct-pane-2">
+      <div class="consult-patient-banner" data-ct-banner>
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span>Consultation en cours — <b data-ct-banner-name>Patient</b><span data-ct-banner-age></span></span>
+      </div>
+      <div class="card">
+      <div class="card-title">Consultation du jour</div>
+      <div class="field">
+        <label class="label"><span>Notes de consultation</span><span class="label-opt">Dictez ou tapez — les deux fonctionnent ensemble</span></label>
+        <div class="with-mic">
+          <textarea class="textarea" id="ct-notes" style="min-height:200px" placeholder="Plaintes du patient, examen clinique, constantes, impression diagnostique, conduite à tenir…"></textarea>
+          <button type="button" class="mic-btn" data-mic="ct-notes" title="Dictée vocale">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+          </button>
+        </div>
+        <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="ct-generate">
+          <span class="btn-label">Générer le compte-rendu</span>
+        </button>
+      </div>
+      <div class="alert alert-error" id="ct-error"></div>
+      <div class="result" id="ct-result">
+        <div class="result-head">
+          <span class="result-title">Compte-rendu de consultation</span>
+          <div class="result-tools" data-result-tools="consult"></div>
+        </div>
+        <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
+        <div class="result-body" id="ct-out"></div>
+      </div>
+      </div>
+      <div class="consult-nav">
+        <button class="btn btn-ghost" data-ct-goto="1">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 12H5m6 6l-6-6 6-6"/></svg>
+          Ouverture
+        </button>
+        <button class="btn btn-primary" id="ct-next-2">
+          <span class="btn-label">Passer à la clôture</span>
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Étape 3 — Clôture : prescriptions puis patient suivant -->
+    <div class="consult-pane" id="ct-pane-3">
+      <div class="consult-patient-banner" data-ct-banner>
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span>Clôture du dossier — <b data-ct-banner-name>Patient</b><span data-ct-banner-age></span></span>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Prescriptions de fin de consultation</div>
+        <p style="font-size:13px;color:var(--text-muted);margin:-8px 0 18px">Cochez les examens à prescrire — les suggestions s'adaptent à votre spécialité. L'ordonnance est générée instantanément, sans IA.</p>
+
+        <div class="rx-cat">
+          <div class="rx-cat-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6.3L4.7 18a2 2 0 001.8 3h11a2 2 0 001.8-3L14 9.3V3"/></svg>
+            Biologie
+          </div>
+          <div class="rx-chips" id="rx-bio"></div>
+        </div>
+
+        <div class="rx-cat">
+          <div class="rx-cat-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 8v.01M12 16v.01M8 12h.01M16 12h.01"/></svg>
+            Imagerie
+          </div>
+          <div class="rx-chips" id="rx-img"></div>
+        </div>
+
+        <div class="rx-cat">
+          <div class="rx-cat-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            Soins &amp; protocoles
+          </div>
+          <div class="rx-chips" id="rx-soin"></div>
+        </div>
+
+        <div class="field rx-free">
+          <label class="label"><span>Autres examens ou soins</span><span class="label-opt">Une ligne par prescription</span></label>
+          <textarea class="textarea" id="ct-rx-libre" style="min-height:70px" placeholder="Ex. Échographie thyroïdienne — contrôle nodule&#10;Bilan martial (fer sérique, ferritine, CST)"></textarea>
+        </div>
+
+        <div class="field rx-free">
+          <label class="label"><span>Médicaments</span><span class="label-opt">DCI + posologie, une ligne par médicament</span></label>
+          <div class="with-mic">
+            <textarea class="textarea" id="ct-rx-med" style="min-height:70px" placeholder="Ex. Amoxicilline 1g — 1 cp 3 fois/jour pendant 7 jours"></textarea>
+            <button type="button" class="mic-btn" data-mic="ct-rx-med" title="Dictée vocale">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="rx-actions" style="margin-top:16px">
+          <button class="btn btn-ghost" id="ct-rx-generate">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6M9 16h6M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13,2 13,9 20,9"/></svg>
+            Préparer l'ordonnance
+          </button>
+        </div>
+        <div class="alert alert-error" id="rx-error"></div>
+        <div class="result" id="rx-result">
+          <div class="result-head">
+            <span class="result-title">Ordonnance — examens &amp; soins</span>
+            <div class="result-tools" data-result-tools="rx"></div>
+          </div>
+          <div class="edit-hint"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Cliquez pour modifier le texte</div>
+          <div class="result-body" id="rx-out"></div>
+        </div>
+      </div>
+
+      <div class="consult-nav">
+        <button class="btn btn-ghost" data-ct-goto="2">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 12H5m6 6l-6-6 6-6"/></svg>
+          Consultation
+        </button>
+        <button class="btn btn-success" id="ct-close-btn">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>
+          <span class="btn-label">Enregistrer et passer au patient suivant</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
   <!-- ── LIAISON ── -->
-  <section class="view active" id="view-liaison">
+  <section class="view" id="view-liaison">
     <h1 class="page-title">Lettre de liaison</h1>
     <p class="page-sub">Adressez un patient à un confrère spécialiste à partir de vos notes.</p>
 
@@ -972,7 +1485,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   <!-- ── COMPTE-RENDU ── -->
   <section class="view" id="view-cr">
     <h1 class="page-title">Compte-rendu de consultation</h1>
-    <p class="page-sub">Transformez vos notes de consultation en compte-rendu structuré.</p>
+    <p class="page-sub">Transformez des notes en compte-rendu structuré, sans passer par le parcours guidé. Pour une consultation complète (antécédents, prescriptions, clôture), utilisez « Nouvelle consultation ».</p>
 
     <div class="quick-tpl-bar" id="tpl-cr" style="display:none">
       <span class="quick-tpl-label">Modèles rapides</span>
@@ -1447,7 +1960,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     <p class="page-sub">Ces informations apparaissent en en-tête de chaque document généré.</p>
 
     <div class="card">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:18px">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px">
         <span class="card-title" style="margin:0">Identité &amp; cabinet</span>
         <span class="profile-save" id="profile-save"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg> Profil mis à jour</span>
       </div>
@@ -1531,7 +2044,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
         <input class="input" id="dl-query" placeholder="Ex. Dupont Jean" />
       </div>
       <div class="modal-foot">
-        <button class="btn btn-ghost" data-close-modal>Annuler</button>
+        <button class="btn btn-ghost" data-close-modal>Fermer</button>
         <button class="btn btn-primary" id="dl-search-btn">
           <span class="btn-label">Rechercher</span>
         </button>
@@ -1553,11 +2066,27 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
         </dl>
       </div>
       <div class="modal-foot">
-        <button class="btn btn-ghost" data-close-modal>Annuler</button>
+        <button class="btn btn-ghost" data-close-modal>Fermer</button>
         <button class="btn btn-primary" id="dl-import-btn">
           <span class="btn-label">Pré-remplir le formulaire</span>
         </button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── MODALE DE CLÔTURE DE CONSULTATION ─── -->
+<div class="modal-bg" id="modal-cloture">
+  <div class="modal">
+    <h2>Clôturer la consultation ?</h2>
+    <p class="modal-desc">Le dossier sera enregistré dans l'historique, puis un nouveau dossier vierge s'ouvrira pour le patient suivant.</p>
+    <div id="cloture-summary" style="font-size:13.5px;color:var(--text-muted);line-height:1.7;margin-bottom:4px"></div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" data-close-cloture>Revenir au dossier</button>
+      <button class="btn btn-success" id="cloture-confirm">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>
+        <span class="btn-label">Enregistrer et fermer le dossier</span>
+      </button>
     </div>
   </div>
 </div>
@@ -1648,6 +2177,7 @@ function switchView(name) {
   if (name === 'patients') renderPatients();
   if (name === 'profile') renderUsageStats();
   if (name === 'avis') initAvis();
+  if (name === 'consult') consultOnEnter();
   placeClinicalSettings(name);
   if (['liaison', 'cr', 'ordonnance'].includes(name)) setTimeout(() => renderQuickTemplates(name), 0);
   if (name === 'history') {
@@ -1659,6 +2189,7 @@ function switchView(name) {
     }
   }
   sidebar.classList.remove('open'); overlay.classList.remove('show');
+  if (typeof stopMic === 'function') stopMic();   // pas de dictée orpheline sur un champ caché
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 document.querySelectorAll('.side-link[data-view]').forEach(b => {
@@ -1670,6 +2201,92 @@ document.querySelectorAll('.side-link[data-view]').forEach(b => {
       overlay.classList.remove('show');
     }
   });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  THÈME — light par défaut (usage clinique), dark en option
+// ═══════════════════════════════════════════════════════════════════════
+const THEME_KEY = 'praxi_theme';
+function applyTheme(t) {
+  if (t === 'dark') document.documentElement.dataset.theme = 'dark';
+  else delete document.documentElement.dataset.theme;
+  try { localStorage.setItem(THEME_KEY, t); } catch (_) {}
+  document.getElementById('theme-icon-moon').style.display = t === 'dark' ? 'none' : '';
+  document.getElementById('theme-icon-sun').style.display  = t === 'dark' ? '' : 'none';
+  document.getElementById('theme-label').textContent = t === 'dark' ? 'Mode clair' : 'Mode sombre';
+}
+applyTheme(localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light');
+document.getElementById('theme-toggle').addEventListener('click', () =>
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SAUVEGARDE AUTOMATIQUE — brouillons en continu, indicateur visible
+// ═══════════════════════════════════════════════════════════════════════
+const DRAFT_KEY = 'praxi_drafts_v1';
+const DRAFT_EXCLUDED = new Set(['history-search', 'pt-search']);
+let draftTimer = null, draftPillTimer = null;
+
+function draftFields() {
+  return Array.from(document.querySelectorAll(
+    '.view input.input[id], .view textarea.textarea[id], .view select.select[id]'
+  )).filter(el => !DRAFT_EXCLUDED.has(el.id) && !el.closest('#view-profile'));
+}
+function loadDrafts() {
+  try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || '{}'); } catch (_) { return {}; }
+}
+function autosavePill(state, label) {
+  const pill = document.getElementById('autosave-pill');
+  clearTimeout(draftPillTimer);
+  pill.className = 'autosave-pill visible ' + state;
+  pill.innerHTML = state === 'saving'
+    ? '<span class="autosave-spin"></span><span>' + (label || 'Enregistrement…') + '</span>'
+    : '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg><span>' + (label || 'Enregistré à l\'instant') + '</span>';
+  if (state === 'saved') draftPillTimer = setTimeout(() => pill.classList.remove('visible'), 2400);
+}
+function persistDrafts() {
+  const map = loadDrafts();
+  draftFields().forEach(el => {
+    if (el.value) map[el.id] = el.value;
+    else delete map[el.id];
+  });
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(map)); autosavePill('saved'); }
+  catch (_) { /* stockage plein : le contenu reste dans le formulaire */ }
+}
+function scheduleDraftSave() {
+  autosavePill('saving');
+  clearTimeout(draftTimer);
+  draftTimer = setTimeout(persistDrafts, 700);
+}
+function clearDraftsFor(prefix) {
+  const map = loadDrafts();
+  Object.keys(map).forEach(k => { if (k.startsWith(prefix)) delete map[k]; });
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(map)); } catch (_) {}
+}
+(function restoreDrafts() {
+  const map = loadDrafts();
+  let restoredConsult = false;
+  draftFields().forEach(el => {
+    if (map[el.id] !== undefined && !el.value) {
+      el.value = map[el.id];
+      if (el.id.startsWith('ct-')) restoredConsult = true;
+    }
+  });
+  if (restoredConsult) {
+    const notice = document.getElementById('ct-restored');
+    notice.textContent = 'Brouillon restauré — votre consultation en cours a été conservée, rien n\'a été perdu.';
+    notice.classList.add('show');
+    setTimeout(() => notice.classList.remove('show'), 8000);
+  }
+})();
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el && el.id && !DRAFT_EXCLUDED.has(el.id) && el.closest('.view') && !el.closest('#view-profile') &&
+      (el.classList.contains('input') || el.classList.contains('textarea') || el.classList.contains('select'))) {
+    scheduleDraftSave();
+  }
+});
+document.addEventListener('change', e => {
+  if (e.target && e.target.classList && e.target.classList.contains('select') && e.target.closest('.view')) scheduleDraftSave();
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2248,6 +2865,34 @@ const GEN = {
       }};
     }
   },
+  // Consultation guidée : le compte-rendu de l'étape 2 réutilise le même
+  // endpoint que la vue Compte-rendu, avec les notes composées des 3 temps.
+  consult: {
+    btnLabel: 'Générer le compte-rendu',
+    endpoint: 'compte-rendu',
+    errId: 'ct-error', resId: 'ct-result', outId: 'ct-out',
+    label: 'Compte-rendu de consultation',
+    getPatient: () => document.getElementById('ct-patient').value.trim(),
+    build: () => {
+      const notes = consultComposedNotes();
+      if (!notes) return { err: 'Renseignez au moins les notes de consultation ou l\'histoire de la maladie.' };
+      return { payload: {
+        patient: document.getElementById('ct-patient').value,
+        age:     document.getElementById('ct-age').value,
+        date:    new Date().toISOString().slice(0, 10),
+        notes
+      }};
+    }
+  },
+  // Ordonnance d'examens de clôture : générée localement (sans IA), cette
+  // entrée ne sert qu'aux outils d'export, d'impression et d'historique.
+  rx: {
+    btnLabel: 'Préparer l\'ordonnance',
+    endpoint: null,
+    errId: 'rx-error', resId: 'rx-result', outId: 'rx-out',
+    label: 'Ordonnance — examens & soins',
+    getPatient: () => document.getElementById('ct-patient').value.trim(),
+  },
   // L'avis spécialisé n'utilise pas runGeneration (photos + pipeline RAG), mais
   // il déclare la même configuration pour réutiliser les outils d'export,
   // d'impression et d'historique.
@@ -2309,7 +2954,7 @@ function placeClinicalSettings(viewName) {
   if (action) { action.appendChild(settings); settings.style.display = 'flex'; }
   else settings.style.display = 'none';
 }
-placeClinicalSettings('liaison');
+placeClinicalSettings('consult');
 
 function clinicalList(items, empty) {
   return items && items.length ? '<ul>' + items.map(x => '<li>' + escapeHtml(x) + '</li>').join('') + '</ul>' : '<div style="font-size:13px;color:var(--text-dim)">' + empty + '</div>';
@@ -2493,14 +3138,14 @@ async function submitQuickClinicalAnswer() {
 function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   const modal = ensureClinicalModal(); clinicalPending = { key, btn, label, analysis, sourcePayload };
   const score = modal.querySelector('#clinical-score'); score.textContent = analysis.confidence + '%';
-  const scoreBox = score.parentElement; scoreBox.style.borderColor = analysis.confidence > 85 ? '#22c55e' : analysis.confidence >= 70 ? '#f59e0b' : '#ef4444';
+  const scoreBox = score.parentElement; scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--warning)' : '#ef4444';
   document.getElementById('clinical-score-label').textContent = analysis.confidenceLabel || (analysis.confidence > 85 ? 'Prêt à générer' : analysis.confidence >= 70 ? 'Bon dossier' : 'À compléter');
   if (!clinicalQuestionProgress[key]) clinicalQuestionProgress[key] = { total: analysis.questions.length, answered: 0 };
   const suggestions = analysis.suggestions.length
     ? suggestionsHtml(analysis.suggestions)
     : '';
   const progress = clinicalQuestionProgress[key];
-  const questions = analysis.questions.length ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>` : '<div style="font-size:13px;color:#22c55e">Questions essentielles couvertes.</div>';
+  const questions = analysis.questions.length ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>` : '<div style="font-size:13px;color:var(--success)">Questions essentielles couvertes.</div>';
   const recommended = analysis.missing.map(friendlyMissing);
   const optional = (analysis.optionalMissing || []).map(friendlyMissing);
   modal.querySelector('#clinical-body').innerHTML = `<div class="clinical-grid">
@@ -2529,12 +3174,41 @@ async function prepareClinicalGeneration(key, btn) {
   const cfg = GEN[key]; clearError(cfg.errId);
   const built = cfg.build(); if (built.err) { showError(cfg.errId, built.err); return; }
   setLoading(btn, true);
+  const stopProgress = startAiProgress(cfg.errId, 'analyze');
   try {
     const payload = Object.assign({}, built.payload, { documentType: key, specialty: built.payload.specialiste || '' });
     const data = await api('/api/clinical/analyze', { method:'POST', body:JSON.stringify(payload) });
     renderClinicalReview(key, btn, cfg.btnLabel, data.analysis, payload);
   } catch (err) { showError(cfg.errId, err.message); }
-  finally { setLoading(btn, false, cfg.btnLabel); }
+  finally { stopProgress(); setLoading(btn, false, cfg.btnLabel); }
+}
+
+// ─── Progression IA visible : jamais d'écran figé pendant une génération ───
+const AI_STAGE_MESSAGES = {
+  analyze:  ['Lecture de vos notes…', 'Vérification des éléments cliniques…', 'Préparation des suggestions…'],
+  generate: ['Analyse de vos notes…', 'Rédaction du document…', 'Mise en forme et vérifications…'],
+  avis:     ['Recherche dans la base médicale indexée…', 'Analyse du cas clinique…', 'Rédaction de l\'avis sourcé…']
+};
+function startAiProgress(errId, kind) {
+  const errEl = document.getElementById(errId);
+  if (!errEl) return () => {};
+  let box = errEl.previousElementSibling;
+  if (!box || !box.classList.contains('ai-progress')) {
+    box = document.createElement('div');
+    box.className = 'ai-progress';
+    box.innerHTML = '<div class="ai-progress-row"><span class="spinner dark"></span><span class="ai-progress-msg"></span></div><div class="ai-progress-bar"></div>';
+    errEl.parentNode.insertBefore(box, errEl);
+  }
+  const msgs = AI_STAGE_MESSAGES[kind] || AI_STAGE_MESSAGES.generate;
+  const msgEl = box.querySelector('.ai-progress-msg');
+  let step = 0;
+  msgEl.textContent = msgs[0];
+  box.classList.add('show');
+  const timer = setInterval(() => {
+    step = Math.min(step + 1, msgs.length - 1);
+    msgEl.textContent = msgs[step];
+  }, 2600);
+  return () => { clearInterval(timer); box.classList.remove('show'); };
 }
 
 function renderResult(el, text) {
@@ -2570,6 +3244,7 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
   if (built.err) { showError(cfg.errId, built.err); return; }
 
   setLoading(btn, true);
+  const stopProgress = startAiProgress(cfg.errId, 'generate');
   try {
     let payload = Object.assign({}, built.payload);
     if (complement) payload.complement = complement;
@@ -2580,10 +3255,10 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
     let subs = null;
     let patientOrig = '';
 
-    // Pseudonymisation des notes (liaison + compte-rendu uniquement)
-    if (key === 'liaison' || key === 'cr') {
+    // Pseudonymisation des notes (liaison, compte-rendu et consultation)
+    if (key === 'liaison' || key === 'cr' || key === 'consult') {
       patientOrig = payload.patient || '';
-      const ageOrig = key === 'liaison' ? (payload.age || '') : '';
+      const ageOrig = key !== 'cr' ? (payload.age || '') : '';
       const { anonymizedText, substitutions } = pseudonymize(payload.notes || '', patientOrig, ageOrig);
       subs = substitutions;
       if (ageOrig) subs.set('__age__', ageOrig);
@@ -2624,6 +3299,7 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
   } catch (err) {
     showError(cfg.errId, err.message);
   } finally {
+    stopProgress();
     setLoading(btn, false, btnLabel || cfg.btnLabel);
   }
 }
@@ -2635,7 +3311,9 @@ document.addEventListener('keydown', e => {
     const activeView = document.querySelector('.view.active');
     if (!activeView) return;
     const viewId = activeView.id.replace('view-', '');
-    const btn = document.querySelector('[data-gen="' + viewId + '"]');
+    const btn = viewId === 'consult'
+      ? document.getElementById('ct-generate')
+      : document.querySelector('[data-gen="' + viewId + '"]');
     if (btn && !btn.disabled) btn.click();
   }
 });
@@ -2778,7 +3456,7 @@ function renderTools(key) {
     '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/></svg>');
   pdfBtn.addEventListener('click', () => downloadPdf(cfg, key));
 
-  const saveBtn = mkTool('Sauvegarder',
+  const saveBtn = mkTool('Enregistrer',
     '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2zM17 21v-8H7v8M7 3v5h8"/></svg>');
   saveBtn.addEventListener('click', () => saveToHistory(saveBtn, cfg, key));
 
@@ -2829,6 +3507,8 @@ function fileBaseName(cfg, key) {
   const slugMap = {
     'liaison':    'lettre-liaison',
     'cr':         'compte-rendu',
+    'consult':    'compte-rendu',
+    'rx':         'ordonnance-examens',
     'resume':     'analyse-document',
     'mdph':       'certificat-mdph',
     'ald':        'protocole-ald',
@@ -3000,7 +3680,7 @@ function renderPatients(filter = '') {
         <div class="hist-type">${escapeHtml(p.nom)}${p.ddn ? '<span style="font-weight:400;font-size:12px;color:var(--text-muted);margin-left:8px">né(e) le ' + escapeHtml(p.ddn) + '</span>' : ''}</div>
         ${p.patho ? `<div style="font-size:12px;color:var(--text-muted);margin-top:2px">🩺 ${escapeHtml(p.patho)}</div>` : ''}
         ${p.traitements ? `<div style="font-size:12px;color:var(--text-dim);margin-top:2px">💊 ${escapeHtml(p.traitements)}</div>` : ''}
-        ${p.allergies ? `<div style="font-size:12px;color:#dc2626;margin-top:2px">⚠ Allergie : ${escapeHtml(p.allergies)}</div>` : ''}
+        ${p.allergies ? `<div style="font-size:12px;color:var(--danger);margin-top:2px">⚠ Allergie : ${escapeHtml(p.allergies)}</div>` : ''}
         ${p.mt ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">MT : ${escapeHtml(p.mt)}</div>` : ''}
       </div>
       <button class="btn btn-ghost" style="padding:6px 12px;font-size:12px;margin-right:8px" onclick="usePatient('${p.id}')">Utiliser</button>
@@ -3024,10 +3704,21 @@ function usePatient(id) {
   if (!activeView) return;
 
   // Remplir nom du patient dans la vue active
-  ['l-patient','c-patient','m-patient','a-patient','cert-patient','ord-patient'].forEach(fid => {
+  ['ct-patient','l-patient','c-patient','m-patient','a-patient','cert-patient','ord-patient'].forEach(fid => {
     const el = document.getElementById(fid);
     if (el && activeView.contains(el)) el.value = p.nom;
   });
+
+  // Parcours consultation : la fiche alimente directement l'ouverture du dossier
+  if (activeView.id === 'view-consult' || sessionStorage.getItem('praxi_lastView') === 'consult') {
+    document.getElementById('ct-patient').value = p.nom;
+    const ageEl = document.getElementById('ct-age');
+    if (p.ddn && ageEl && !ageEl.value.trim()) ageEl.value = (new Date().getFullYear() - new Date(p.ddn).getFullYear()) + ' ans';
+    const atcdEl = document.getElementById('ct-atcd');
+    if (p.patho && atcdEl && !atcdEl.value.trim()) atcdEl.value = p.patho;
+    const tttEl = document.getElementById('ct-ttt');
+    if (p.traitements && tttEl && !tttEl.value.trim()) tttEl.value = p.traitements;
+  }
 
   // DDN dans l'ordonnance
   if (p.ddn) {
@@ -3144,9 +3835,12 @@ function saveToHistory(btn, cfg, key) {
   if (!text) return;
 
   const list = loadHistory();
+  // Les documents issus du parcours consultation sont rangés sous leur type
+  // « lisible » pour que la relecture depuis l'historique rouvre la bonne vue.
+  const histType = key === 'consult' ? 'cr' : key === 'rx' ? 'ordonnance' : key;
   const entry = {
     id:      Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-    type:    key,                          // 'liaison' | 'cr' | 'resume'
+    type:    histType,                     // 'liaison' | 'cr' | 'resume' | …
     typeLabel: cfg.label,
     patient: cfg.getPatient() || 'Patient',
     date:    new Date().toISOString().slice(0, 10),
@@ -3159,7 +3853,7 @@ function saveToHistory(btn, cfg, key) {
 
   const label = btn.querySelector('span');
   const orig  = label.textContent;
-  label.textContent = '✓ Sauvegardé';
+  label.textContent = '✓ Enregistré';
   btn.classList.add('saved');
   setTimeout(() => { label.textContent = orig; btn.classList.remove('saved'); }, 1600);
 }
@@ -3172,8 +3866,8 @@ function renderHistory(query) {
     container.innerHTML =
       '<div class="history-empty">' +
         '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2z"/></svg>' +
-        '<div style="margin-bottom:6px">Aucun document sauvegardé pour l\'instant.</div>' +
-        '<div style="font-size:13px;color:var(--text-dim)">Cliquez sur « Sauvegarder » après une génération.</div>' +
+        '<div style="margin-bottom:6px">Aucun document enregistré pour l\'instant.</div>' +
+        '<div style="font-size:13px;color:var(--text-dim)">Cliquez sur « Enregistrer » après une génération, ou clôturez une consultation.</div>' +
       '</div>';
     return;
   }
@@ -3322,58 +4016,186 @@ async function readPdf(file) {
 // ═══════════════════════════════════════════════════════════════════════
 //  DICTÉE VOCALE (Web Speech API)
 // ═══════════════════════════════════════════════════════════════════════
+// La dictée est un outil secondaire : la saisie manuelle reste active en
+// permanence, y compris pendant l'écoute. Trois garanties de fiabilité :
+//  1. le texte est reconstruit depuis la liste complète des résultats
+//     (élimine les doublons observés sur Chrome Android / tablette) ;
+//  2. l'écoute redémarre seule après les coupures silencieuses du navigateur
+//     (arrêt automatique après quelques secondes sans parole) ;
+//  3. toute erreur affiche un message clair sous le champ concerné, avec
+//     bascule immédiate en saisie manuelle — jamais de blocage silencieux.
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-let activeRec = null;       // { rec, btn, target, baseText }
+let activeRec = null;
 
 document.querySelectorAll('[data-mic]').forEach(btn => {
   btn.addEventListener('click', () => toggleMic(btn));
 });
 
+function micStatusEl(btn) {
+  const wrap = btn.closest('.with-mic');
+  if (!wrap) return null;
+  let el = wrap.parentElement.querySelector('.mic-status');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'mic-status';
+    wrap.insertAdjacentElement('afterend', el);
+  }
+  return el;
+}
+function micShowListening(btn) {
+  const el = micStatusEl(btn);
+  if (!el) return;
+  el.className = 'mic-status listening show';
+  el.innerHTML = '<span class="mic-dot"></span><span class="mic-status-body">Praxi vous écoute — parlez naturellement.' +
+    '<span class="mic-status-hint">Le texte s\'ajoute au fur et à mesure. Vous pouvez continuer à taper à tout moment. Cliquez à nouveau sur le micro pour arrêter.</span></span>';
+}
+function micShowError(btn, message, hint) {
+  const el = micStatusEl(btn);
+  if (!el) return;
+  el.className = 'mic-status error show';
+  el.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>' +
+    '<span class="mic-status-body">' + escapeHtml(message) +
+    '<span class="mic-status-hint">' + escapeHtml(hint || 'Votre texte est conservé — continuez simplement à taper dans le champ ci-dessus.') + '</span></span>';
+  setTimeout(() => { if (el.classList.contains('error')) el.classList.remove('show'); }, 9000);
+}
+// N'efface que le bandeau d'écoute : un message d'erreur doit rester lisible
+// après l'arrêt de la reconnaissance, sinon la panne redevient silencieuse.
+function micHideStatus(btn) {
+  const el = micStatusEl(btn);
+  if (el && !el.classList.contains('error')) el.classList.remove('show');
+}
+
+function stopMic() {
+  if (!activeRec) return;
+  activeRec.manualStop = true;
+  try { activeRec.rec.stop(); } catch (_) {}
+}
+
 function toggleMic(btn) {
   if (!SpeechRec) {
-    const fieldId = btn.dataset.mic.includes('l-') ? 'l-error' : 'c-error';
-    showError(fieldId, 'La dictée vocale n\'est pas supportée par votre navigateur. Essayez Chrome ou Edge.');
+    micShowError(btn,
+      'La dictée vocale n\'est pas disponible sur ce navigateur.',
+      'Utilisez Chrome, Edge ou Safari — ou tapez vos notes dans le champ ci-dessus, tout fonctionne sans le micro.');
     return;
   }
-  if (activeRec && activeRec.btn === btn) { activeRec.rec.stop(); return; }
-  if (activeRec) activeRec.rec.stop();
+  if (activeRec && activeRec.btn === btn) { stopMic(); return; }
+  if (activeRec) stopMic();
 
   const target = document.getElementById(btn.dataset.mic);
-  const rec = new SpeechRec();
+  const state = {
+    btn, target,
+    rec: new SpeechRec(),
+    baseText: target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value,
+    sessionFinal: '',
+    ignoreUntil: 0,        // résultats déjà intégrés (repris si l'utilisateur tape)
+    manualStop: false,
+    programmatic: false,   // distingue nos écritures des frappes de l'utilisateur
+    restarts: 0
+  };
+  const rec = state.rec;
   rec.lang = 'fr-FR';
   rec.continuous = true;
   rec.interimResults = true;
 
-  let baseText = target.value;
-  if (baseText && !/\s$/.test(baseText)) baseText += ' ';
+  const setValue = v => {
+    state.programmatic = true;
+    target.value = v;
+    target.dispatchEvent(new Event('input', { bubbles: true })); // autosave du texte dicté
+    state.programmatic = false;
+  };
 
-  rec.onresult = (e) => {
+  // Si le médecin tape pendant la dictée, on repart de son texte : la saisie
+  // manuelle a toujours priorité, rien n'est écrasé.
+  const onUserType = () => {
+    if (state.programmatic) return;
+    state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
+    state.sessionFinal = '';
+    state.ignoreUntil = state.resultCount || 0;
+  };
+  target.addEventListener('input', onUserType);
+
+  rec.onresult = e => {
     let finalT = '', interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
+    for (let i = state.ignoreUntil; i < e.results.length; i++) {
       const r = e.results[i];
       if (r.isFinal) finalT += r[0].transcript;
       else           interim += r[0].transcript;
     }
-    if (finalT) {
-      baseText += finalT;
-      if (!/\s$/.test(baseText)) baseText += ' ';
-    }
-    target.value = baseText + interim;
-  };
-  rec.onerror = (e) => {
-    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-      const fieldId = btn.dataset.mic.includes('l-') ? 'l-error' : 'c-error';
-      showError(fieldId, 'Accès au micro refusé. Autorisez le micro dans les réglages de votre navigateur.');
-    }
-  };
-  rec.onend = () => {
-    btn.classList.remove('listening');
-    activeRec = null;
+    state.resultCount = e.results.length;
+    state.sessionFinal = finalT;
+    setValue(state.baseText + finalT + interim);
   };
 
-  rec.start();
+  rec.onerror = e => {
+    switch (e.error) {
+      case 'not-allowed':
+      case 'service-not-allowed':
+        state.manualStop = true;
+        micShowError(btn,
+          'Praxi n\'a pas l\'autorisation d\'utiliser le micro.',
+          'Autorisez le micro dans les réglages du navigateur (icône cadenas dans la barre d\'adresse), ou tapez vos notes : rien n\'est perdu.');
+        break;
+      case 'audio-capture':
+        state.manualStop = true;
+        micShowError(btn,
+          'Aucun micro n\'a été détecté sur cet appareil.',
+          'Vérifiez le branchement du micro, ou tapez vos notes dans le champ ci-dessus.');
+        break;
+      case 'network':
+        state.manualStop = true;
+        micShowError(btn,
+          'Le service de reconnaissance vocale est momentanément injoignable.',
+          'Vérifiez la connexion internet et réessayez, ou tapez vos notes : le champ reste actif.');
+        break;
+      // 'no-speech' et 'aborted' : silences normaux, l'écoute redémarre seule.
+    }
+  };
+
+  rec.onend = () => {
+    // Consolide ce qui a été dicté avant un éventuel redémarrage.
+    if (state.sessionFinal) {
+      state.baseText = state.baseText + state.sessionFinal;
+      if (!/\s$/.test(state.baseText)) state.baseText += ' ';
+      state.sessionFinal = '';
+    }
+    setValue(state.baseText.replace(/\s$/, ''));
+    state.ignoreUntil = 0;
+    state.resultCount = 0;
+
+    // Le navigateur coupe l'écoute après quelques secondes de silence :
+    // on la relance tant que le médecin n'a pas arrêté lui-même.
+    if (!state.manualStop && activeRec === state && state.restarts < 60) {
+      state.restarts += 1;
+      state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
+      setTimeout(() => {
+        if (activeRec !== state || state.manualStop) return;
+        try { rec.start(); }
+        catch (_) {
+          micCleanup(state);
+          micShowError(btn, 'La dictée s\'est interrompue.', 'Cliquez sur le micro pour reprendre — le texte déjà dicté est conservé.');
+        }
+      }, 200);
+      return;
+    }
+    micCleanup(state);
+  };
+
+  function micCleanup(s) {
+    s.btn.classList.remove('listening');
+    s.target.removeEventListener('input', onUserType);
+    micHideStatus(s.btn);
+    if (activeRec === s) activeRec = null;
+  }
+
+  try {
+    rec.start();
+  } catch (_) {
+    micShowError(btn, 'Impossible de démarrer la dictée.', 'Réessayez dans un instant, ou tapez vos notes dans le champ ci-dessus.');
+    return;
+  }
   btn.classList.add('listening');
-  activeRec = { rec, btn, target, baseText };
+  micShowListening(btn);
+  activeRec = state;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -3625,7 +4447,7 @@ function mockPatient(name) {
 //  AUTO-COMPLÉTION PATIENT sur tous les champs patient
 // ═══════════════════════════════════════════════════════════════════════
 (function initPatientAutocomplete() {
-  const PATIENT_IDS = ['l-patient','c-patient','m-patient','a-patient','cert-patient','ord-patient'];
+  const PATIENT_IDS = ['ct-patient','l-patient','c-patient','m-patient','a-patient','cert-patient','ord-patient'];
   let acBox = null;
 
   function closeAc() { if (acBox) { acBox.remove(); acBox = null; } }
@@ -3634,34 +4456,41 @@ function mockPatient(name) {
     closeAc();
     if (!patients.length) return;
     acBox = document.createElement('div');
-    acBox.style.cssText = [
-      'position:absolute','z-index:200','background:#0D1520',
-      'border:1px solid #1A2535','border-radius:8px','box-shadow:0 8px 24px rgba(0,0,0,.5)',
-      'max-height:220px','overflow-y:auto','min-width:260px','width:100%'
-    ].join(';');
+    acBox.className = 'ac-box';
 
     patients.forEach(p => {
       const item = document.createElement('div');
-      item.style.cssText = 'padding:10px 14px;cursor:pointer;font-size:13.5px;color:#EDF2F7;border-bottom:1px solid #1A2535;transition:background .12s';
-      item.onmouseenter = () => item.style.background = '#1A2535';
-      item.onmouseleave = () => item.style.background = '';
+      item.className = 'ac-item';
       const age = p.ddn ? ' · ' + (new Date().getFullYear() - new Date(p.ddn).getFullYear()) + ' ans' : '';
-      const patho = p.patho ? '<div style="font-size:11px;color:#6B8299;margin-top:2px">' + escapeHtml(p.patho.slice(0, 60)) + '</div>' : '';
-      item.innerHTML = '<strong>' + escapeHtml(p.nom) + '</strong><span style="color:#6B8299">' + escapeHtml(age) + '</span>' + patho;
+      const patho = p.patho ? '<small>' + escapeHtml(p.patho.slice(0, 60)) + '</small>' : '';
+      item.innerHTML = '<strong>' + escapeHtml(p.nom) + '</strong><span class="ac-age">' + escapeHtml(age) + '</span>' + patho;
       item.addEventListener('mousedown', e => {
         e.preventDefault();
         input.value = p.nom;
-        // Remplir DDN si ordonnance
-        const ddnEl = document.getElementById('ord-ddn');
-        if (ddnEl && p.ddn) ddnEl.value = p.ddn;
-        // Pré-remplir pathologies dans notes si vide
-        if (p.patho) {
-          const view = input.closest('.view');
-          if (view) {
-            const notesEl = view.querySelector('textarea[id$="-notes"]');
-            if (notesEl && !notesEl.value.trim()) notesEl.value = 'ATCD : ' + p.patho;
+        if (input.id === 'ct-patient') {
+          // Parcours consultation : la fiche pré-remplit l'ouverture du dossier.
+          const ageEl = document.getElementById('ct-age');
+          if (p.ddn && ageEl && !ageEl.value.trim()) {
+            ageEl.value = (new Date().getFullYear() - new Date(p.ddn).getFullYear()) + ' ans';
+          }
+          const atcdEl = document.getElementById('ct-atcd');
+          if (p.patho && atcdEl && !atcdEl.value.trim()) atcdEl.value = p.patho;
+          const tttEl = document.getElementById('ct-ttt');
+          if (p.traitements && tttEl && !tttEl.value.trim()) tttEl.value = p.traitements;
+        } else {
+          // Remplir DDN si ordonnance
+          const ddnEl = document.getElementById('ord-ddn');
+          if (ddnEl && p.ddn) ddnEl.value = p.ddn;
+          // Pré-remplir pathologies dans notes si vide
+          if (p.patho) {
+            const view = input.closest('.view');
+            if (view) {
+              const notesEl = view.querySelector('textarea[id$="-notes"]');
+              if (notesEl && !notesEl.value.trim()) notesEl.value = 'ATCD : ' + p.patho;
+            }
           }
         }
+        scheduleDraftSave();
         closeAc();
       });
       acBox.appendChild(item);
@@ -3691,6 +4520,233 @@ function mockPatient(name) {
     if (acBox && !acBox.contains(e.target)) closeAc();
   });
 })();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CONSULTATION — parcours guidé en 3 temps (ouverture → contenu → clôture)
+// ═══════════════════════════════════════════════════════════════════════
+let consultStep = 1;
+let consultInitialized = false;
+
+function consultComposedNotes() {
+  const val = id => (document.getElementById(id).value || '').trim();
+  const sections = [];
+  if (val('ct-atcd'))     sections.push('ANTÉCÉDENTS :\n' + val('ct-atcd'));
+  if (val('ct-ttt'))      sections.push('TRAITEMENTS EN COURS :\n' + val('ct-ttt'));
+  if (val('ct-histoire')) sections.push('HISTOIRE DE LA MALADIE :\n' + val('ct-histoire'));
+  if (val('ct-notes'))    sections.push('CONSULTATION DU JOUR :\n' + val('ct-notes'));
+  return sections.join('\n\n');
+}
+
+function consultUpdateBanner() {
+  const name = document.getElementById('ct-patient').value.trim() || 'Patient sans nom';
+  const age  = document.getElementById('ct-age').value.trim();
+  document.querySelectorAll('[data-ct-banner]').forEach(b => {
+    b.querySelector('[data-ct-banner-name]').textContent = name;
+    b.querySelector('[data-ct-banner-age]').textContent = age ? ' · ' + age : '';
+    b.classList.add('show');
+  });
+}
+
+function ctGoto(step) {
+  consultStep = step;
+  for (let i = 1; i <= 3; i++) {
+    document.getElementById('ct-pane-' + i).classList.toggle('active', i === step);
+  }
+  document.querySelectorAll('#ct-stepper .step').forEach(s => {
+    const n = Number(s.dataset.step);
+    s.classList.toggle('active', n === step);
+    s.classList.toggle('done', n < step);
+  });
+  consultUpdateBanner();
+  placeClinicalSettings('consult');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function consultOnEnter() {
+  consultUpdateBanner();
+  if (!consultInitialized) {
+    consultInitialized = true;
+    renderRxChips();
+  }
+}
+
+// ── Prescriptions de clôture : suggestions par spécialité (P3) ──
+const RX_BASE = {
+  bio:  ['NFS plaquettes', 'Ionogramme sanguin, créatinine', 'CRP', 'Glycémie à jeun', 'Bilan lipidique', 'Bilan hépatique', 'TSH', 'ECBU'],
+  img:  ['Radiographie du thorax', 'Échographie abdominale', 'Radiographie articulaire', 'Scanner thoraco-abdominal', 'Échographie-doppler veineux des MI'],
+  soin: ['Kinésithérapie — 10 séances', 'Soins infirmiers à domicile', 'Pansements par IDE', 'ECG de repos']
+};
+const RX_SPECIALTY = {
+  'Cardiologue':        { bio: ['BNP / NT-proBNP', 'Troponine', 'HbA1c'], img: ['Échocardiographie transthoracique', 'Holter ECG 24h', 'MAPA'], soin: ['Épreuve d\'effort', 'Réadaptation cardiovasculaire'] },
+  'Pneumologue':        { bio: ['GDS artériels', 'NFS éosinophiles'], img: ['Scanner thoracique', 'Radiographie thorax F+P'], soin: ['EFR', 'Polygraphie ventilatoire nocturne'] },
+  'Diabétologue':       { bio: ['HbA1c', 'Microalbuminurie', 'Créatinine + DFG'], img: [], soin: ['Fond d\'œil', 'Bilan podologique'] },
+  'Endocrinologue':     { bio: ['TSH, T4L', 'HbA1c', 'Cortisol à 8h'], img: ['Échographie thyroïdienne'], soin: [] },
+  'Rhumatologue':       { bio: ['VS, CRP', 'Facteur rhumatoïde, anti-CCP', 'Uricémie'], img: ['Radiographies mains et pieds', 'IRM des sacro-iliaques', 'Ostéodensitométrie'], soin: [] },
+  'Gastro-entérologue': { bio: ['Bilan hépatique complet', 'Lipase', 'Sérologie H. pylori'], img: ['Scanner abdomino-pelvien'], soin: ['Fibroscopie œso-gastro-duodénale', 'Coloscopie'] },
+  'Neurologue':         { bio: ['Vitamine B12, folates', 'TSH'], img: ['IRM cérébrale', 'Scanner cérébral'], soin: ['EEG', 'EMG'] },
+  'Médecin généraliste':{ bio: ['HbA1c', 'Ferritine', 'Vitamine D'], img: ['IRM lombaire'], soin: ['Consultation spécialisée'] },
+};
+
+function renderRxChips() {
+  const specs = (me && (Array.isArray(me.specialites) ? me.specialites : [me.specialite])) || [];
+  const extra = specs.map(s => RX_SPECIALTY[s]).find(Boolean) || {};
+  const hosts = { bio: 'rx-bio', img: 'rx-img', soin: 'rx-soin' };
+  Object.entries(hosts).forEach(([cat, hostId]) => {
+    const host = document.getElementById(hostId);
+    if (!host) return;
+    host.innerHTML = '';
+    const items = [...new Set([...(extra[cat] || []), ...RX_BASE[cat]])];
+    items.forEach(label => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip';
+      chip.textContent = label;
+      chip.addEventListener('click', () => chip.classList.toggle('on'));
+      host.appendChild(chip);
+    });
+  });
+}
+
+function consultRxText() {
+  const picked = cat => Array.from(document.querySelectorAll('#rx-' + cat + ' .chip.on')).map(c => c.textContent.trim());
+  const lines = id => (document.getElementById(id).value || '').split('\n').map(l => l.trim()).filter(Boolean);
+  const bio  = picked('bio');
+  const img  = picked('img');
+  const soin = picked('soin');
+  const libre = lines('ct-rx-libre');
+  const med   = lines('ct-rx-med');
+  if (!bio.length && !img.length && !soin.length && !libre.length && !med.length) return null;
+
+  const name = document.getElementById('ct-patient').value.trim();
+  const age  = document.getElementById('ct-age').value.trim();
+  const today = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+  const parts = ['ORDONNANCE', '', 'Patient : ' + (name || '—') + (age ? ' — ' + age : ''), 'Date : ' + today];
+  const section = (title, items) => { if (items.length) parts.push('', title + ' :', ...items.map(x => '  - ' + x)); };
+  section('BIOLOGIE', bio);
+  section('IMAGERIE', img);
+  section('SOINS ET PROTOCOLES', soin);
+  section('AUTRES EXAMENS', libre);
+  section('MÉDICAMENTS', med);
+  return parts.join('\n');
+}
+
+function consultRxGenerate() {
+  clearError('rx-error');
+  const text = consultRxText();
+  if (!text) { showError('rx-error', 'Sélectionnez au moins un examen, un soin ou un médicament à prescrire.'); return false; }
+  renderResult(document.getElementById('rx-out'), text);
+  renderTools('rx');
+  document.getElementById('rx-result').classList.add('show');
+  return true;
+}
+
+// ── Clôture : enregistrer, fermer le dossier, ouvrir le suivant (P2) ──
+const modalCloture = document.getElementById('modal-cloture');
+document.querySelectorAll('[data-close-cloture]').forEach(b =>
+  b.addEventListener('click', () => modalCloture.classList.remove('show')));
+modalCloture.addEventListener('click', e => { if (e.target === modalCloture) modalCloture.classList.remove('show'); });
+
+function consultOpenCloture() {
+  clearError('rx-error');
+  const name = document.getElementById('ct-patient').value.trim();
+  const crText = (document.getElementById('ct-out').dataset.plain || '').trim();
+  const notes = consultComposedNotes();
+  if (!name && !notes && !crText) {
+    showError('rx-error', 'Le dossier est vide — renseignez au moins le patient ou les notes avant de clôturer.');
+    return;
+  }
+  // Si des prescriptions sont cochées mais pas encore mises en forme, on les prépare.
+  const rxReady = (document.getElementById('rx-out').dataset.plain || '').trim();
+  if (!rxReady && consultRxText()) consultRxGenerate();
+
+  const rxText = (document.getElementById('rx-out').dataset.plain || '').trim();
+  const rows = [
+    ['Patient', name || 'Sans nom'],
+    ['Compte-rendu', crText ? 'Généré — sera archivé' : 'Non généré — les notes brutes seront archivées'],
+    ['Prescriptions', rxText ? 'Ordonnance prête — sera archivée' : 'Aucune'],
+  ];
+  document.getElementById('cloture-summary').innerHTML = rows.map(([k, v]) =>
+    '<div style="display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--border)">' +
+    '<span>' + escapeHtml(k) + '</span><strong style="color:var(--text);text-align:right">' + escapeHtml(v) + '</strong></div>'
+  ).join('');
+  modalCloture.classList.add('show');
+}
+
+function consultDoCloture() {
+  const val = id => (document.getElementById(id).value || '').trim();
+  const name = val('ct-patient') || 'Patient';
+  const list = loadHistory();
+  const now = new Date().toISOString();
+  const mkId = () => Date.now() + '-' + Math.random().toString(36).slice(2, 8);
+
+  const crText = (document.getElementById('ct-out').dataset.plain || '').trim();
+  const notes = consultComposedNotes();
+  const contenu = crText || (notes ? 'NOTES DE CONSULTATION (compte-rendu non généré)\n\n' + notes : '');
+  if (contenu) {
+    list.unshift({ id: mkId(), type: 'cr', typeLabel: 'Compte-rendu de consultation', patient: name,
+      date: now.slice(0, 10), contenu, createdAt: now });
+  }
+  const rxText = (document.getElementById('rx-out').dataset.plain || '').trim();
+  if (rxText) {
+    list.unshift({ id: mkId(), type: 'ordonnance', typeLabel: 'Ordonnance — examens & soins', patient: name,
+      date: now.slice(0, 10), contenu: rxText, createdAt: now });
+  }
+  while (list.length > HIST_MAX) list.pop();
+  persistHistory(list);
+
+  // Met à jour la fiche patient (création si nécessaire, sans écraser l'existant)
+  if (val('ct-patient')) {
+    const patients = loadPatients();
+    const existing = patients.find(p => p.nom.toLowerCase() === name.toLowerCase());
+    if (!existing) {
+      patients.push({ id: mkId(), nom: name, ddn: '', patho: val('ct-atcd'), traitements: val('ct-ttt'), allergies: '', mt: '', createdAt: now });
+    } else {
+      if (!existing.patho && val('ct-atcd')) existing.patho = val('ct-atcd');
+      if (!existing.traitements && val('ct-ttt')) existing.traitements = val('ct-ttt');
+    }
+    persistPatients(patients);
+  }
+
+  // Réinitialise le dossier pour le patient suivant
+  ['ct-patient','ct-age','ct-atcd','ct-ttt','ct-histoire','ct-notes','ct-rx-libre','ct-rx-med'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.querySelectorAll('#ct-pane-3 .chip.on').forEach(c => c.classList.remove('on'));
+  ['ct-result','rx-result'].forEach(id => document.getElementById(id).classList.remove('show'));
+  document.getElementById('ct-out').dataset.plain = '';
+  document.getElementById('ct-out').innerHTML = '';
+  document.getElementById('rx-out').dataset.plain = '';
+  document.getElementById('rx-out').innerHTML = '';
+  clearDraftsFor('ct-');
+  clearError('ct-error');
+
+  modalCloture.classList.remove('show');
+  ctGoto(1);
+  autosavePill('saved', 'Consultation de ' + name + ' enregistrée');
+  const notice = document.getElementById('ct-restored');
+  notice.textContent = 'Consultation de ' + name + ' enregistrée dans l\'historique. Nouveau dossier prêt.';
+  notice.classList.add('show');
+  setTimeout(() => notice.classList.remove('show'), 6000);
+  document.getElementById('ct-patient').focus();
+}
+
+// ── Câblage du parcours ──
+document.querySelectorAll('#ct-stepper .step').forEach(s =>
+  s.addEventListener('click', () => ctGoto(Number(s.dataset.step))));
+document.querySelectorAll('[data-ct-goto]').forEach(b =>
+  b.addEventListener('click', () => ctGoto(Number(b.dataset.ctGoto))));
+document.getElementById('ct-next-1').addEventListener('click', () => ctGoto(2));
+document.getElementById('ct-next-2').addEventListener('click', () => ctGoto(3));
+document.getElementById('ct-generate').addEventListener('click', function () {
+  document.getElementById('ct-result').classList.remove('show');
+  runGeneration('consult', this);
+});
+document.getElementById('ct-rx-generate').addEventListener('click', consultRxGenerate);
+document.getElementById('ct-close-btn').addEventListener('click', consultOpenCloture);
+document.getElementById('cloture-confirm').addEventListener('click', consultDoCloture);
+['ct-patient', 'ct-age'].forEach(id =>
+  document.getElementById(id).addEventListener('input', consultUpdateBanner));
+consultOnEnter();
 
 // ═══════════════════════════════════════════════════════════════════════
 //  AVIS SPÉCIALISÉ — cas clinique + photos, réponse sourcée
@@ -3909,6 +4965,7 @@ async function avisDemander(btn) {
 
   document.getElementById('av-result').classList.remove('show');
   setLoading(btn, true);
+  const stopProgress = startAiProgress('av-error', 'avis');
   try {
     const data = await api('/api/avis-specialise', {
       method: 'POST',
@@ -3936,6 +4993,7 @@ async function avisDemander(btn) {
   } catch (err) {
     showError('av-error', err.message);
   } finally {
+    stopProgress();
     setLoading(btn, false, "Demander l'avis");
   }
 }

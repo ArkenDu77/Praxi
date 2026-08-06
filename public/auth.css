@@ -1,21 +1,23 @@
 /* Praxi — styles partagés des pages d'authentification (login / register) */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Thème clair, aligné sur l'application (light mode par défaut) */
 :root {
-  --bg:        #080C10;
-  --bg-card:   #0D1520;
-  --bg-card2:  #0A1018;
-  --border:    #1A2535;
-  --border2:   #243040;
-  --text:      #EDF2F7;
-  --text-muted:#6B8299;
-  --text-dim:  #3D5166;
-  --accent:    #38BDF8;
-  --accent-dim:rgba(56,189,248,0.10);
-  --accent-glow:rgba(56,189,248,0.22);
-  --danger:    #F87171;
-  --danger-dim:rgba(248,113,113,0.10);
-  --success:   #4ADE80;
+  --bg:        #F2F6FA;
+  --bg-card:   #FFFFFF;
+  --bg-card2:  #F8FAFD;
+  --border:    #E2E9F1;
+  --border2:   #CDD9E5;
+  --text:      #16232F;
+  --text-muted:#54687C;
+  --text-dim:  #64778A;
+  --accent:    #0284C7;
+  --accent-contrast: #FFFFFF;
+  --accent-dim:rgba(2,132,199,0.08);
+  --accent-glow:rgba(2,132,199,0.22);
+  --danger:    #DC2626;
+  --danger-dim:rgba(220,38,38,0.08);
+  --success:   #15803D;
 }
 
 body {
@@ -33,15 +35,15 @@ body {
 .bg-grid {
   position: fixed; inset: 0; z-index: 0;
   background-image:
-    linear-gradient(rgba(56,189,248,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56,189,248,.04) 1px, transparent 1px);
+    linear-gradient(rgba(2,132,199,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(2,132,199,.05) 1px, transparent 1px);
   background-size: 48px 48px;
   mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 100%);
 }
 .bg-glow {
   position: fixed; z-index: 0; width: 700px; height: 420px;
   top: 38%; left: 50%; transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse, rgba(56,189,248,.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse, rgba(2,132,199,.10) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -49,9 +51,10 @@ body {
   position: relative; z-index: 1;
   width: 100%; max-width: 440px;
   background: var(--bg-card);
-  border: 1px solid var(--border2);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 40px 38px;
+  box-shadow: 0 18px 48px rgba(22,35,47,.10), 0 2px 6px rgba(22,35,47,.05);
   animation: rise .5s cubic-bezier(.2,.7,.2,1) both;
 }
 @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
@@ -76,12 +79,15 @@ body {
 .row .field { flex: 1; }
 .input, .select {
   width: 100%; background: var(--bg-card2);
-  border: 1px solid var(--border2); border-radius: 8px;
+  border: 1px solid var(--border2); border-radius: 9px;
   padding: 12px 14px; font-size: 14px; color: var(--text);
-  outline: none; font-family: inherit; transition: border-color .2s;
+  outline: none; font-family: inherit; transition: border-color .18s, box-shadow .18s;
 }
 .input::placeholder { color: var(--text-dim); }
-.input:focus, .select:focus { border-color: var(--accent); }
+.input:hover:not(:focus), .select:hover:not(:focus) { border-color: var(--text-dim); }
+.input:focus, .select:focus {
+  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
+}
 .select {
   -webkit-appearance: none; appearance: none; cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -107,7 +113,7 @@ body {
 .ms-placeholder { color: var(--text-dim); }
 .ms-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  background: var(--accent-dim); border: 1px solid rgba(56,189,248,.32);
+  background: var(--accent-dim); border: 1px solid rgba(2,132,199,.30);
   color: var(--accent); border-radius: 999px;
   padding: 3px 5px 3px 11px; font-size: 12.5px; line-height: 1.4;
   animation: chip-in .2s cubic-bezier(.2,.7,.2,1) both;
@@ -116,18 +122,18 @@ body {
 .ms-chip-x {
   display: inline-flex; align-items: center; justify-content: center;
   width: 16px; height: 16px; border-radius: 50%; border: none;
-  background: rgba(56,189,248,.18); color: var(--accent);
+  background: var(--accent-glow); color: var(--accent);
   font-size: 13px; line-height: 1; cursor: pointer; padding: 0;
   transition: background .15s, transform .15s;
 }
-.ms-chip-x:hover { background: var(--accent); color: #050A10; transform: scale(1.12); }
+.ms-chip-x:hover { background: var(--accent); color: var(--accent-contrast); transform: scale(1.12); }
 .ms-caret { flex: none; color: var(--text-muted); transition: transform .28s cubic-bezier(.2,.7,.2,1); }
 .ms.open .ms-caret { transform: rotate(180deg); color: var(--accent); }
 .ms-panel {
   position: absolute; z-index: 40; top: calc(100% + 7px); left: 0; right: 0;
   background: var(--bg-card); border: 1px solid var(--border2);
   border-radius: 11px; padding: 6px; max-height: 282px; overflow-y: auto;
-  box-shadow: 0 22px 48px rgba(0,0,0,.5);
+  box-shadow: 0 22px 48px rgba(22,35,47,.16);
   opacity: 0; transform: translateY(-10px) scale(.985); transform-origin: top center;
   visibility: hidden; pointer-events: none;
   transition: opacity .22s ease, transform .22s cubic-bezier(.2,.7,.2,1), visibility .22s;
@@ -147,7 +153,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   transition: background .18s, border-color .18s;
 }
-.ms-check svg { width: 11px; height: 11px; stroke: #050A10; opacity: 0; transform: scale(.4); transition: opacity .18s, transform .18s cubic-bezier(.2,.7,.2,1); }
+.ms-check svg { width: 11px; height: 11px; stroke: var(--accent-contrast); opacity: 0; transform: scale(.4); transition: opacity .18s, transform .18s cubic-bezier(.2,.7,.2,1); }
 .ms-opt input:checked + .ms-check { background: var(--accent); border-color: var(--accent); }
 .ms-opt input:checked + .ms-check svg { opacity: 1; transform: none; }
 .ms-opt input:focus-visible + .ms-check { box-shadow: 0 0 0 3px var(--accent-dim); }
@@ -155,7 +161,7 @@ body {
 .ms-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 8px; }
 
 .btn-submit {
-  width: 100%; background: var(--accent); color: #050A10;
+  width: 100%; background: var(--accent); color: var(--accent-contrast);
   border: none; border-radius: 8px; padding: 14px;
   font-size: 15px; font-weight: 600; cursor: pointer;
   font-family: inherit; margin-top: 8px;
@@ -167,7 +173,7 @@ body {
 
 .spinner {
   width: 15px; height: 15px; border-radius: 50%;
-  border: 2px solid rgba(5,10,16,.3); border-top-color: #050A10;
+  border: 2px solid var(--accent-glow); border-top-color: var(--accent-contrast);
   animation: spin .7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -177,8 +183,8 @@ body {
   border-radius: 8px; font-size: 13.5px; line-height: 1.5;
 }
 .alert.show { display: block; }
-.alert-error   { background: var(--danger-dim); border: 1px solid rgba(248,113,113,.3); color: #FCA5A5; }
-.alert-success { background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.28); color: #86EFAC; }
+.alert-error   { background: var(--danger-dim); border: 1px solid rgba(220,38,38,.30); color: var(--danger); }
+.alert-success { background: rgba(21,128,61,.08); border: 1px solid rgba(21,128,61,.28); color: var(--success); }
 
 .auth-foot {
   text-align: center; font-size: 13.5px; color: var(--text-muted); margin-top: 24px;
