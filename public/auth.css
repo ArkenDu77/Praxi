@@ -1,6 +1,13 @@
 /* Praxi — styles partagés des pages d'authentification (login / register) */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Tactile : coupe le double-tap-to-zoom sur les éléments interactifs, sans
+   toucher au pinch-to-zoom (voir app.html pour le détail du raisonnement). */
+a, button, input, select, summary,
+.btn-submit, .ms-trigger, .ms-opt, .ms-chip-x, .auth-back {
+  touch-action: manipulation;
+}
+
 /* Thème clair, aligné sur l'application (light mode par défaut) */
 :root {
   --bg:        #F2F6FA;
