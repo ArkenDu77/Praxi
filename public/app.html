@@ -112,6 +112,22 @@ body::before {
 /* Focus clavier homogène sur toute l'application */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
 
+/* ─── TACTILE : supprime le double-tap-to-zoom du navigateur ───
+   Un double-tap accidentel sur un bouton ou un champ déclenchait le zoom
+   natif du navigateur — gênant sur tablette en consultation. "manipulation"
+   autorise explicitement le défilement (pan) et le pincement (pinch-zoom) :
+   seuls les gestes non standard comme le double-tap sont coupés, le
+   pinch-to-zoom d'accessibilité reste pleinement actif (le viewport meta
+   n'impose par ailleurs aucun user-scalable=no ni maximum-scale). */
+a, button, input, select, textarea, summary, [role="button"],
+.btn, .chip, .side-link, .side-user, .theme-toggle, .menu-toggle,
+.mic-btn, .tool-btn, .vue-btn, .quick-tpl-btn, .file-remove, .hist-del, .hist-item,
+.step, .ms-trigger, .ms-opt, .ms-chip-x,
+.suggestion-toggle, .suggestion-text, .deduction-hit, .mini-apply,
+.dropzone, .doctolib-flag, .disclosure-summary {
+  touch-action: manipulation;
+}
+
 /* ─── SIDEBAR ─── */
 .sidebar {
   position: fixed; top: 0; left: 0; bottom: 0;
@@ -197,11 +213,6 @@ body::before {
   font-size: 14.5px; color: var(--text-muted); font-weight: 400;
   margin-bottom: 30px; max-width: 74ch;
 }
-.page-actions {
-  display: flex; gap: 10px; align-items: center;
-  margin-top: -22px; margin-bottom: 28px; flex-wrap: wrap;
-}
-
 .view { display: none; }
 .view.active { display: block; animation: fade .35s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -465,6 +476,50 @@ body::before {
 }
 .quick-tpl-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
 
+/* ─── DIVULGATION PROGRESSIVE (blocs repliables) ───
+   L'écran doit montrer d'abord le champ principal ; tout le reste (modèles,
+   import, catégories secondaires) reste fermé jusqu'à ce qu'on le demande.
+   <details> natif : pas de JS à écrire, ouverture au clavier gratuite. */
+.disclosure { margin-bottom: 20px; }
+.disclosure-summary {
+  display: flex; align-items: center; gap: 9px;
+  padding: 11px 14px; border-radius: 10px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text-muted);
+  cursor: pointer; user-select: none; list-style: none;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .18s, color .18s, background .18s, border-radius .18s;
+}
+.disclosure-summary::-webkit-details-marker { display: none; }
+.disclosure-summary::marker { content: ''; }
+.disclosure-summary:hover { border-color: var(--accent-border); color: var(--text); background: var(--bg-hover); }
+.disclosure-summary svg.disclosure-icon { width: 15px; height: 15px; flex-shrink: 0; color: var(--accent); }
+.disclosure-chevron {
+  width: 15px; height: 15px; flex-shrink: 0; margin-left: auto; color: var(--text-dim);
+  transition: transform .22s cubic-bezier(.2,.7,.2,1);
+}
+.disclosure[open] > .disclosure-summary .disclosure-chevron { transform: rotate(180deg); }
+.disclosure[open] > .disclosure-summary {
+  border-radius: 10px 10px 0 0; border-bottom-color: transparent;
+}
+.disclosure-body {
+  padding: 16px; border: 1px solid var(--border); border-top: none;
+  border-radius: 0 0 10px 10px; background: var(--bg-card2);
+  animation: fade .2s ease;
+}
+.disclosure-body > *:first-child { margin-top: 0; }
+.disclosure-body > *:last-child { margin-bottom: 0; }
+/* Compteur discret : reste lisible quand la section est repliée après sélection */
+.disclosure-count {
+  display: none; align-items: center; justify-content: center;
+  min-width: 19px; height: 19px; padding: 0 5px; margin-left: auto;
+  border-radius: 999px; background: var(--accent); color: var(--accent-contrast);
+  font-size: 11px; font-weight: 700;
+}
+.disclosure-count.show { display: inline-flex; }
+.disclosure[open] .disclosure-count { margin-left: 0; }
+.disclosure[open] .disclosure-chevron { margin-left: 8px; }
+
 /* ─── ALERTS ─── */
 .alert {
   display: none; margin-top: 18px; padding: 12px 16px;
@@ -726,13 +781,34 @@ body::before {
 }
 @keyframes ai-slide { to { left: 100%; } }
 
-/* ─── CONSULTATION : parcours en 3 temps ─── */
+/* ─── CONSULTATION : parcours en 3 temps ───
+   Le titre H1 + sous-titre n'apparaissent qu'à l'étape 1 (Ouverture) : sur
+   les étapes 2 et 3, le stepper indique déjà où on en est, et son propre
+   contexte patient (fusionné ci-dessous) donne l'identité — répéter un
+   titre générique au-dessus serait la même information sous une troisième
+   forme. */
+.consult-intro.step-hidden { display: none; }
+
 .stepper {
-  display: flex; align-items: center; justify-content: center; gap: 0;
+  display: flex; flex-direction: column; gap: 0;
   margin-bottom: 24px; background: var(--bg-card);
   border: 1px solid var(--border); border-radius: 14px;
-  padding: 10px 12px; box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-sm);
 }
+.stepper-steps { display: flex; align-items: center; justify-content: center; padding: 10px 12px; }
+/* Contexte patient fusionné dans l'en-tête du stepper : remplace les deux
+   bandeaux dupliqués qui existaient sur les étapes 2 et 3. */
+.stepper-patient {
+  display: none; align-items: center; gap: 8px;
+  padding: 10px 16px; margin-top: -1px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-hover);
+  border-radius: 0 0 14px 14px;
+  font-size: 12.5px; color: var(--text-muted);
+}
+.stepper-patient.show { display: flex; }
+.stepper-patient svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
+.stepper-patient b { color: var(--text); font-weight: 600; }
 .step {
   flex: 1; display: flex; align-items: center; gap: 11px;
   padding: 8px 12px; border-radius: 10px; cursor: pointer;
@@ -781,24 +857,12 @@ body::before {
   margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--border);
   display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
 }
-.consult-patient-banner {
-  display: none; align-items: center; gap: 10px; margin-bottom: 20px;
-  padding: 10px 16px; border-radius: 10px;
-  background: var(--accent-dim); border: 1px solid var(--accent-border);
-  font-size: 13.5px; color: var(--text);
-}
-.consult-patient-banner.show { display: flex; }
-.consult-patient-banner svg { width: 15px; height: 15px; color: var(--accent); flex-shrink: 0; }
-.consult-patient-banner b { font-weight: 600; }
-
-/* ─── PRESCRIPTIONS (clôture) ─── */
-.rx-cat { margin-bottom: 18px; }
-.rx-cat-title {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px; font-weight: 600; letter-spacing: .05em; text-transform: uppercase;
-  color: var(--text-muted); margin-bottom: 10px;
-}
-.rx-cat-title svg { width: 14px; height: 14px; color: var(--accent); }
+/* ─── PRESCRIPTIONS (clôture) — accordéon, une seule catégorie à la fois
+   suffit à l'œil : Biologie, Imagerie et Soins restent repliées jusqu'à ce
+   qu'on les ouvre, pour ne pas faire défiler l'imagerie et les soins devant
+   quelqu'un qui ne veut prescrire qu'une biologie. ─── */
+.rx-disclosure { margin-bottom: 10px; }
+.rx-disclosure .disclosure-summary { text-transform: uppercase; letter-spacing: .04em; font-size: 12px; }
 .rx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .rx-free { margin-top: 10px; }
 
@@ -1164,24 +1228,32 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── CONSULTATION : parcours guidé en 3 temps ── -->
   <section class="view active" id="view-consult">
-    <h1 class="page-title">Consultation</h1>
-    <p class="page-sub">Un parcours guidé du début à la fin : ouvrez le dossier, menez la consultation, clôturez et passez au patient suivant.</p>
+    <div class="consult-intro" id="ct-intro">
+      <h1 class="page-title">Consultation</h1>
+      <p class="page-sub">Un parcours guidé du début à la fin : ouvrez le dossier, menez la consultation, clôturez et passez au patient suivant.</p>
+    </div>
 
     <div class="stepper" id="ct-stepper">
-      <button type="button" class="step active" data-step="1">
-        <span class="step-num">1</span>
-        <span class="step-info"><span class="step-label">Ouverture</span><span class="step-sub">Antécédents · traitements · histoire</span></span>
-      </button>
-      <span class="step-sep"></span>
-      <button type="button" class="step" data-step="2">
-        <span class="step-num">2</span>
-        <span class="step-info"><span class="step-label">Consultation</span><span class="step-sub">Notes · compte-rendu</span></span>
-      </button>
-      <span class="step-sep"></span>
-      <button type="button" class="step" data-step="3">
-        <span class="step-num">3</span>
-        <span class="step-info"><span class="step-label">Clôture</span><span class="step-sub">Prescriptions · patient suivant</span></span>
-      </button>
+      <div class="stepper-steps">
+        <button type="button" class="step active" data-step="1">
+          <span class="step-num">1</span>
+          <span class="step-info"><span class="step-label">Ouverture</span><span class="step-sub">Antécédents · traitements · histoire</span></span>
+        </button>
+        <span class="step-sep"></span>
+        <button type="button" class="step" data-step="2">
+          <span class="step-num">2</span>
+          <span class="step-info"><span class="step-label">Consultation</span><span class="step-sub">Notes · compte-rendu</span></span>
+        </button>
+        <span class="step-sep"></span>
+        <button type="button" class="step" data-step="3">
+          <span class="step-num">3</span>
+          <span class="step-info"><span class="step-label">Clôture</span><span class="step-sub">Prescriptions · patient suivant</span></span>
+        </button>
+      </div>
+      <div class="stepper-patient" id="ct-stepper-patient">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <span><b data-ct-banner-name>Patient</b><span data-ct-banner-age></span></span>
+      </div>
     </div>
 
     <div class="alert alert-info" id="ct-restored" style="margin:0 0 18px"></div>
@@ -1240,10 +1312,6 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
     <!-- Étape 2 — Consultation -->
     <div class="consult-pane" id="ct-pane-2">
-      <div class="consult-patient-banner" data-ct-banner>
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-        <span>Consultation en cours — <b data-ct-banner-name>Patient</b><span data-ct-banner-age></span></span>
-      </div>
       <div class="card">
       <div class="card-title">Consultation du jour</div>
       <div class="field">
@@ -1285,38 +1353,45 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
     <!-- Étape 3 — Clôture : prescriptions puis patient suivant -->
     <div class="consult-pane" id="ct-pane-3">
-      <div class="consult-patient-banner" data-ct-banner>
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-        <span>Clôture du dossier — <b data-ct-banner-name>Patient</b><span data-ct-banner-age></span></span>
-      </div>
-
       <div class="card">
         <div class="card-title">Prescriptions de fin de consultation</div>
         <p style="font-size:13px;color:var(--text-muted);margin:-8px 0 18px">Cochez les examens à prescrire — les suggestions s'adaptent à votre spécialité. L'ordonnance est générée instantanément, sans IA.</p>
 
-        <div class="rx-cat">
-          <div class="rx-cat-title">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6.3L4.7 18a2 2 0 001.8 3h11a2 2 0 001.8-3L14 9.3V3"/></svg>
+        <details class="disclosure rx-disclosure" data-rx-cat="bio">
+          <summary class="disclosure-summary">
+            <svg class="disclosure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 3h6M10 3v6.3L4.7 18a2 2 0 001.8 3h11a2 2 0 001.8-3L14 9.3V3"/></svg>
             Biologie
+            <span class="disclosure-count" data-rx-count="bio"></span>
+            <svg class="disclosure-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="disclosure-body">
+            <div class="rx-chips" id="rx-bio"></div>
           </div>
-          <div class="rx-chips" id="rx-bio"></div>
-        </div>
+        </details>
 
-        <div class="rx-cat">
-          <div class="rx-cat-title">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 8v.01M12 16v.01M8 12h.01M16 12h.01"/></svg>
+        <details class="disclosure rx-disclosure" data-rx-cat="img">
+          <summary class="disclosure-summary">
+            <svg class="disclosure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="4"/><path d="M12 8v.01M12 16v.01M8 12h.01M16 12h.01"/></svg>
             Imagerie
+            <span class="disclosure-count" data-rx-count="img"></span>
+            <svg class="disclosure-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="disclosure-body">
+            <div class="rx-chips" id="rx-img"></div>
           </div>
-          <div class="rx-chips" id="rx-img"></div>
-        </div>
+        </details>
 
-        <div class="rx-cat">
-          <div class="rx-cat-title">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <details class="disclosure rx-disclosure" data-rx-cat="soin">
+          <summary class="disclosure-summary">
+            <svg class="disclosure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             Soins &amp; protocoles
+            <span class="disclosure-count" data-rx-count="soin"></span>
+            <svg class="disclosure-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </summary>
+          <div class="disclosure-body">
+            <div class="rx-chips" id="rx-soin"></div>
           </div>
-          <div class="rx-chips" id="rx-soin"></div>
-        </div>
+        </details>
 
         <div class="field rx-free">
           <label class="label"><span>Autres examens ou soins</span><span class="label-opt">Une ligne par prescription</span></label>
@@ -1368,17 +1443,23 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     <h1 class="page-title">Lettre de liaison</h1>
     <p class="page-sub">Adressez un patient à un confrère spécialiste à partir de vos notes.</p>
 
-    <div class="quick-tpl-bar" id="tpl-liaison" style="display:none">
-      <span class="quick-tpl-label">Modèles rapides</span>
-      <div class="quick-tpl-row" id="tpl-liaison-row"></div>
-    </div>
-
-    <div class="page-actions">
-      <button class="btn btn-ghost" id="open-doctolib-l">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
-        Importer depuis Doctolib
-      </button>
-    </div>
+    <details class="disclosure">
+      <summary class="disclosure-summary">
+        <svg class="disclosure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/></svg>
+        Utiliser un modèle
+        <svg class="disclosure-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </summary>
+      <div class="disclosure-body">
+        <div class="quick-tpl-bar" id="tpl-liaison" style="display:none">
+          <span class="quick-tpl-label">Modèles rapides</span>
+          <div class="quick-tpl-row" id="tpl-liaison-row"></div>
+        </div>
+        <button class="btn btn-ghost" id="open-doctolib-l">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
+          Importer depuis Doctolib
+        </button>
+      </div>
+    </details>
 
     <div class="field-row">
       <div class="field">
@@ -1487,17 +1568,23 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     <h1 class="page-title">Compte-rendu de consultation</h1>
     <p class="page-sub">Transformez des notes en compte-rendu structuré, sans passer par le parcours guidé. Pour une consultation complète (antécédents, prescriptions, clôture), utilisez « Nouvelle consultation ».</p>
 
-    <div class="quick-tpl-bar" id="tpl-cr" style="display:none">
-      <span class="quick-tpl-label">Modèles rapides</span>
-      <div class="quick-tpl-row" id="tpl-cr-row"></div>
-    </div>
-
-    <div class="page-actions">
-      <button class="btn btn-ghost" id="open-doctolib-c">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
-        Importer depuis Doctolib
-      </button>
-    </div>
+    <details class="disclosure">
+      <summary class="disclosure-summary">
+        <svg class="disclosure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/></svg>
+        Utiliser un modèle
+        <svg class="disclosure-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </summary>
+      <div class="disclosure-body">
+        <div class="quick-tpl-bar" id="tpl-cr" style="display:none">
+          <span class="quick-tpl-label">Modèles rapides</span>
+          <div class="quick-tpl-row" id="tpl-cr-row"></div>
+        </div>
+        <button class="btn btn-ghost" id="open-doctolib-c">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
+          Importer depuis Doctolib
+        </button>
+      </div>
+    </details>
 
     <div class="field-row">
       <div class="field">
@@ -1740,10 +1827,19 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     <h1 class="page-title">Ordonnance médicale</h1>
     <p class="page-sub">Rédigez une ordonnance structurée, conforme aux bonnes pratiques HAS/ANSM.</p>
 
-    <div class="quick-tpl-bar" id="tpl-ordonnance" style="display:none">
-      <span class="quick-tpl-label">Modèles rapides</span>
-      <div class="quick-tpl-row" id="tpl-ordonnance-row"></div>
-    </div>
+    <details class="disclosure">
+      <summary class="disclosure-summary">
+        <svg class="disclosure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.4"/><rect x="14" y="3" width="7" height="7" rx="1.4"/><rect x="3" y="14" width="7" height="7" rx="1.4"/><rect x="14" y="14" width="7" height="7" rx="1.4"/></svg>
+        Utiliser un modèle
+        <svg class="disclosure-chevron" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </summary>
+      <div class="disclosure-body">
+        <div class="quick-tpl-bar" id="tpl-ordonnance" style="display:none">
+          <span class="quick-tpl-label">Modèles rapides</span>
+          <div class="quick-tpl-row" id="tpl-ordonnance-row"></div>
+        </div>
+      </div>
+    </details>
 
     <div class="field-row">
       <div class="field">
@@ -4537,14 +4633,17 @@ function consultComposedNotes() {
   return sections.join('\n\n');
 }
 
-function consultUpdateBanner() {
-  const name = document.getElementById('ct-patient').value.trim() || 'Patient sans nom';
+// Contexte patient fusionné dans l'en-tête du stepper (remplace les deux
+// bandeaux dupliqués des étapes 2 et 3). Ne s'affiche que si un nom a été
+// saisi : un bandeau vide n'apporte rien tant que le dossier est ouvert.
+function consultUpdateStepperContext() {
+  const name = document.getElementById('ct-patient').value.trim();
   const age  = document.getElementById('ct-age').value.trim();
-  document.querySelectorAll('[data-ct-banner]').forEach(b => {
-    b.querySelector('[data-ct-banner-name]').textContent = name;
-    b.querySelector('[data-ct-banner-age]').textContent = age ? ' · ' + age : '';
-    b.classList.add('show');
-  });
+  const el = document.getElementById('ct-stepper-patient');
+  if (!name) { el.classList.remove('show'); return; }
+  el.querySelector('[data-ct-banner-name]').textContent = name;
+  el.querySelector('[data-ct-banner-age]').textContent = age ? ' · ' + age : '';
+  el.classList.add('show');
 }
 
 function ctGoto(step) {
@@ -4557,13 +4656,16 @@ function ctGoto(step) {
     s.classList.toggle('active', n === step);
     s.classList.toggle('done', n < step);
   });
-  consultUpdateBanner();
+  // Le titre + sous-titre n'ont leur place qu'à l'ouverture : dès l'étape 2,
+  // le stepper (+ son contexte patient) suffit à se situer.
+  document.getElementById('ct-intro').classList.toggle('step-hidden', step !== 1);
+  consultUpdateStepperContext();
   placeClinicalSettings('consult');
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 function consultOnEnter() {
-  consultUpdateBanner();
+  consultUpdateStepperContext();
   if (!consultInitialized) {
     consultInitialized = true;
     renderRxChips();
@@ -4587,6 +4689,17 @@ const RX_SPECIALTY = {
   'Médecin généraliste':{ bio: ['HbA1c', 'Ferritine', 'Vitamine D'], img: ['IRM lombaire'], soin: ['Consultation spécialisée'] },
 };
 
+// Met à jour le badge de comptage d'une catégorie repliable : une section
+// fermée après sélection doit rester lisible sans qu'on ait à la rouvrir
+// pour se souvenir de ce qu'on y a cochée.
+function updateRxCount(cat) {
+  const badge = document.querySelector('[data-rx-count="' + cat + '"]');
+  if (!badge) return;
+  const n = document.querySelectorAll('#rx-' + cat + ' .chip.on').length;
+  badge.textContent = n;
+  badge.classList.toggle('show', n > 0);
+}
+
 function renderRxChips() {
   const specs = (me && (Array.isArray(me.specialites) ? me.specialites : [me.specialite])) || [];
   const extra = specs.map(s => RX_SPECIALTY[s]).find(Boolean) || {};
@@ -4601,9 +4714,10 @@ function renderRxChips() {
       chip.type = 'button';
       chip.className = 'chip';
       chip.textContent = label;
-      chip.addEventListener('click', () => chip.classList.toggle('on'));
+      chip.addEventListener('click', () => { chip.classList.toggle('on'); updateRxCount(cat); });
       host.appendChild(chip);
     });
+    updateRxCount(cat);
   });
 }
 
@@ -4712,6 +4826,8 @@ function consultDoCloture() {
     document.getElementById(id).value = '';
   });
   document.querySelectorAll('#ct-pane-3 .chip.on').forEach(c => c.classList.remove('on'));
+  ['bio', 'img', 'soin'].forEach(updateRxCount);
+  document.querySelectorAll('#ct-pane-3 details.disclosure').forEach(d => { d.open = false; });
   ['ct-result','rx-result'].forEach(id => document.getElementById(id).classList.remove('show'));
   document.getElementById('ct-out').dataset.plain = '';
   document.getElementById('ct-out').innerHTML = '';
@@ -4745,7 +4861,7 @@ document.getElementById('ct-rx-generate').addEventListener('click', consultRxGen
 document.getElementById('ct-close-btn').addEventListener('click', consultOpenCloture);
 document.getElementById('cloture-confirm').addEventListener('click', consultDoCloture);
 ['ct-patient', 'ct-age'].forEach(id =>
-  document.getElementById(id).addEventListener('input', consultUpdateBanner));
+  document.getElementById(id).addEventListener('input', consultUpdateStepperContext));
 consultOnEnter();
 
 // ═══════════════════════════════════════════════════════════════════════
