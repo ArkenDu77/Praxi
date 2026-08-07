@@ -12,22 +12,35 @@ const helmet     = require('helmet');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
-const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'praxi-admin-dev';
 
-// ── AUTH (JWT) ──
-const JWT_SECRET     = process.env.JWT_SECRET || 'praxi-dev-secret-change-me';
+// ── SECRETS ──
+// Les valeurs ci-dessous n'existent que pour le confort du développement local.
+// Le garde-fou ne peut pas dépendre de NODE_ENV : aucun hébergeur ne garantit
+// que la variable est positionnée à l'exécution, et un JWT_SECRET connu suffit
+// à forger un jeton valable pour n'importe quel compte médecin (donc à lire et
+// générer des documents en son nom), un ADMIN_TOKEN connu à vider la liste des
+// inscrits. On refuse donc de démarrer dès qu'un secret par défaut est en place,
+// sauf demande explicite pour le poste de développement.
+const DEV_JWT_SECRET  = 'praxi-dev-secret-change-me';
+const DEV_ADMIN_TOKEN = 'praxi-admin-dev';
+
+const ADMIN_TOKEN    = process.env.ADMIN_TOKEN || DEV_ADMIN_TOKEN;
+const JWT_SECRET     = process.env.JWT_SECRET  || DEV_JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
-// Fail fast en production si les secrets critiques ne sont pas définis
-if (process.env.NODE_ENV === 'production') {
-  if (!process.env.JWT_SECRET) {
-    console.error('[FATAL] JWT_SECRET non défini — arrêt du serveur');
-    process.exit(1);
-  }
-  if (!process.env.ADMIN_TOKEN) {
-    console.error('[FATAL] ADMIN_TOKEN non défini — arrêt du serveur');
-    process.exit(1);
-  }
+const secretsParDefaut = [
+  JWT_SECRET  === DEV_JWT_SECRET  ? 'JWT_SECRET'  : null,
+  ADMIN_TOKEN === DEV_ADMIN_TOKEN ? 'ADMIN_TOKEN' : null,
+].filter(Boolean);
+
+if (secretsParDefaut.length && process.env.PRAXI_ALLOW_DEV_SECRETS !== '1') {
+  console.error(
+    `[FATAL] Secret(s) par défaut détecté(s) : ${secretsParDefaut.join(', ')}.\n` +
+    "        Un JWT_SECRET par défaut laisse forger un jeton pour n'importe quel compte médecin.\n" +
+    "        Un ADMIN_TOKEN par défaut ouvre /api/admin/list (identités, emails, villes des inscrits).\n" +
+    '        Définissez ces variables dans l\'environnement — ou PRAXI_ALLOW_DEV_SECRETS=1 en local.'
+  );
+  process.exit(1);
 }
 
 // ── CLIENT IA (Anthropic) ──
@@ -118,24 +131,57 @@ const DATA_DIR = process.env.DATA_DIR || __dirname;
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
 const DB_PATH = path.join(DATA_DIR, 'waitlist.json');
 
-function readDB() {
-  try { return JSON.parse(fs.readFileSync(DB_PATH, 'utf8')); }
-  catch { return { entries: [], nextId: 1 }; }
+/**
+ * Lecture d'un fichier JSON de données.
+ *
+ * Seule l'absence du fichier (premier démarrage) donne la valeur par défaut.
+ * Toute autre erreur remonte : un `catch` qui renvoyait une base vide sur un
+ * JSON tronqué transformait un incident récupérable en perte définitive, car
+ * la première écriture suivante persistait le vide par-dessus les comptes.
+ */
+function readJsonFile(file, parDefaut) {
+  let brut;
+  try {
+    brut = fs.readFileSync(file, 'utf8');
+  } catch (err) {
+    if (err.code === 'ENOENT') return parDefaut;
+    throw err;
+  }
+  try {
+    return JSON.parse(brut);
+  } catch (_) {
+    throw new Error(
+      `${path.basename(file)} est illisible (JSON corrompu). ` +
+      'Restaurez une sauvegarde avant de repartir : écrire par-dessus effacerait les données restantes.'
+    );
+  }
 }
-function writeDB(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
+
+/**
+ * Écriture atomique : fichier temporaire puis `rename`, qui est atomique sur un
+ * même système de fichiers. Un `writeFileSync` direct laisse un JSON tronqué si
+ * le processus est arrêté au milieu — sur Railway, un redéploiement pendant une
+ * inscription suffisait.
+ */
+function writeJsonFile(file, data) {
+  const tmp = `${file}.${process.pid}.tmp`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(data, null, 2));
+    fs.renameSync(tmp, file);
+  } catch (err) {
+    try { fs.unlinkSync(tmp); } catch (_) {}
+    throw err;
+  }
 }
+
+function readDB()      { return readJsonFile(DB_PATH, { entries: [], nextId: 1 }); }
+function writeDB(data) { writeJsonFile(DB_PATH, data); }
 
 // ── STOCKAGE UTILISATEURS (médecins) ──
 const USERS_PATH = path.join(DATA_DIR, 'users.json');
 
-function readUsers() {
-  try { return JSON.parse(fs.readFileSync(USERS_PATH, 'utf8')); }
-  catch { return { users: [], nextId: 1 }; }
-}
-function writeUsers(data) {
-  fs.writeFileSync(USERS_PATH, JSON.stringify(data, null, 2));
-}
+function readUsers()      { return readJsonFile(USERS_PATH, { users: [], nextId: 1 }); }
+function writeUsers(data) { writeJsonFile(USERS_PATH, data); }
 function getUserById(id) {
   return readUsers().users.find(u => u.id === id) || null;
 }
@@ -210,16 +256,36 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false,
 }));
 
-// CORS : autoriser uniquement l'origine de production + localhost dev
-const ALLOWED_ORIGINS = [
+// Railway — comme tout PaaS — place un reverse proxy devant l'application :
+// l'IP réelle du client arrive dans X-Forwarded-For. Lire cet en-tête à la main
+// revient à laisser l'appelant choisir la clé de son propre compteur : un
+// en-tête différent à chaque requête rendait le plafond de /api/auth/login
+// (10 essais par heure) sans effet, donc les mots de passe attaquables sans
+// limite. `trust proxy` délègue la question à Express, qui ne retient que le
+// dernier maillon réellement fourni par l'infrastructure.
+app.set('trust proxy', Number(process.env.TRUST_PROXY || 1));
+
+/** IP du client telle qu'Express l'a résolue, normalisée IPv4-mapped. */
+function clientIp(req) {
+  return String(req.ip || req.socket.remoteAddress || '').replace(/^::ffff:/, '');
+}
+
+// CORS : autoriser uniquement l'origine de production + localhost dev.
+// Comparaison stricte, et non par préfixe : `origin.startsWith(APP_URL)`
+// acceptait aussi `https://praxi.up.railway.app.exemple-malveillant.fr`.
+const ALLOWED_ORIGINS = new Set([
   process.env.APP_URL || 'http://localhost:3001',
   'http://localhost:3000',
   'http://localhost:3001',
-].filter(Boolean);
+].filter(Boolean).map(o => o.replace(/\/+$/, '')));
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (!origin || ALLOWED_ORIGINS.some(o => origin.startsWith(o))) {
-    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  // Sans en-tête Origin, la requête est same-origin ou hors navigateur : aucun
+  // en-tête CORS n'est nécessaire, et renvoyer `*` élargissait inutilement.
+  if (origin && ALLOWED_ORIGINS.has(origin.replace(/\/+$/, ''))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization,x-admin-token');
     res.setHeader('Access-Control-Max-Age', '86400');
@@ -254,12 +320,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Rate limit (mémoire) — chaque route a son propre compteur via le namespace `ns`
 const rlMap = new Map();
+const RL_WINDOW = 60 * 60 * 1000;
+let rlDernierNettoyage = 0;
+
+// La carte n'était jamais purgée : chaque IP vue laissait une entrée à vie, et
+// une boucle de requêtes depuis des IP variées la faisait croître sans borne
+// jusqu'à saturer la mémoire du conteneur. On balaie les fenêtres expirées.
+function rlNettoyer(now) {
+  if (now - rlDernierNettoyage < RL_WINDOW) return;
+  rlDernierNettoyage = now;
+  for (const [key, r] of rlMap) if (now > r.reset) rlMap.delete(key);
+}
+
 function rateLimit(ip, max = 3, ns = 'default') {
   const key = ns + ':' + ip;
   const now = Date.now();
-  const win = 60 * 60 * 1000;
-  const r   = rlMap.get(key) || { n: 0, reset: now + win };
-  if (now > r.reset) { r.n = 0; r.reset = now + win; }
+  rlNettoyer(now);
+  const r   = rlMap.get(key) || { n: 0, reset: now + RL_WINDOW };
+  if (now > r.reset) { r.n = 0; r.reset = now + RL_WINDOW; }
   r.n++;
   rlMap.set(key, r);
   return r.n <= max;
@@ -293,11 +371,17 @@ function parseSpecialites(body) {
   } else if (typeof body.specialite === 'string') {
     list = body.specialite.split(',');
   }
+  // Validation contre la liste fermée, la même que celle du menu déroulant.
+  // La spécialité est reprise telle quelle dans le prompt système de chaque
+  // document (« Tu es un médecin expert en … ») : un champ libre y injectait du
+  // texte arbitraire, et une simple faute de frappe dégradait silencieusement
+  // tous les documents du compte sans que rien ne le signale.
+  const connues = new Map(SPECIALITES.map(x => [x.toLowerCase(), x]));
   const seen = new Set();
   const out = [];
   for (const item of list) {
-    const v = s(item);
-    if (v && !seen.has(v)) { seen.add(v); out.push(v); }
+    const officielle = connues.get(s(item).toLowerCase());
+    if (officielle && !seen.has(officielle)) { seen.add(officielle); out.push(officielle); }
   }
   return out;
 }
@@ -306,7 +390,7 @@ function parseSpecialites(body) {
 
 // POST /api/waitlist
 app.post('/api/waitlist', (req, res) => {
-  const ip = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ip = clientIp(req);
 
   if (!rateLimit(ip, 3, 'waitlist')) {
     return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
@@ -657,7 +741,7 @@ function signToken(user) {
 
 // POST /api/auth/register
 app.post('/api/auth/register', async (req, res) => {
-  const ipReg = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ipReg = clientIp(req);
   if (!rateLimit(ipReg, 5, 'register')) {
     return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
   }
@@ -682,12 +766,19 @@ app.post('/api/auth/register', async (req, res) => {
   if (!ville)                errors.push('Ville requise');
   if (errors.length) return res.status(400).json({ error: errors.join(', ') });
 
+  // Le hachage est calculé AVANT la lecture du fichier : c'est le seul `await`
+  // de la route, et le laisser entre readUsers() et writeUsers() ouvrait une
+  // fenêtre où deux inscriptions simultanées lisaient la même base et où la
+  // seconde écriture écrasait la première — compte perdu, et `nextId` réattribué
+  // au même entier. Lecture, modification et écriture sont maintenant purement
+  // synchrones, donc indivisibles dans la boucle d'événements de Node.
+  const passwordHash = await bcrypt.hash(password, 10);
+
   const db = readUsers();
   if (db.users.some(u => u.email === email)) {
     return res.status(409).json({ error: 'Un compte existe déjà avec cet email.' });
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
   const user = {
     id: db.nextId++,
     prenom, nom, email, passwordHash,
@@ -706,7 +797,7 @@ app.post('/api/auth/register', async (req, res) => {
 
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
-  const ipLogin = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ipLogin = clientIp(req);
   if (!rateLimit(ipLogin, 10, 'login')) {
     return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
   }
@@ -1293,22 +1384,65 @@ function analyzeBySpecialty(source, body, deductions, suggestions) {
   }
 }
 
+// Guidance par défaut, par type de document.
+//
+// Elle était intégralement écrite pour la lettre de liaison : sur un
+// compte-rendu ou une ordonnance, le médecin lisait « le dossier permet une
+// lettre de liaison structurée » et des justifications adressées à un
+// « spécialiste destinataire » qui n'existe pas. Ce n'était pas un libellé mal
+// choisi mais du contenu produit pour le mauvais document.
+//
+// Un compte-rendu est archivé, pas envoyé : ce qui compte est la complétude du
+// dossier pour la consultation suivante, pas ce qu'un confrère y cherchera.
+const GUIDANCE_DOCUMENT = {
+  liaison: {
+    deduction: 'Le dossier fourni permet une lettre de liaison structurée ; une synthèse orientée vers la question clinique du spécialiste est recommandée.',
+    suggestions: [
+      { id:'retour', label:'Solliciter un retour d’avis après la consultation', rationale:'Facilite le suivi et la coordination des soins', category:'orientation', confidence:90 },
+      { id:'antecedents', label:'Mentionner les antécédents pertinents s’ils sont connus', rationale:'Enrichit le dossier sans surinterpréter', category:'clinique', confidence:78 },
+      { id:'traitements', label:'Récapituler les traitements en cours et leur tolérance', rationale:'Information utile au spécialiste destinataire', category:'clinique', confidence:82 },
+      { id:'allergies', label:'Préciser les allergies connues ou leur absence', rationale:'Sécurité thérapeutique', category:'clinique', confidence:75 },
+      { id:'gravite', label:'Signaler l’absence de signe de gravité si applicable', rationale:'Élément rassurant pour le confrère', category:'clinique', confidence:74 },
+    ],
+  },
+  cr: {
+    deduction: 'Le dossier fourni permet un compte-rendu structuré ; une synthèse diagnostique explicite et un délai de réévaluation en renforceraient la valeur pour le suivi.',
+    suggestions: [
+      { id:'synthese', label:'Formuler explicitement la synthèse diagnostique', rationale:'C’est la rubrique relue en premier à la consultation suivante', category:'clinique', confidence:88 },
+      { id:'constantes', label:'Reporter les constantes mesurées ce jour', rationale:'Permet de suivre l’évolution d’une consultation à l’autre', category:'clinique', confidence:84 },
+      { id:'traitements', label:'Récapituler les traitements en cours et leur tolérance', rationale:'Évite de reconduire un traitement mal supporté', category:'clinique', confidence:82 },
+      { id:'allergies', label:'Préciser les allergies connues ou leur absence', rationale:'Sécurité thérapeutique', category:'clinique', confidence:75 },
+      { id:'suivi', label:'Fixer un délai de réévaluation', rationale:'Rend le suivi vérifiable à la consultation suivante', category:'orientation', confidence:80 },
+    ],
+  },
+  ordonnance: {
+    deduction: 'Les éléments fournis permettent une ordonnance conforme ; la posologie complète et la durée de traitement en conditionnent la validité.',
+    suggestions: [
+      { id:'posologie', label:'Vérifier posologie, forme et durée pour chaque ligne', rationale:'Une ordonnance incomplète est refusée en pharmacie', category:'clinique', confidence:92 },
+      { id:'allergies', label:'Contrôler les allergies connues du patient', rationale:'Sécurité thérapeutique', category:'clinique', confidence:88 },
+      { id:'interactions', label:'Vérifier les interactions avec le traitement en cours', rationale:'Risque iatrogène, particulièrement en polymédication', category:'clinique', confidence:85 },
+      { id:'surveillance', label:'Préciser la surveillance biologique si elle s’impose', rationale:'Certaines molécules l’exigent avant renouvellement', category:'orientation', confidence:78 },
+    ],
+  },
+};
+// Certificats et protocoles se rapprochent du compte-rendu : document conservé,
+// pas de destinataire à convaincre.
+GUIDANCE_DOCUMENT.consult    = GUIDANCE_DOCUMENT.cr;
+GUIDANCE_DOCUMENT.mdph       = GUIDANCE_DOCUMENT.cr;
+GUIDANCE_DOCUMENT.ald        = GUIDANCE_DOCUMENT.cr;
+GUIDANCE_DOCUMENT.certificat = GUIDANCE_DOCUMENT.cr;
+
 function ensureMinimumGuidance({ deductions, suggestions, source, body }) {
-  if (deductions.length === 0)
-    pushUniqueDeduction(deductions, 'Le dossier fourni permet une lettre de liaison structurée ; une synthèse orientée vers la question clinique du spécialiste est recommandée.');
-  if (body.motif)
+  const guidance = GUIDANCE_DOCUMENT[body.documentType] || GUIDANCE_DOCUMENT.liaison;
+
+  if (deductions.length === 0) pushUniqueDeduction(deductions, guidance.deduction);
+  // Ces deux déductions ne valent que pour un document adressé à un confrère.
+  if (body.motif && body.documentType === 'liaison')
     pushUniqueDeduction(deductions, `L’adressage pour « ${s(body.motif, 120)} » justifie de préciser au confrère les éléments clés du contexte et la question posée.`);
   if (body.specialiste || body.specialty)
     pushUniqueDeduction(deductions, `La demande d’avis ${s(body.specialiste || body.specialty, 80)} appelle une mise en avant des éléments pertinents pour cette spécialité.`);
 
-  const fallback = [
-    { id:'retour', label:'Solliciter un retour d’avis après la consultation', rationale:'Facilite le suivi et la coordination des soins', category:'orientation', confidence:90 },
-    { id:'antecedents', label:'Mentionner les antécédents pertinents s’ils sont connus', rationale:'Enrichit le dossier sans surinterpretér', category:'clinique', confidence:78 },
-    { id:'traitements', label:'Récapituler les traitements en cours et leur tolérance', rationale:'Information utile au spécialiste destinataire', category:'clinique', confidence:82 },
-    { id:'allergies', label:'Préciser les allergies connues ou leur absence', rationale:'Sécurité thérapeutique', category:'clinique', confidence:75 },
-    { id:'gravite', label:'Signaler l’absence de signe de gravité si applicable', rationale:'Élément rassurant pour le confrère', category:'clinique', confidence:74 }
-  ];
-  for (const item of fallback) {
+  for (const item of guidance.suggestions) {
     if (suggestions.length >= 3) break;
     pushUniqueSuggestion(suggestions, item);
   }
@@ -1454,6 +1588,62 @@ function finalizeDocument(text) {
   return stripPraxiArtifacts(text);
 }
 
+// Jetons de pseudonymisation reconnus, et ce qu'ils masquent.
+const JETONS_IDENTITE = [
+  { jeton: 'PATIENT_CONFIDENTIEL', quoi: 'nom du patient' },
+  { jeton: 'AGE_PATIENT',          quoi: "âge du patient" },
+  { jeton: 'DDN_PATIENT',          quoi: 'date de naissance' },
+];
+const JETONS_MARQUEURS = [
+  { motif: /\[adresse retirée \d+\]/,  exemple: '[adresse retirée 1]', quoi: 'adresse' },
+  { motif: /\[numéro retiré \d+\]/,    exemple: '[numéro retiré 1]',   quoi: 'numéro' },
+];
+
+/**
+ * Consigne sur les jetons de pseudonymisation, construite à partir de ce que la
+ * requête contient RÉELLEMENT.
+ *
+ * La version précédente annonçait la liste complète en dur. Le modèle lisait donc
+ * « AGE_PATIENT représente une donnée disponible mais masquée, recopie-la à
+ * chaque emplacement naturel de l'âge » y compris quand aucun âge n'avait été
+ * transmis — l'écran Compte-rendu n'ayant pas de champ Âge, le jeton ne pouvait
+ * être ni envoyé ni restitué, et sortait en clair dans le document signé.
+ *
+ * Les jetons absents sont désormais interdits explicitement : sans cela, le
+ * modèle continue d'en inventer par analogie avec ceux qu'on lui présente.
+ */
+function consigneJetons(req) {
+  const corps = JSON.stringify(req.body || {});
+
+  const presents = JETONS_IDENTITE.filter(t => corps.includes(t.jeton));
+  const absents  = JETONS_IDENTITE.filter(t => !corps.includes(t.jeton));
+  const marqueurs = JETONS_MARQUEURS.filter(m => m.motif.test(corps));
+
+  const listePresents = [
+    ...presents.map(t => t.jeton),
+    ...marqueurs.map(m => `des marqueurs de la forme ${m.exemple}`),
+  ];
+
+  let regle = '';
+  if (listePresents.length) {
+    regle +=
+      `JETONS DE PSEUDONYMISATION : ${listePresents.join(', ')} ` +
+      `${listePresents.length > 1 ? 'représentent' : 'représente'} des données réellement disponibles mais masquées. ` +
+      "Recopie-les strictement, à l'identique, à chaque emplacement naturel, " +
+      "sans les reformuler, sans les traduire, sans changer leur numéro, et sans écrire 'Information non renseignée' à leur place. ";
+  }
+
+  if (absents.length) {
+    regle +=
+      `INTERDICTION : n'écris JAMAIS ${absents.map(t => t.jeton).join(', ')} ` +
+      `dans le document — ${absents.length > 1 ? 'ces données ne sont pas fournies' : 'cette donnée n\'est pas fournie'} ` +
+      `(${absents.map(t => t.quoi).join(', ')}). ` +
+      "Omets naturellement la mention correspondante plutôt que d'écrire un jeton, un crochet ou une valeur inventée. ";
+  }
+
+  return regle;
+}
+
 function clinicalGenerationRules(req, documentType) {
   const mode = ['express','standard','detaille'].includes(req.body.mode) ? req.body.mode : 'standard';
   const lengths = { express: 'EXPRESS : 5 à 8 lignes, lecture en moins de 20 secondes', standard: 'STANDARD : 10 à 15 lignes', detaille: 'DÉTAILLÉ : complet mais sans répétition' };
@@ -1471,7 +1661,12 @@ function clinicalGenerationRules(req, documentType) {
     "Les suggestions explicitement validées par le médecin s'intègrent naturellement dans une ou deux phrases cliniques du texte (ex. 'Un Holter ECG pourrait être utile si vous le jugez indiqué'), jamais dans une rubrique séparée. " +
     "S'il n'y a aucune suggestion validée, n'ajoute strictement rien à ce sujet. " +
     "Ne transforme jamais une suggestion en prescription, diagnostic, examen réalisé ou résultat. N'invente jamais âge, sexe, poids, IMC, antécédent, traitement, constante, résultat, interprétation d'ECG, diagnostic ou examen. " +
-    "Les jetons PATIENT_CONFIDENTIEL et AGE_PATIENT représentent des données disponibles mais masquées : recopie-les strictement à chaque emplacement naturel du nom et de l'âge, sans les reformuler et sans écrire 'Information non renseignée' à leur place. " +
+    // Les jetons sont posés par le poste du médecin avant l'envoi : les données
+    // identifiantes ne quittent pas son navigateur, et c'est lui qui les
+    // replace dans le document reçu. Le modèle doit donc les recopier au
+    // caractère près, sinon la restitution échoue et le document sort avec un
+    // trou à la place du nom, de l'âge ou de la date de naissance.
+    consigneJetons(req) +
     "Si une autre donnée manque, omets naturellement la phrase ou la rubrique au lieu de répéter 'Information non renseignée', sauf champ légal strictement obligatoire. N'utilise aucune valeur chiffrée absente des données source. " +
     `Éléments attendus par la spécialité destinataire : ${focus.length ? focus.join(' ; ') : 'non spécifiés'}. Ne les présente que s'ils figurent dans la source.\n` +
     `Déductions identifiées (à formuler comme interprétations cliniques dans le texte, jamais comme faits établis) : ${deductions.length ? deductions.join(' ; ') : 'aucune'}.\n` +
@@ -1526,10 +1721,66 @@ function contexteMeta(contexte) {
   };
 }
 
+/**
+ * Extrait les valeurs numériques d'un texte sous forme normalisée.
+ * « 1 500 », « 1500 » et « 1500,0 » désignent la même dose : on les ramène à la
+ * même chaîne pour pouvoir les comparer valeur par valeur.
+ */
+function valeursNumeriques(texte) {
+  return (String(texte || '')
+    .replace(/(\d)[  ](?=\d{3}\b)/g, '$1')          // séparateur de milliers
+    .match(/\d+(?:[.,]\d+)?/g) || [])
+    .map(n => n.replace(',', '.').replace(/\.0+$/, '').replace(/^0+(?=\d)/, ''));
+}
+
+/**
+ * Contrôle qu'aucune valeur chiffrée du document ne sort de nulle part.
+ *
+ * La comparaison est faite valeur par valeur. La version précédente testait
+ * `source.includes(n)` : une posologie inventée à « 500 mg » passait sans alerte
+ * dès que la source contenait « 1500 » ou l'année « 2500 » quelque part — c'est
+ * exactement le cas que le contrôle est censé attraper.
+ *
+ * Deux exclusions volontaires, pour que le signal reste lisible :
+ *  - les numéros de liste en début de ligne (« 1. », « 2) »), que le modèle
+ *    produit sur toute ordonnance et qui ne sont pas des valeurs cliniques ;
+ *  - la date du jour, que les documents signés portent par construction.
+ */
+const MOIS_FR = 'janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre';
+
+/**
+ * Retire du document ce qui n'est pas une valeur clinique et ne doit donc pas
+ * entrer dans le contrôle : numérotation de liste et expressions de date.
+ *
+ * Les dates sont retirées par leur FORME plutôt que par leurs chiffres. La
+ * version précédente autorisait globalement le quantième et le numéro de mois
+ * du jour : le 7 du mois, « 7 mg » inventé devenait indétectable. En retirant
+ * « le 07 août 2026 » en tant qu'expression, le faux positif disparaît sans
+ * ouvrir de trou dans le signal.
+ */
+function retirerNonClinique(document) {
+  return String(document || '')
+    // Numérotation de liste en début de ligne (« 1. », « 2) »).
+    .replace(/^[ \t]*\d+\s*[.)]\s/gm, '')
+    // « 07/08/2026 », « 7-8-26 ».
+    .replace(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/g, ' ')
+    // « le 07 août 2026 », « 1er janvier 2026 ».
+    .replace(new RegExp(`\\b\\d{1,2}(?:er)?\\s+(?:${MOIS_FR})\\s+\\d{4}\\b`, 'gi'), ' ')
+    // « août 2026 » sans quantième.
+    .replace(new RegExp(`\\b(?:${MOIS_FR})\\s+\\d{4}\\b`, 'gi'), ' ');
+}
+
 function documentSafety(document, source, user) {
-  const allowed = `${source}\n${medecinContext(user)}\n${new Date().getFullYear()}`;
-  const values = [...new Set((document.match(/\b\d+(?:[.,]\d+)?\b/g) || []))];
-  const unsupportedNumbers = values.filter(n => !allowed.includes(n));
+  const autorisees = new Set([
+    ...valeursNumeriques(source),
+    ...valeursNumeriques(medecinContext(user)),
+    // L'année courante peut figurer seule dans un en-tête, hors expression de
+    // date complète : elle reste tolérée.
+    String(new Date().getFullYear()),
+  ]);
+
+  const corps = retirerNonClinique(document);
+  const unsupportedNumbers = [...new Set(valeursNumeriques(corps))].filter(n => !autorisees.has(n));
   return { checked: true, unsupportedNumbers, requiresReview: unsupportedNumbers.length > 0 };
 }
 
@@ -1774,7 +2025,7 @@ app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
 
 // POST /api/auth/forgot-password — génère un token de réinitialisation et l'envoie par email
 app.post('/api/auth/forgot-password', async (req, res) => {
-  const ipFwd = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ipFwd = clientIp(req);
   if (!rateLimit(ipFwd, 3, 'forgot-password')) {
     return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
   }
@@ -1816,12 +2067,17 @@ app.post('/api/auth/reset-password', async (req, res) => {
   if (error === 'expired') return res.status(400).json({ error: 'Lien expiré. Faites une nouvelle demande.' });
   if (error || !user)      return res.status(400).json({ error: 'Lien invalide ou expiré.' });
 
+  // Hachage avant lecture, pour la même raison qu'à l'inscription : un `await`
+  // entre readUsers() et writeUsers() laissait une modification de profil
+  // concurrente écraser le nouveau mot de passe (ou l'inverse).
+  const nouveauHash = await bcrypt.hash(password, 10);
+
   const db  = readUsers();
   const idx = db.users.findIndex(u => u.id === user.id);
   if (idx === -1) return res.status(400).json({ error: 'Lien invalide ou expiré.' });
 
   // Changer le hash invalide automatiquement le token (signature liée à l'ancien hash).
-  db.users[idx].passwordHash = await bcrypt.hash(password, 10);
+  db.users[idx].passwordHash = nouveauHash;
   delete db.users[idx].resetToken;        // nettoyage d'éventuels anciens tokens stockés
   delete db.users[idx].resetTokenExpiry;
   writeUsers(db);
@@ -2090,7 +2346,13 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
 
 const MEDIA_TYPES_PHOTO = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_PHOTOS = 4;
-const MAX_PHOTO_BYTES = 4_500_000;   // limite API par image, marge comprise
+// Plafond par image ET plafond cumulé. Sans le second, quatre photos de 4,5 Mo
+// passaient la validation une à une puis se heurtaient à la limite de 20 Mo du
+// corps JSON : le médecin recevait « Fichiers trop volumineux » après l'envoi,
+// alors que chaque photo avait été annoncée comme acceptable. Le base64 pèse
+// ~4/3 de l'original, d'où la marge sur le cumul.
+const MAX_PHOTO_BYTES = 4_500_000;
+const MAX_PHOTOS_BYTES_TOTAL = 14_000_000;
 const BASE64_RE = /^[A-Za-z0-9+/]+={0,2}$/;
 
 /**
@@ -2106,6 +2368,7 @@ function parsePhotos(raw) {
   }
 
   const blocks = [];
+  let cumul = 0;
   for (const photo of raw) {
     let mediaType = '';
     let data = '';
@@ -2132,8 +2395,13 @@ function parsePhotos(raw) {
       return { blocks: [], erreur: 'Photo corrompue ou mal encodée.' };
     }
     // Taille décodée approchée — évite de décoder le buffer pour rien.
-    if (Math.floor(data.length * 3 / 4) > MAX_PHOTO_BYTES) {
-      return { blocks: [], erreur: 'Photo trop lourde (5 Mo maximum par image).' };
+    const octets = Math.floor(data.length * 3 / 4);
+    if (octets > MAX_PHOTO_BYTES) {
+      return { blocks: [], erreur: 'Photo trop lourde (4,5 Mo maximum par image).' };
+    }
+    cumul += octets;
+    if (cumul > MAX_PHOTOS_BYTES_TOTAL) {
+      return { blocks: [], erreur: 'Photos trop lourdes au total (14 Mo maximum). Réduisez leur nombre ou leur taille.' };
     }
 
     blocks.push({ type: 'image', source: { type: 'base64', media_type: mediaType, data } });
@@ -2227,7 +2495,7 @@ app.post('/api/avis-specialise', authenticateJWT, async (req, res) => {
   if (erreur) return res.status(400).json({ error: erreur });
 
   // Les appels vision + Opus sont coûteux : garde-fou par utilisateur.
-  const ipAvis = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ipAvis = clientIp(req);
   if (!rateLimit(`${req.user.id}:${ipAvis}`, 12, 'avis-specialise')) {
     return res.status(429).json({ error: 'Trop de demandes d\'avis. Réessayez dans quelques minutes.' });
   }
@@ -2344,7 +2612,7 @@ app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
 
   const specialite = getSpecialite(req.body.specialite);
 
-  const ipResume = (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim();
+  const ipResume = clientIp(req);
   if (!rateLimit(`${req.user.id}:${ipResume}`, 40, 'avis-resume')) {
     return res.status(429).json({ error: 'Trop de demandes de résumé. Réessayez dans quelques minutes.' });
   }
@@ -2556,8 +2824,16 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// SPA fallback
-app.get('*', (_req, res) => {
+// SPA fallback.
+// Les chemins /api et /admin en sont exclus : ils renvoyaient la page d'accueil
+// en HTML avec un code 200, que le front tentait de lire en JSON. Une faute de
+// frappe sur une route produisait donc « Unexpected token < » au lieu d'un 404
+// exploitable — et un 200 sur une route inexistante fausse toute supervision.
+app.use((req, res, next) => {
+  if (req.method !== 'GET') return next();
+  if (/^\/(api|admin)(\/|$)/.test(req.path)) {
+    return res.status(404).json({ error: 'Route inconnue.' });
+  }
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -2566,7 +2842,10 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`\n  Praxi backend ✓`);
     console.log(`  → http://localhost:${PORT}`);
-    console.log(`  → Admin : x-admin-token: ${ADMIN_TOKEN}`);
+    // Le jeton lui-même n'est pas journalisé : les logs d'un PaaS sont lisibles
+    // par tous les collaborateurs du projet et repartent souvent vers un
+    // agrégateur tiers. L'imprimer revenait à publier un accès administrateur.
+    console.log(`  → Admin : en-tête x-admin-token (valeur non journalisée)`);
     console.log(`  → Data  : waitlist.json · users.json`);
     console.log(`  → Auth  : JWT (${JWT_EXPIRES_IN})${process.env.JWT_SECRET ? '' : ' — ⚠ JWT_SECRET par défaut'}`);
     console.log(`  → IA    : ${anthropic ? `activée (${AI_MODEL})` : 'désactivée — ANTHROPIC_API_KEY manquante'}`);
@@ -2621,3 +2900,13 @@ function authorVoiceConstraint(authorSpec, destSpec) {
 
 module.exports = app;
 module.exports.finalizeDocument = finalizeDocument;
+// Exportés pour les tests : ce sont les deux fonctions dont une régression
+// silencieuse coûte le plus cher — un document faux non signalé, ou une base de
+// comptes écrasée par une lecture qui aurait dû échouer.
+module.exports.documentSafety = documentSafety;
+// Exposé pour les tests : c'est la fonction qui décide quels jetons de
+// pseudonymisation sont annoncés au modèle. En annoncer un qui n'a pas été
+// transmis le fait sortir en clair dans un document signé.
+module.exports.consigneJetons  = consigneJetons;
+module.exports.readJsonFile   = readJsonFile;
+module.exports.writeJsonFile  = writeJsonFile;

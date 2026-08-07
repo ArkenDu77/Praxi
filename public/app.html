@@ -88,9 +88,17 @@ html[data-theme="dark"] {
   --accent:    #38BDF8;
   --accent2:   #0EA5E9;
   --accent-contrast: #050A10;
-  --accent-dim: var(--accent-dim);
-  --accent-glow: var(--accent-glow);
-  --accent-border: var(--accent-border);
+  /* Ces trois variables se référençaient elles-mêmes (`--accent-dim: var(--accent-dim)`).
+     Une propriété personnalisée qui se cite elle-même est invalide au calcul :
+     elle prend la valeur « invalide garantie », et toute déclaration qui
+     l'utilise tombe. En thème sombre, les 45 usages de ces jetons étaient donc
+     sans effet — halo de focus des champs, fond de l'élément de menu actif,
+     pastille d'avatar, état sélectionné des onglets de vue. Le plus coûteux :
+     `.input:focus { box-shadow: 0 0 0 3px var(--accent-dim) }` disparaissait,
+     et le champ actif ne se distinguait plus que par 1 px de bordure. */
+  --accent-dim: rgba(56,189,248,0.11);
+  --accent-glow: rgba(56,189,248,0.28);
+  --accent-border: rgba(56,189,248,0.34);
   --highlight: #BAE6FD;
   --danger:    #F87171;
   --danger-dim: rgba(248,113,113,0.10);
@@ -273,12 +281,15 @@ a, button, input, select, textarea, summary, [role="button"],
   outline: none;
 }
 .textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
+/* C'est la phrase qui répond à « où partent les données de mes patients ? »,
+   la question qui décide de l'achat. Elle était composée comme une mention
+   légale de bas de page : 11,5 px dans le gris le plus pâle de la palette. */
 .anon-hint {
-  font-size: 11.5px; color: var(--text-dim);
-  margin-top: 7px; display: flex; align-items: center; gap: 5px;
-  user-select: none; pointer-events: none;
+  font-size: 12.5px; color: var(--text-muted);
+  margin-top: 9px; display: flex; align-items: flex-start; gap: 6px;
+  line-height: 1.5; user-select: none; pointer-events: none;
 }
-.anon-hint svg { width: 13px; height: 13px; flex-shrink: 0; }
+.anon-hint svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--success); }
 .select {
   -webkit-appearance: none; appearance: none; cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -569,8 +580,11 @@ a, button, input, select, textarea, summary, [role="button"],
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 12px; gap: 14px; flex-wrap: wrap;
 }
+/* Le titre du document produit était le plus petit texte de l'écran (11 px),
+   plus petit que les boutons d'export posés à côté de lui. Il nomme pourtant
+   l'objet le plus important de la page. */
 .result-title {
-  font-size: 11px; font-weight: 500; letter-spacing: .1em;
+  font-size: 13px; font-weight: 600; letter-spacing: .08em;
   text-transform: uppercase; color: var(--accent);
 }
 .result-tools { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -580,28 +594,59 @@ a, button, input, select, textarea, summary, [role="button"],
   border-radius: 8px; padding: 6px 12px;
   font-size: 12.5px; font-weight: 500; color: var(--text-muted);
   cursor: pointer; font-family: inherit; box-shadow: var(--shadow-sm);
-  transition: border-color .18s, color .18s, background .18s;
+  /* transform en dernier et sur sa propre durée : le retour de frappe doit
+     être plus rapide que le changement de couleur, sinon le bouton paraît
+     répondre après coup. */
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease,
+              background-color var(--dur-fast) ease,
+              transform var(--dur-press) var(--ease-out);
 }
-.tool-btn:hover { background: var(--bg-hover); }
 .tool-btn svg { width: 13px; height: 13px; }
-.tool-btn:hover { border-color: var(--accent); color: var(--accent); }
-.tool-btn.copied { border-color: var(--success); color: var(--success); }
-.tool-btn.saved  { border-color: var(--success); color: var(--success); }
+@media (hover: hover) and (pointer: fine) {
+  .tool-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+}
+/* Le geste est confirmé par la pression elle-même, avant même le résultat. */
+.tool-btn:active { transform: scale(.96); }
+/* Retour d'action : l'état réussi arrive franchement puis se retire seul.
+   Pas d'animation d'entrée — le bouton est déjà là, seule sa couleur change. */
+.tool-btn.copied, .tool-btn.saved { border-color: var(--success); color: var(--success); }
 .edit-hint {
   display: none; align-items: center; gap: 5px;
   font-size: 12px; color: var(--text-dim); margin-bottom: 6px;
 }
 .result.show .edit-hint { display: flex; }
 .edit-hint svg { width: 12px; height: 12px; }
+/* Le document généré est ce que le médecin relit, corrige, signe et envoie à un
+   confrère. Il était rendu en JetBrains Mono : une lettre de liaison affichée
+   en chasse fixe ne se lit pas comme un courrier médical, elle se lit comme une
+   sortie de terminal — et c'est l'écran sur lequel se joue la crédibilité de
+   l'outil. On revient à la fonte de lecture du reste de l'application, à une
+   taille de lecture confortable et sur une longueur de ligne bornée. */
 .result-body {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  border-radius: 10px; padding: 26px 30px;
-  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  font-size: 13.5px; line-height: 1.75; color: var(--text);
+  /* Ombre un peu plus portée que sur les cartes de l'application : le document
+     se pose sur la page au lieu d'être une zone parmi d'autres. */
+  box-shadow: 0 1px 2px rgba(22,35,47,.05), 0 8px 28px rgba(22,35,47,.07);
+  border-radius: 12px; padding: 40px 44px;
+  font-family: inherit;
+  font-size: 15.5px; line-height: 1.75; color: var(--text);
   white-space: pre-wrap; word-wrap: break-word;
-  transition: border-color .2s, box-shadow .2s;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+html[data-theme="dark"] .result-body {
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.35);
+}
+
+/* Édition en place : l'affordance apparaît au survol du document, pas en
+   permanence — un liseré bleu posé en continu sur un document qu'on relit
+   fatigue et suggère un champ de formulaire. */
+@media (hover: hover) and (pointer: fine) {
+  .result-body[contenteditable="true"]:hover { border-color: var(--border2); }
+}
+
+@media (max-width: 720px) {
+  .result-body { padding: 24px 20px; }
 }
 .result-body[contenteditable="true"] { cursor: text; }
 .result-body[contenteditable="true"]:focus {
@@ -1017,14 +1062,39 @@ a, button, input, select, textarea, summary, [role="button"],
 /* Le document rendu section par section : chaque titre en majuscules du
    texte généré devient une vraie rubrique. Sans ça, le compte-rendu est un
    bloc de texte que l'œil doit découper lui-même à chaque relecture. */
-.cr-doc { background: var(--bg-card); border-radius: 12px; }
-.cr-section { padding: 15px 0; border-top: 1px solid var(--border); }
-.cr-section:first-child { border-top: 0; padding-top: 0; }
-.cr-section-t {
-  font-size: 11px; font-weight: 700; letter-spacing: .09em;
-  text-transform: uppercase; color: var(--accent); margin-bottom: 7px;
+/* ─── Le document lui-même ───
+   C'est l'écran qu'un médecin montre à un confrère : il doit se lire comme un
+   document, pas comme une sortie d'outil. Trois décisions portent tout :
+
+   1. La séparation des rubriques passe par le RYTHME, pas par un filet. Un
+      soulignement à chaque titre découpe la page en tranches ; l'espace fait
+      le même travail sans ajouter de trait à regarder.
+   2. La hiérarchie repose sur trois niveaux nets — en-tête discret, titre de
+      rubrique, corps — plutôt que sur des variations de gris.
+   3. La mesure est bornée à ~72 caractères et la colonne est centrée : au-delà,
+      l'œil perd la ligne suivante ; alignée à gauche dans une page large, elle
+      laissait un vide qui déséquilibrait l'écran. */
+.cr-doc { max-width: 72ch; margin: 0 auto; }
+
+.cr-entete {
+  font-size: 13px; line-height: 1.6; color: var(--text-muted);
+  white-space: pre-wrap;
+  padding-bottom: 18px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
-.cr-section-c { font-size: 15px; line-height: 1.72; color: var(--text); white-space: pre-wrap; }
+
+/* Pas de filet : c'est l'espace au-dessus du titre qui ouvre la rubrique. */
+.cr-section + .cr-section { margin-top: 26px; }
+
+.cr-section-t {
+  font-size: 12.5px; font-weight: 650; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 8px;
+}
+.cr-section-c {
+  font-size: 15.5px; line-height: 1.75; color: var(--text);
+  white-space: pre-wrap; hyphens: auto;
+}
 
 /* Provenance : sur quoi cette génération s'est appuyée. Un médecin qui
    relit doit pouvoir remonter à la source d'une affirmation, sinon il
@@ -1285,9 +1355,35 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 .clinical-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.clinical-alert{border-color:var(--danger-glow);background:var(--danger-dim)}
 .clinical-suggestion{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .clinical-suggestion:last-child{border-bottom:0}
-.suggestion-toggle{flex:none;border:1px solid var(--border2);background:var(--bg-card2);color:var(--text-muted);border-radius:10px;min-width:52px;min-height:44px;padding:0 14px;font:600 12px Inter,sans-serif;cursor:pointer;transition:border-color var(--dur-fast) ease,background-color var(--dur-fast) ease,color var(--dur-fast) ease,transform var(--dur-press) var(--ease-out);white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* Bascule Oui/Non. L'état « Non » était gris sur fond gris : il se lisait
+   comme un bouton désactivé, alors que c'est la moitié d'un choix. Les deux
+   états sont désormais également présents — seul le remplissage change — et le
+   libellé de l'état inactif reste visible en filigrane pour dire qu'on peut
+   basculer. */
+.suggestion-toggle{
+  flex:none;position:relative;border:1px solid var(--border2);
+  background:var(--bg-card);color:var(--text);
+  border-radius:10px;min-width:78px;min-height:44px;padding:0 8px;
+  font:600 12px Inter,sans-serif;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:space-between;gap:6px;
+  transition:border-color var(--dur-fast) ease,background-color var(--dur-fast) ease,
+             color var(--dur-fast) ease,transform var(--dur-press) var(--ease-out);
+  white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.suggestion-toggle::before{content:'Non';flex:1;text-align:center;border-radius:7px;padding:6px 0;transition:background-color var(--dur-fast) ease,color var(--dur-fast) ease}
+.suggestion-toggle::after{content:'Oui';flex:1;text-align:center;border-radius:7px;padding:6px 0;transition:background-color var(--dur-fast) ease,color var(--dur-fast) ease}
+/* Segment actif rempli, segment inactif lisible mais en retrait. */
+.suggestion-toggle::before{background:var(--bg-hover);color:var(--text)}
+.suggestion-toggle::after{background:transparent;color:var(--text-dim)}
+.suggestion-toggle.on::before{background:transparent;color:var(--text-dim)}
+.suggestion-toggle.on::after{background:var(--accent);color:var(--accent-contrast)}
+.suggestion-toggle.on{border-color:var(--accent)}
 .suggestion-toggle:active{transform:scale(.97)}
-.suggestion-toggle.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+/* Le texte du bouton est porté par ::before/::after : on masque le libellé
+   que le JS y écrit, sans toucher à ce que lisent les lecteurs d'écran
+   (aria-pressed porte déjà l'état). */
+.suggestion-toggle{font-size:0}
+.suggestion-toggle::before,.suggestion-toggle::after{font-size:12px}
 .suggestion-body{flex:1;min-width:0;padding-top:10px}.suggestion-body .suggestion-text{display:block;font-weight:500;line-height:1.45;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:var(--accent-dim);color:var(--accent)}
 .confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}.confidence-line:last-child{border:0}.confidence-plus{color:var(--success)}.confidence-minus{color:var(--warning)}.confidence-optional{color:var(--text-dim)}
@@ -1301,8 +1397,21 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 .final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px Inter,sans-serif}.final-row input:focus{outline:none;border-color:var(--accent)}
 .clinical-foot{flex:none;display:flex;align-items:center;justify-content:stretch;gap:10px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg-card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.35);position:relative;z-index:2}
 .clinical-foot .btn{flex:1;justify-content:center;min-height:48px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.praxi-verification{margin:14px 0 0;padding:13px 15px;background:var(--success-dim);border:1px solid var(--success);border-radius:9px}
-.praxi-verification strong{display:block;font-size:12px;color:var(--success);margin-bottom:7px}.praxi-verification div{font-size:11px;color:var(--text-muted);line-height:1.7}
+/* Le cadre était vert et titré en vert quel que soit son contenu : il annonçait
+   « Relecture des valeurs chiffrées recommandée » et « 2 informations non
+   renseignées » dans une boîte de succès, juste sous une bannière d'alerte
+   orange qui disait la même chose. Un indicateur toujours vert n'informe de
+   rien et apprend à ne plus le lire. Le ton suit maintenant l'état réel. */
+.praxi-verification{margin:14px 0 0;padding:13px 15px;border-radius:9px;
+  background:var(--success-dim);border:1px solid var(--success)}
+.praxi-verification.attention{background:var(--warning-dim);border-color:var(--warning)}
+.praxi-verification strong{display:block;font-size:12.5px;color:var(--success);margin-bottom:7px}
+.praxi-verification.attention strong{color:var(--warning)}
+.praxi-verification div{font-size:12px;color:var(--text-muted);line-height:1.75}
+.praxi-verification .pv-ligne{display:flex;gap:7px;align-items:baseline}
+.praxi-verification .pv-marque{flex-shrink:0;font-weight:700}
+.praxi-verification .pv-ok{color:var(--success)}
+.praxi-verification .pv-attention{color:var(--warning)}
 .safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:var(--warning-dim);border:1px solid var(--warning);color:var(--warning)}
 @media(min-width:701px){
   .clinical-modal{padding:20px;align-items:center}
@@ -1465,6 +1574,108 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   .consult-nav .btn { width: 100%; justify-content: center; min-height: 50px; }
   .autosave-pill { top: 12px; right: 12px; }
 }
+
+/* ─── ERGONOMIE TACTILE ───────────────────────────────────────────────────
+   Les aménagements tactiles de l'application étaient tous conditionnés à
+   `max-width: 700px`. Or l'appareil visé est la tablette du cabinet, autour de
+   1024 px : elle recevait donc la densité prévue pour la souris. Mesuré sur la
+   rangée d'actions du document — celle qu'on utilise à chaque génération —
+   .tool-btn faisait 29 px de haut, .vue-btn 31 px, .quick-tpl-btn 27 px, pour
+   8 px d'écart entre eux. C'est au-dessus du plancher WCAG 2.2 (24 px) et
+   nettement sous le seuil de confort des recommandations tactiles (44 px).
+
+   `pointer: coarse` interroge le périphérique et non la largeur d'écran : le
+   poste de bureau garde sa densité, la tablette gagne des cibles atteignables,
+   quelle que soit son orientation. */
+@media (pointer: coarse) {
+  .tool-btn      { min-height: 44px; padding: 10px 16px; font-size: 13.5px; }
+  .tool-btn svg  { width: 15px; height: 15px; }
+  .vue-btn       { min-height: 44px; padding: 10px 18px; font-size: 13.5px; }
+  .chip          { min-height: 44px; padding: 11px 18px; font-size: 13.5px; }
+  .quick-tpl-btn { min-height: 44px; padding: 10px 18px; font-size: 13.5px; }
+  .hist-del      { min-width: 44px; min-height: 44px; }
+  .mic-btn       { width: 44px; height: 44px; top: 8px; right: 8px; }
+  .with-mic .textarea { padding-right: 62px; }
+  .side-link     { min-height: 46px; }
+  .step          { min-height: 48px; }
+  .ms-opt        { min-height: 46px; }
+  .btn           { min-height: 48px; }
+  /* L'espacement compte autant que la taille : deux cibles de 44 px collées
+     l'une à l'autre restent une source d'erreur de saisie. */
+  .result-tools, .chip-row, .quick-tpl-row { gap: 12px; }
+}
+/* ═══════════════════════════════════════════════════════════════════════
+   PANNEAU DE VÉRIFICATION — hiérarchie de lecture
+   ═══════════════════════════════════════════════════════════════════════
+   Trois niveaux visuellement distincts : ce qui demande une décision, l'état
+   du dossier, puis le facultatif replié. */
+
+/* 1. Décision attendue — le seul bloc qui a le droit d'être coloré. */
+.cv-action, .cv-manque {
+  border-radius: 11px; padding: 14px 16px; margin-bottom: 12px;
+}
+.cv-action { background: var(--danger-dim); border: 1px solid var(--danger); }
+.cv-manque { background: var(--warning-dim); border: 1px solid var(--warning); }
+.cv-action-t, .cv-manque-t {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 650; margin-bottom: 8px;
+}
+.cv-action-t { color: var(--danger); }
+.cv-manque-t { color: var(--warning); }
+.cv-action-l { margin: 0; padding-left: 20px; }
+.cv-action-l li { font-size: 13.5px; line-height: 1.6; color: var(--text); margin-bottom: 3px; }
+.cv-action-h { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+
+.cv-ok {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--success-dim); border: 1px solid var(--success);
+  border-radius: 11px; padding: 12px 16px; margin-bottom: 12px;
+  font-size: 13.5px; font-weight: 600; color: var(--success);
+}
+
+/* 2. État du dossier — compact, sur une seule bande. */
+.cv-etat {
+  display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 11px; padding: 14px 16px; margin-bottom: 12px;
+}
+.cv-etat-score { flex: none; text-align: center; min-width: 74px; }
+.cv-etat-score strong { display: block; font-size: 26px; line-height: 1.1; color: var(--text); letter-spacing: -.02em; }
+.cv-etat-score span { font-size: 11px; color: var(--text-dim); }
+.cv-etat-faits { flex: 1; min-width: 220px; }
+.cv-etat-faits p { font-size: 13px; color: var(--text-muted); line-height: 1.55; margin: 0 0 8px; }
+.cv-etat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cv-etat-chips span {
+  font-size: 12px; color: var(--text-muted);
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 8px;
+}
+.cv-etat-chips .cv-vide { color: var(--text-dim); border-style: dashed; }
+
+/* 3. Facultatif — replié, compteur visible pour éviter d'ouvrir à vide. */
+.cv-fold { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); margin-bottom: 8px; }
+.cv-fold > summary {
+  list-style: none; cursor: pointer; padding: 12px 15px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  transition: background-color var(--dur-fast) ease;
+}
+.cv-fold > summary::-webkit-details-marker { display: none; }
+@media (hover: hover) and (pointer: fine) { .cv-fold > summary:hover { background: var(--bg-hover); } }
+.cv-count {
+  flex: none; min-width: 22px; text-align: center;
+  background: var(--accent-dim); color: var(--accent);
+  border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600;
+}
+.cv-fold > summary::after {
+  content: ''; width: 7px; height: 7px; flex: none; margin-left: 2px;
+  border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.cv-fold[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+.cv-fold-body { padding: 0 15px 14px; }
+.cv-fold-hint { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px; }
 </style>
 </head>
 <body>
@@ -1648,7 +1859,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
           </button>
         </div>
-        <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+        <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
       </div>
       </div>
       <div class="consult-nav">
@@ -1672,7 +1883,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
           </button>
         </div>
-        <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+        <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
       </div>
       <div class="actions">
         <button class="btn btn-primary" id="ct-generate">
@@ -1892,7 +2103,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
         </button>
       </div>
-      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+      <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
     <div class="actions">
@@ -1941,6 +2152,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
         <label class="label">Nom du patient</label>
         <input class="input" id="c-patient" placeholder="Ex. Mme Martin Sophie" />
       </div>
+      <!-- L'âge manquait ici alors que le gabarit du compte-rendu le prévoit :
+           le jeton de pseudonymisation ne pouvait jamais être résolu et sortait
+           en clair dans le document. Il est aussi cliniquement utile — un CR
+           sans âge se lit mal. -->
+      <div class="field" style="max-width:130px">
+        <label class="label">Âge <span class="label-opt">Facultatif</span></label>
+        <input class="input" id="c-age" placeholder="Ex. 68 ans" />
+      </div>
       <div class="field" style="max-width:200px">
         <label class="label">Date</label>
         <input class="input" id="c-date" type="date" />
@@ -1958,7 +2177,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
         </button>
       </div>
-      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+      <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
     <div class="actions">
@@ -2046,7 +2265,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
         </button>
       </div>
-      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+      <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
     <div class="actions">
@@ -2095,7 +2314,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
         </button>
       </div>
-      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+      <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
     <div class="actions">
@@ -2151,7 +2370,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
         </button>
       </div>
-      <p class="anon-hint"><i data-lucide="lock"></i> Les données identifiantes sont anonymisées avant envoi</p>
+      <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
     <div class="actions">
@@ -2243,6 +2462,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       <button class="btn btn-primary" data-gen="ordonnance">
         <span class="btn-label">Générer l'ordonnance</span>
       </button>
+      <p class="anon-hint"><i data-lucide="lock"></i> Nom, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
     <div class="alert alert-error" id="ord-error"></div>
 
@@ -2566,9 +2786,18 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   </div>
 </div>
 
-<!-- pdf.js + jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- pdf.js + jsPDF.
+     Ces scripts s'exécutent dans la page qui détient le jeton de session et
+     l'historique des documents : une version altérée sur le CDN lirait les
+     deux. Les versions étaient déjà figées ; l'attribut `integrity` vérifie en
+     plus que l'octet reçu est bien celui attendu, et `crossorigin` est requis
+     pour que le navigateur applique ce contrôle. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
+        integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+        integrity="sha384-JcnsjUPPylna1s1fvi1u12X5qjY5OL56iySh75FdtrwhO/SWXgMjoVqcKyIIWOLk"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
   if (window.pdfjsLib) {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -2605,9 +2834,30 @@ function api(path, opts = {}) {
   });
 }
 
+// Tout ce que Praxi écrit sur le poste. Le thème est délibérément absent : il
+// ne porte aucune donnée de santé et survit à la déconnexion.
+//
+// Seuls le jeton et le profil étaient effacés jusqu'ici. L'historique des
+// documents générés, les fiches patients et les brouillons — c'est-à-dire des
+// noms, des âges, des diagnostics et des courriers complets — restaient en
+// clair dans le navigateur après la déconnexion. Sur la tablette partagée d'un
+// cabinet, le médecin suivant y avait accès sans se connecter.
+const DONNEES_LOCALES = [
+  'praxi_token', 'praxi_profil', 'praxi_drafts_v1',
+  'praxi_history', 'praxi_patients', 'praxi_clinical_preferences',
+  // Drapeau de reprise des données héritées. Il appartient au compte qui vient
+  // de se déconnecter : le laisser ferait sauter la reprise pour le médecin
+  // suivant sur le même poste, qui repartirait sans ses anciennes fiches.
+  'praxi_migration_v2',
+];
+
+function purgeDonneesLocales() {
+  DONNEES_LOCALES.forEach(k => { try { localStorage.removeItem(k); } catch (_) {} });
+  try { sessionStorage.removeItem('praxi_lastView'); } catch (_) {}
+}
+
 function logout() {
-  localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem(PROFIL_KEY);
+  purgeDonneesLocales();
   location.replace('/login.html');
 }
 document.getElementById('logout').addEventListener('click', logout);
@@ -3124,10 +3374,39 @@ document.getElementById('ord-bizone').addEventListener('change', function() {
 // ═══════════════════════════════════════════════════════════════════════
 //  PSEUDONYMISATION côté client (avant envoi API)
 // ═══════════════════════════════════════════════════════════════════════
-function pseudonymize(text, patient, age) {
-  const substitutions = new Map();
+// Les champs de texte libre soumis à la pseudonymisation, par type de document.
+// Cette table est la définition unique de ce que recouvre la mention « les
+// données identifiantes sont anonymisées avant envoi » affichée dans
+// l'interface : tout écran qui porte cette mention doit figurer ici, et tout
+// champ absent d'une entrée part en clair. Auparavant seules la lettre de
+// liaison, le compte-rendu et la consultation étaient traités — et uniquement
+// leur champ `notes` —, alors que le certificat MDPH, le protocole ALD et le
+// certificat médical affichaient la même promesse en envoyant le nom du patient
+// et son diagnostic tels quels.
+const PSEUDO_FIELDS = {
+  liaison:    ['motif', 'notes', 'complement'],
+  cr:         ['notes', 'complement'],
+  consult:    ['notes', 'complement'],
+  mdph:       ['diagnostic', 'notes', 'complement'],
+  ald:        ['affection', 'notes', 'complement'],
+  certificat: ['type', 'notes', 'complement'],
+  ordonnance: ['medicaments', 'medicamentsAld', 'complement'],
+  // Le document analysé est collé par le médecin : on ignore quel nom il
+  // contient, donc on ne peut pas le masquer. Les identifiants de forme fixe
+  // (NIR, adresse, date de naissance) le sont, et l'écran ne promet rien de plus.
+  resume:     ['text', 'complement'],
+};
+
+function pseudonymize(text, patient, age, substitutions = new Map()) {
   let anon = text;
   const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Compteur porté par la Map partagée : plusieurs champs d'un même document
+  // sont pseudonymisés à la suite et doivent continuer la même numérotation.
+  const prochainIndex = kind => {
+    let i = 1;
+    while (substitutions.has(`__${kind}_${i}__`)) i++;
+    return i;
+  };
 
   // ── Nom du patient ──
   if (patient && patient.trim()) {
@@ -3184,25 +3463,61 @@ function pseudonymize(text, patient, age) {
   });
 
   // ── NIR / numéro de sécu (13 chiffres consécutifs) ──
+  // Chaque occurrence reçoit son propre marqueur numéroté. La version
+  // précédente stockait une seule valeur par catégorie (`__nir__`) et
+  // restituait la première partout : deux numéros dans un même document
+  // ressortaient identiques, celui du second patient écrasé par le premier.
   anon = anon.replace(/\b(\d{13})\b/g, match => {
-    substitutions.set('__nir__', match);
-    return '[numéro retiré]';
+    const i = prochainIndex('nir');
+    substitutions.set(`__nir_${i}__`, match);
+    return `[numéro retiré ${i}]`;
   });
 
   // ── Adresses (numéro + type de voie + libellé) ──
   anon = anon.replace(
     /\b\d+[a-z]?\s+(?:rue|avenue|av\.?|boulevard|bd\.?|allée|place|impasse|chemin|voie|route|passage|cité|résidence|cours)\s+[^,\n]{3,50}(?:,\s*\d{5}\s+[^\n,]{2,30})?/gi,
     match => {
-      substitutions.set('__addr__', match);
-      return '[adresse retirée]';
+      const i = prochainIndex('addr');
+      substitutions.set(`__addr_${i}__`, match);
+      return `[adresse retirée ${i}]`;
     }
   );
 
   return { anonymizedText: anon, substitutions };
 }
 
+// Jetons d'identité substitués dans les champs structurés du formulaire.
+const IDENTITY_TOKENS = { patient: 'PATIENT_CONFIDENTIEL', age: 'AGE_PATIENT', ddn: 'DDN_PATIENT' };
+
+/**
+ * Pseudonymise sur place tous les champs déclarés pour ce type de document.
+ * @returns {{substitutions:Map, patientOrig:string}|null} null si le type n'est
+ *          pas couvert — l'appelant ne doit alors afficher aucune promesse.
+ */
+function pseudonymizePayload(key, payload) {
+  const champs = PSEUDO_FIELDS[key];
+  if (!champs) return null;
+
+  const patientOrig = typeof payload.patient === 'string' ? payload.patient.trim() : '';
+  const ageOrig     = typeof payload.age === 'string'     ? payload.age.trim()     : '';
+  const ddnOrig     = typeof payload.ddn === 'string'     ? payload.ddn.trim()     : '';
+  const substitutions = new Map();
+
+  for (const champ of champs) {
+    if (typeof payload[champ] !== 'string' || !payload[champ]) continue;
+    payload[champ] = pseudonymize(payload[champ], patientOrig, ageOrig, substitutions).anonymizedText;
+  }
+
+  if (patientOrig) payload.patient = IDENTITY_TOKENS.patient;
+  if (ageOrig) { substitutions.set('__age__', ageOrig); payload.age = IDENTITY_TOKENS.age; }
+  // La date de naissance est directement identifiante : elle ne quitte pas le
+  // poste. Le modèle reçoit un jeton qu'il recopie, et le front la replace.
+  if (ddnOrig) { substitutions.set('__ddn__', ddnOrig); payload.ddn = IDENTITY_TOKENS.ddn; }
+
+  return { substitutions, patientOrig };
+}
+
 function resubstitute(text, substitutions, patient) {
-  console.log('[resubstitute] patient:', patient, 'text preview:', text.slice(0, 100));
   let out = text;
   if (patient && patient.trim()) {
     const name = patient.trim();
@@ -3236,16 +3551,66 @@ function resubstitute(text, substitutions, patient) {
       if (exact) {
         out = out.replace(/\bAGE_PATIENT\b/g, exact[0] + ' ans');
         out = out.replace(/(?:l['’]âge|âge)\s+Information non renseignée/gi, 'âge de ' + exact[0] + ' ans');
-        out = out.replace(/\bentre\s+\d{1,3}\s+et\s+\d{1,3}\s+ans\b/gi, exact[0] + ' ans');
-        out = out.replace(/\b(?:âgé(?:e)?\s+de\s+)?\d{1,3}\s*[–-]\s*\d{1,3}\s+ans\b/gi, exact[0] + ' ans');
+        // Deux règles de rattrapage ont été retirées ici : elles remplaçaient
+        // toute tranche d'âge du document (« entre 50 et 74 ans », « 18-65 ans »)
+        // par l'âge du patient. Un seuil de dépistage ou une tranche d'AMM se
+        // trouvait ainsi réécrit en silence dans un document signé — le
+        // document restait plausible tout en étant faux. Le jeton AGE_PATIENT,
+        // que le modèle a pour consigne de recopier tel quel, suffit.
       }
     }
-    if (k === '__nir__')   out = out.split('[numéro retiré]').join(v);
-    if (k === '__addr__')  out = out.split('[adresse retirée]').join(v);
+    if (k === '__ddn__')   out = out.replace(/\bDDN_PATIENT\b/g, v);
+    if (/^__nir_\d+__$/.test(k))  out = out.split(`[numéro retiré ${k.match(/\d+/)[0]}]`).join(v);
+    if (/^__addr_\d+__$/.test(k)) out = out.split(`[adresse retirée ${k.match(/\d+/)[0]}]`).join(v);
   }
   const today = new Intl.DateTimeFormat('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(new Date());
   out = out.replace(/Information non renseignée\s*\(date d['’]émission\)/gi, today);
-  return out;
+  return nettoyerJetonsResiduels(out);
+}
+
+/**
+ * Filet de sécurité : retire tout jeton d'identité qui aurait survécu à la
+ * restitution.
+ *
+ * Un jeton ne survit que si le modèle l'a écrit sans qu'on le lui ait fourni —
+ * c'est ce qui se produisait sur l'écran Compte-rendu, dépourvu de champ Âge :
+ * « AGE_PATIENT » sortait en clair, deux fois, dans un document destiné à être
+ * signé. La cause est traitée côté serveur (la consigne ne cite plus que les
+ * jetons réellement transmis) ; ce filet garantit qu'aucune régression de prompt
+ * ne puisse à nouveau faire fuiter un jeton jusqu'à l'écran.
+ *
+ * On retire la mention entière plutôt que le seul jeton : supprimer « AGE_PATIENT »
+ * dans « patient de AGE_PATIENT, admis pour… » laisserait « patient de , admis ».
+ */
+function nettoyerJetonsResiduels(texte) {
+  let out = texte;
+  // Prépositions qui introduisent habituellement la donnée masquée.
+  const PREP = '(?:âgée?\\s+de|née?\\s+le|de|le)';
+
+  for (const jeton of ['AGE_PATIENT', 'DDN_PATIENT', 'PATIENT_CONFIDENTIEL']) {
+    if (!out.includes(jeton)) continue;
+    console.warn(`[praxi] jeton non restitué retiré du document : ${jeton}`);
+    out = out
+      // 1. Apposition entre deux virgules — « M. Dupont, âgé de X, consulte ».
+      //    Les DEUX virgules partent, sinon il reste « M. Dupont, consulte ».
+      .replace(new RegExp(`,\\s*${PREP}?\\s*${jeton}\\s*,`, 'gi'), ' ')
+      // 2. Entre parenthèses, crochets ou tirets — « le patient (X) présente ».
+      .replace(new RegExp(`\\s*[(\\[]\\s*${PREP}?\\s*${jeton}\\s*[)\\]]`, 'gi'), '')
+      .replace(new RegExp(`\\s*[—–-]\\s*${PREP}?\\s*${jeton}\\s*(?=[—–-]|$)`, 'gim'), '')
+      // 3. Introduit par une préposition — « âgé de X », « né le X ».
+      .replace(new RegExp(`\\s*${PREP}\\s+${jeton}\\b`, 'gi'), '')
+      // 4. Occurrence isolée restante.
+      .replace(new RegExp(`\\s*\\b${jeton}\\b`, 'g'), '');
+  }
+
+  // Ponctuation laissée orpheline par les retraits ci-dessus.
+  return out
+    .replace(/[ \t]+([,;.])/g, '$1')      // espace avant ponctuation
+    .replace(/,\s*,/g, ',')               // virgules jumelles
+    .replace(/,\s*([.;])/g, '$1')         // virgule collée à un point
+    .replace(/^[ \t]*[,;]\s*/gm, '')      // ponctuation en début de ligne
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+$/gm, '');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -3282,6 +3647,7 @@ const GEN = {
       if (!notes) return { err: 'Renseignez les notes de consultation.' };
       return { payload: {
         patient: document.getElementById('c-patient').value,
+        age:     document.getElementById('c-age').value,
         date:    document.getElementById('c-date').value,
         notes
       }};
@@ -3556,6 +3922,24 @@ function confidenceBreakdownHtml(items) {
     return `<div class="confidence-line"><span>${escapeHtml(item.label)}</span><strong class="${cls}">${item.value >= 0 ? '+' : ''}${item.value} %</strong></div>`;
   }).join('');
 }
+// Désignation du document en cours, pour que le copilote parle du document
+// qu'on rédige. Les libellés étaient écrits pour la lettre de liaison et
+// s'affichaient tels quels sur tous les écrans : « Suggestions pour votre
+// lettre » alors qu'on rédige un compte-rendu. Le routage, lui, est correct —
+// le serveur reçoit documentType et adapte réellement son analyse.
+const NOM_DOCUMENT = {
+  liaison:    'cette lettre',
+  cr:         'ce compte-rendu',
+  consult:    'ce compte-rendu',
+  ordonnance: 'cette ordonnance',
+  mdph:       'ce certificat',
+  ald:        'ce protocole',
+  certificat: 'ce certificat',
+  resume:     'cette analyse',
+  avis:       'cet avis',
+};
+function nomDocument(key) { return NOM_DOCUMENT[key] || 'ce document'; }
+
 function suggestionItemHtml(s, index) {
   return `<div class="clinical-suggestion">
     <button type="button" class="suggestion-toggle" aria-pressed="false">Non</button>
@@ -3563,7 +3947,7 @@ function suggestionItemHtml(s, index) {
     <span class="suggestion-body"><span class="suggestion-text" role="button" tabindex="0">${escapeHtml(s.label)}</span><small class="clinical-confidence">Confiance ${Number(s.confidence) || 70} %</small><small class="clinical-rationale">${escapeHtml(s.rationale)}</small></span>
   </div>`;
 }
-function suggestionsHtml(items) {
+function suggestionsHtml(items, key) {
   const auteur = items.filter(s => s.role !== 'specialiste');
   const specialiste = items.filter(s => s.role === 'specialiste');
   let html = '';
@@ -3574,7 +3958,7 @@ function suggestionsHtml(items) {
     html += `<div class="specialist-insights">
       <div class="specialist-insights-header">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Ce que le spécialiste pourra envisager — non inclus dans la lettre
+        Ce que le spécialiste pourra envisager — non inclus dans le document
       </div>
       <div class="specialist-insights-list">
         ${specialiste.map(s => `<div class="specialist-insight-item"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>${escapeHtml(s.label)}</div>`).join('')}
@@ -3642,30 +4026,92 @@ async function submitQuickClinicalAnswer() {
     renderClinicalReview(pending.key, pending.btn, pending.label, data.analysis, payload);
   } catch (err) { showError(GEN[pending.key].errId, err.message); }
 }
+// Panneau de vérification finale.
+//
+// Il empilait sept blocs de même poids : éléments retenus, score, incohérences,
+// à compléter, interprétations, questions, suggestions. Rien ne disait par où
+// commencer, et ce qui demandait une décision (une incohérence relevée) avait
+// exactement le même traitement visuel qu'un compteur informatif.
+//
+// Trois niveaux désormais :
+//   1. CE QUI DEMANDE UNE DÉCISION — dépliés, en tête, jamais repliables.
+//   2. L'ÉTAT DU DOSSIER — une ligne compacte : score et éléments retenus.
+//   3. LE FACULTATIF — replié, avec un compteur qui dit ce qu'il y a dedans.
+// Un bloc vide n'est pas rendu : « Aucune incohérence détectée » occupe autant
+// de place qu'une vraie incohérence et dilue le signal.
 function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   const modal = ensureClinicalModal(); clinicalPending = { key, btn, label, analysis, sourcePayload };
   const score = modal.querySelector('#clinical-score'); score.textContent = analysis.confidence + '%';
-  const scoreBox = score.parentElement; scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--warning)' : '#ef4444';
+  const scoreBox = score.parentElement;
+  scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--warning)' : 'var(--danger)';
   document.getElementById('clinical-score-label').textContent = analysis.confidenceLabel || (analysis.confidence > 85 ? 'Prêt à générer' : analysis.confidence >= 70 ? 'Bon dossier' : 'À compléter');
   if (!clinicalQuestionProgress[key]) clinicalQuestionProgress[key] = { total: analysis.questions.length, answered: 0 };
-  const suggestions = analysis.suggestions.length
-    ? suggestionsHtml(analysis.suggestions)
+
+  const suggestions  = analysis.suggestions.length ? suggestionsHtml(analysis.suggestions, key) : '';
+  const progress     = clinicalQuestionProgress[key];
+  const recommended  = analysis.missing.map(friendlyMissing);
+  const optional     = (analysis.optionalMissing || []).map(friendlyMissing);
+  const incoherences = analysis.inconsistencies || [];
+  const deductions   = analysis.deductions || [];
+
+  const questions = analysis.questions.length
+    ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>`
     : '';
-  const progress = clinicalQuestionProgress[key];
-  const questions = analysis.questions.length ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>` : '<div style="font-size:13px;color:var(--success)">Questions essentielles couvertes.</div>';
-  const recommended = analysis.missing.map(friendlyMissing);
-  const optional = (analysis.optionalMissing || []).map(friendlyMissing);
-  modal.querySelector('#clinical-body').innerHTML = `<div class="clinical-grid">
-    ${analysis.scoreSummary ? `<div class="clinical-block full"><p class="clinical-summary">${escapeHtml(analysis.scoreSummary)}</p></div>` : ''}
-    ${sourcePayload && sourcePayload.specialiste ? `<div class="clinical-block full"><h3>Optimisée pour : ${escapeHtml(sourcePayload.specialiste)}</h3>${clinicalList(analysis.specialtyFocus || [],'Adaptation selon la spécialité destinataire.')}</div>` : ''}
-    <div class="clinical-block"><h3>Éléments retenus</h3>${clinicalList(analysis.facts,'Aucun fait exploitable identifié.')}</div>
-    <div class="clinical-block"><h3>Score dossier · ${analysis.confidence} %</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 8px">Le score reflète la richesse du dossier. Les points en gris sont facultatifs.</p>${confidenceBreakdownHtml(analysis.confidenceBreakdown)}<div style="margin-top:8px;font-size:12px;color:var(--accent)">Format conseillé : ${escapeHtml(analysis.recommendedLength)}<button type="button" class="mini-apply" id="apply-recommended-format">Appliquer</button></div></div>
-    <div class="clinical-block${analysis.inconsistencies.length?' clinical-alert':''}"><h3>Incohérences à vérifier</h3>${clinicalList(analysis.inconsistencies,'Aucune incohérence détectée.')}</div>
-    <div class="clinical-block"><h3>À compléter si possible</h3>${clinicalList(recommended, optional.length ? 'Éléments facultatifs restants : ' + optional.join(', ') : 'Éléments essentiels présents.')}</div>
-    <div class="clinical-block full"><h3>Interprétations proposées · cochez celles à intégrer</h3>${deductionsHtml(analysis.deductions)}</div>
-    <div class="clinical-block"><h3>Compléter rapidement</h3>${questions}</div>
-    <div class="clinical-block full"><h3>Suggestions pour votre lettre</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 10px">Activez “ Oui ” pour intégrer l’élément dans votre lettre. Les pistes du spécialiste sont affichées à titre informatif uniquement.</p>${suggestions || ''}</div>
-  </div>`;
+
+  // Un dépliant ne s'affiche que s'il a un contenu, et son compteur annonce
+  // ce qu'on trouvera dedans : sans lui, on déplie pour découvrir un bloc vide.
+  const repli = (titre, n, contenu, ouvert) => !n ? '' :
+    `<details class="cv-fold"${ouvert ? ' open' : ''}>
+      <summary><span>${escapeHtml(titre)}</span><span class="cv-count">${n}</span></summary>
+      <div class="cv-fold-body">${contenu}</div>
+    </details>`;
+
+  modal.querySelector('#clinical-body').innerHTML = `
+    ${incoherences.length ? `
+      <div class="cv-action">
+        <div class="cv-action-t">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          ${incoherences.length > 1 ? `${incoherences.length} incohérences à trancher` : 'Une incohérence à trancher'}
+        </div>
+        <ul class="cv-action-l">${incoherences.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
+        <div class="cv-action-h">Praxi ne choisira pas à votre place : les deux versions resteraient dans le document.</div>
+      </div>` : ''}
+
+    ${recommended.length ? `
+      <div class="cv-manque">
+        <div class="cv-manque-t">À compléter avant génération</div>
+        <ul class="cv-action-l">${recommended.map(m => `<li>${escapeHtml(m)}</li>`).join('')}</ul>
+        ${optional.length ? `<div class="cv-action-h">Facultatif : ${escapeHtml(optional.join(', '))}.</div>` : ''}
+      </div>` : ''}
+
+    ${!incoherences.length && !recommended.length ? `
+      <div class="cv-ok">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>
+        Rien ne bloque la génération.
+      </div>` : ''}
+
+    <div class="cv-etat">
+      <!-- Le score n'est pas répété ici : l'en-tête de la modale l'affiche déjà
+           en permanence. Deux fois le même chiffre, c'est un chiffre de trop. -->
+      <div class="cv-etat-faits">
+        ${analysis.scoreSummary ? `<p>${escapeHtml(analysis.scoreSummary)}</p>` : ''}
+        <div class="cv-etat-chips">${(analysis.facts || []).slice(0, 6).map(f => `<span>${escapeHtml(f)}</span>`).join('') || '<span class="cv-vide">Aucun fait exploitable identifié</span>'}</div>
+      </div>
+      <button type="button" class="mini-apply" id="apply-recommended-format">Format ${escapeHtml(analysis.recommendedLength)}</button>
+    </div>
+
+    ${repli('Détail du score', (analysis.confidenceBreakdown || []).length, confidenceBreakdownHtml(analysis.confidenceBreakdown))}
+    ${repli('Interprétations à intégrer', deductions.length, deductionsHtml(deductions))}
+    ${repli(`Suggestions pour ${nomDocument(key)}`, analysis.suggestions.length,
+        `<p class="cv-fold-hint">Basculez sur « Oui » pour intégrer l’élément dans ${escapeHtml(nomDocument(key))}. Les pistes du spécialiste sont informatives.</p>${suggestions}`)}
+    ${repli('Compléter par questions', analysis.questions.length, questions)}
+    ${sourcePayload && sourcePayload.specialiste
+        ? repli(`Attentes du destinataire — ${escapeHtml(sourcePayload.specialiste)}`,
+                (analysis.specialtyFocus || []).length,
+                clinicalList(analysis.specialtyFocus || [], ''))
+        : ''}
+  `;
+
   bindSuggestionToggles(modal);
   bindDeductionRows(modal);
   const next = document.getElementById('clinical-quick-next'); if (next) next.addEventListener('click', submitQuickClinicalAnswer);
@@ -3674,7 +4120,6 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   modal.querySelector('#clinical-cancel').textContent = 'Revenir aux notes';
   const continueBtn = modal.querySelector('#clinical-continue'); continueBtn.textContent = 'Vérifier avant génération'; delete continueBtn.dataset.step;
   openClinicalModal(modal);
-  modal.querySelector('#clinical-body').scrollTop = 0;
 }
 
 async function prepareClinicalGeneration(key, btn) {
@@ -3739,8 +4184,7 @@ function startAiProgress(errId, kind, options = {}) {
 
   box.innerHTML =
     '<div class="gen-work-head">' +
-      '<span class="spinner dark"></span>' +
-      '<span>' + escapeHtml(options.titre || 'Génération en cours') + '</span>' +
+      '<span>' + escapeHtml(options.titre || '') + '</span>' +
     '</div>' +
     '<div class="gen-stages">' +
       etapes.map((e, i) =>
@@ -3821,7 +4265,10 @@ function renderResult(el, text) {
     // sinon l'export et l'impression perdraient les rubriques.
     el.innerHTML = '<div class="cr-doc">' + sections.map(s => {
       const corps = s.lignes.join('\n').trim();
-      if (!s.titre) return corps ? `<div class="cr-section-c">${escapeHtml(corps)}</div>` : '';
+      // Ce qui précède la première rubrique est l'en-tête du praticien et la
+      // date. C'est de l'identification, pas du contenu clinique : il se
+      // compose plus petit et se détache du corps par un filet.
+      if (!s.titre) return corps ? `<div class="cr-entete">${escapeHtml(corps)}</div>` : '';
       return '<div class="cr-section">' +
         `<div class="cr-section-t">${escapeHtml(s.titre)} :</div>` +
         `<div class="cr-section-c">${escapeHtml(corps)}</div>` +
@@ -3987,17 +4434,47 @@ function refreshPatientPicks() {
   document.querySelectorAll('[data-patient-pick]').forEach(syncPatientPick);
 }
 
-function renderPraxiVerification(resultHost, options, safety) {
+function renderPraxiVerification(resultHost, options, safety, outEl) {
   const old = resultHost.querySelector('.praxi-verification'); if (old) old.remove();
-  const analysis = options.clinicalAnalysis || {};
-  const box = document.createElement('div'); box.className = 'praxi-verification';
-  box.innerHTML = `<strong>Vérification Praxi</strong><div>
-    ${safety && !safety.requiresReview ? '✓ Aucune valeur chiffrée non sourcée détectée.' : '⚠ Relecture des valeurs chiffrées recommandée.'}<br>
-    ✓ ${(analysis.deductions || []).length} interprétation(s) conservée(s).<br>
-    ✓ ${(options.acceptedSuggestions || []).length} suggestion(s) intégrée(s) après validation.<br>
-    ${(analysis.missing || []).length} information(s) recommandée(s) restent non renseignée(s).
-  </div>`;
-  resultHost.appendChild(box);
+  const analysis    = options.clinicalAnalysis || {};
+  const deductions  = (analysis.deductions || []).length;
+  const suggestions = (options.acceptedSuggestions || []).length;
+  const manquantes  = (analysis.missing || []).length;
+  const aRelire     = Boolean(safety && safety.requiresReview);
+
+  // Une coche ne s'affiche que si elle atteste réellement quelque chose : un
+  // « ✓ 0 suggestion(s) intégrée(s) » ne valide rien, il décore un zéro.
+  const ligne = (etat, texte) => {
+    const marque = etat === 'ok' ? '✓' : etat === 'attention' ? '⚠' : '·';
+    const classe = etat === 'ok' ? 'pv-ok' : etat === 'attention' ? 'pv-attention' : '';
+    return `<div class="pv-ligne"><span class="pv-marque ${classe}">${marque}</span><span>${escapeHtml(texte)}</span></div>`;
+  };
+
+  // Les valeurs en cause sont nommées ici. Elles faisaient auparavant l'objet
+  // d'un second bandeau orange placé juste au-dessus, qui répétait le même
+  // constat dans la même couleur : deux alertes pour un seul fait.
+  const chiffres = (safety && safety.unsupportedNumbers) || [];
+  const lignes = [
+    aRelire
+      ? ligne('attention', chiffres.length
+          ? `Valeur(s) chiffrée(s) sans correspondance dans vos notes — ${chiffres.join(', ')}. À relire avant signature.`
+          : 'Valeur(s) chiffrée(s) sans correspondance dans vos notes — à relire avant signature.')
+      : ligne('ok', 'Aucune valeur chiffrée non sourcée détectée.'),
+    deductions  ? ligne('ok', `${deductions} interprétation(s) clinique(s) conservée(s).`) : null,
+    suggestions ? ligne('ok', `${suggestions} suggestion(s) intégrée(s) après votre validation.`) : null,
+    manquantes  ? ligne('attention', `${manquantes} information(s) recommandée(s) restent non renseignée(s).`) : null,
+  ].filter(Boolean);
+
+  const attention = aRelire || manquantes > 0;
+  const box = document.createElement('div');
+  box.className = 'praxi-verification' + (attention ? ' attention' : '');
+  box.innerHTML = `<strong>${attention ? 'Vérification Praxi — à relire' : 'Vérification Praxi'}</strong><div>${lignes.join('')}</div>`;
+
+  // Placé juste sous le document, et non en fin de page derrière le bloc
+  // « souhaitez-vous ajouter des éléments ? » : ce qui qualifie un document se
+  // lit à côté de lui.
+  if (outEl && outEl.parentNode) outEl.insertAdjacentElement('afterend', box);
+  else resultHost.appendChild(box);
 }
 
 async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
@@ -4010,10 +4487,16 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
   setLoading(btn, true);
   // Le libellé des étapes change quand un dossier est rattaché : le médecin
   // voit que le contexte antérieur est effectivement repris.
+  // Le bouton affiche déjà « Génération en cours… ». Le panneau ne le répète
+  // pas : il dit ce que le bouton ne peut pas dire — sur quel dossier on
+  // travaille, et si des antécédents sont repris.
+  const nbAnterieurs = patientLie ? (patientLie.nbDocuments || 0) : 0;
   const stopProgress = startAiProgress(
     cfg.errId,
     patientLie ? 'generate-contexte' : 'generate',
-    { titre: patientLie ? `Génération — dossier ${patientLie.nom}` : 'Génération en cours' }
+    { titre: patientLie
+        ? `Dossier ${patientLie.nom}${nbAnterieurs ? ` — ${nbAnterieurs} document(s) repris` : ' — premier document'}`
+        : 'Document isolé — aucun antécédent repris' }
   );
   try {
     let payload = Object.assign({}, built.payload);
@@ -4025,34 +4508,19 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
     payload.mode = options.mode || 'standard';
     payload.stylePreference = options.stylePreference || selectedStyle();
     payload.acceptedSuggestions = options.acceptedSuggestions || [];
-    let subs = null;
-    let patientOrig = '';
-
-    // Pseudonymisation des notes (liaison, compte-rendu et consultation)
-    if (key === 'liaison' || key === 'cr' || key === 'consult') {
-      patientOrig = payload.patient || '';
-      const ageOrig = key !== 'cr' ? (payload.age || '') : '';
-      const { anonymizedText, substitutions } = pseudonymize(payload.notes || '', patientOrig, ageOrig);
-      subs = substitutions;
-      if (ageOrig) subs.set('__age__', ageOrig);
-      payload.notes = anonymizedText;
-      if (patientOrig) payload.patient = 'PATIENT_CONFIDENTIEL';
-      if (ageOrig) {
-        const m = ageOrig.match(/^(\d+)/);
-        if (m) {
-          const n = parseInt(m[1], 10);
-          payload.age = 'AGE_PATIENT';
-        }
-      }
-    }
+    // Pseudonymisation : pilotée par PSEUDO_FIELDS, elle couvre désormais tous
+    // les types de documents, et non les seules notes de trois d'entre eux.
+    const pseudo = pseudonymizePayload(key, payload);
+    const subs = pseudo ? pseudo.substitutions : null;
+    const patientOrig = pseudo ? pseudo.patientOrig : '';
 
     const data = await api('/api/generate/' + cfg.endpoint, {
       method: 'POST', body: JSON.stringify(payload)
     });
 
-    // Re-substitution : restaure le nom du patient + NIR/adresse dans le document reçu
+    // Re-substitution : restaure nom, âge, date de naissance, NIR et adresses
+    // dans le document reçu, sur le poste du médecin uniquement.
     let out = data.document || '';
-    console.log('[runGeneration] patientOrig:', JSON.stringify(patientOrig), 'subs:', subs ? [...subs.entries()] : null);
     if (subs) out = resubstitute(out, subs, patientOrig);
 
     const outEl = document.getElementById(cfg.outId);
@@ -4062,13 +4530,10 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
     const resultHost = document.getElementById(cfg.resId);
     renderProvenance(resultHost, key, data.contexte);
     renderReferentiel(resultHost, data.referentiel);
-    renderPraxiVerification(resultHost, options, data.safety);
+    // Le bandeau orange séparé a été fusionné dans l'encadré de vérification :
+    // on retire celui d'une génération précédente avant de redessiner.
     const oldSafety = resultHost.querySelector('.safety-banner'); if (oldSafety) oldSafety.remove();
-    if (data.safety && data.safety.requiresReview) {
-      const warning = document.createElement('div'); warning.className = 'safety-banner';
-      warning.textContent = 'Vérification requise : valeur(s) numérique(s) sans correspondance directe dans la source — ' + data.safety.unsupportedNumbers.join(', ') + '. Relisez avant validation.';
-      outEl.insertAdjacentElement('afterend', warning);
-    }
+    renderPraxiVerification(resultHost, options, data.safety, outEl);
     document.getElementById(cfg.resId).classList.add('show');
     document.getElementById(cfg.resId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (err) {
@@ -4717,8 +5182,12 @@ function lierPatient(p) {
     const ddn = document.getElementById('ord-ddn');
     if (ddn) ddn.value = p.ddn;
   }
-  const age = document.getElementById('ct-age');
-  if (age && p.age !== null && p.age !== undefined && !age.value.trim()) age.value = p.age + ' ans';
+  if (p.age !== null && p.age !== undefined) {
+    ['ct-age', 'c-age', 'l-age'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.value.trim()) el.value = p.age + ' ans';
+    });
+  }
 }
 
 // Conservé : d'anciens appels passent encore par usePatient().
@@ -4872,6 +5341,9 @@ function renderHistory(query) {
     ordonnance:  '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/><path d="M9 12h6M9 16h3"/></svg>'
   };
 
+  // Le contenu est stocké sous `contenu` : le filtre lisait `it.text`, qui
+  // n'existe sur aucune entrée. La recherche ne portait donc jamais sur le
+  // texte des documents, seulement sur le nom du patient et le type.
   const displayList = query
     ? list.filter(it => ((it.patientNom || '') + ' ' + (it.typeLabel || it.type || '') + ' ' + (it.contenu || '')).toLowerCase().includes(query))
     : list;
@@ -6046,7 +6518,12 @@ function initAvis() {
   });
 }
 </script>
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<!-- Version figée + contrôle d'intégrité : `@latest` faisait suivre à Praxi
+     toute version publiée sur unpkg, y compris une version compromise, dans une
+     page qui détient le jeton de session et les documents patients. -->
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"
+        integrity="sha384-hK2uiaqTSh/v1VqRxmuMQL4xmt5n0DdyBCOItx2fAs7Wv+WC8Tu0yDW1j12JooyM"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>lucide.createIcons();</script>
 </body>
 </html>
