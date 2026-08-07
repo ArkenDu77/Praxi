@@ -1,0 +1,13 @@
+[build]
+nixpkgs-version = "latest"
+
+[[build.aptPkgs]]
+pkg = "curl"
+
+# Disable the npm cache mount to prevent EBUSY race condition during builds
+[build.env]
+npm_config_cache = "/tmp/npm-cache"
+
+[[build.runSteps]]
+# Use --no-audit and --no-fund to speed up npm ci
+run = "npm ci --omit=dev --no-audit --no-fund"
