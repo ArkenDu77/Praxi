@@ -43,6 +43,17 @@ const AI_MODEL_AVIS = 'claude-opus-5';
 const { ragSearch, ragStats, DEFAULT_WEIGHTS, DEFAULT_MAX_PER_DOC } = require('./lib/rag');
 const { getSpecialite, listSpecialites } = require('./lib/specialites');
 
+// ── DOSSIERS PATIENTS (fiches + timeline de documents) ──
+const dossiers = require('./lib/dossiers');
+
+// ── RÉFÉRENTIELS DOCUMENTAIRES PAR SPÉCIALITÉ ──
+// Fournit au prompt la structure attendue et les repères chiffrés de la
+// spécialité, plutôt que de laisser le modèle les reconstituer de mémoire.
+const {
+  getReferentiel, analyserCouverture, blocPrompt,
+  referentielPublic, listReferentiels,
+} = require('./lib/referentiels');
+
 // ── SMTP (Nodemailer — Gmail App Password) ──
 // On nettoie les identifiants : les variables d'env (surtout sur Railway) peuvent
 // contenir des espaces ou un retour à la ligne parasite. Un App Password Gmail est
@@ -1468,6 +1479,53 @@ function clinicalGenerationRules(req, documentType) {
     `Suggestions validées par le médecin (à intégrer dans le corps du texte uniquement) : ${accepted.length ? accepted.join(' ; ') : 'aucune'}.\n`;
 }
 
+// ─── CONTEXTE PATIENT ANTÉRIEUR ─────────────────────────────────────────────
+// Un document généré pour un patient déjà suivi doit savoir ce qui a été écrit
+// et prescrit avant. Le médecin garde la main : `utiliserContexte: false` dans
+// le corps de requête désactive entièrement la reprise.
+
+function chargerContextePatient(req) {
+  const patientId = s(req.body.patientId, 40);
+  if (!patientId) return null;
+  if (req.body.utiliserContexte === false) return null;
+  try {
+    const ctx = dossiers.contextePatient(req.user.id, patientId);
+    return ctx && !ctx.vide ? ctx : null;
+  } catch (err) {
+    // Un contexte indisponible ne doit jamais empêcher une génération :
+    // le document se fait sans, et le front l'indique.
+    console.error('[contexte] lecture impossible —', err.message);
+    return null;
+  }
+}
+
+// Consignes d'usage du contexte antérieur. Sans ces garde-fous, le modèle
+// recopie un traitement ancien comme s'il était en cours.
+function consigneContexte(contexte) {
+  if (!contexte) return '';
+  return (
+    `\nCONTEXTE ANTÉRIEUR DU PATIENT :\n` +
+    `La fiche du patient et ses documents précédents te sont fournis, chacun daté et référencé [A1], [A2]…\n` +
+    `RÈGLES D'USAGE :\n` +
+    `- Ce contexte sert à éviter les redites et à assurer la continuité (« traitement introduit le 12 mars, bien toléré »).\n` +
+    `- Ne présente JAMAIS un élément antérieur comme constaté aujourd'hui. Date-le explicitement quand tu le reprends.\n` +
+    `- Un traitement prescrit antérieurement n'est pas forcément en cours : écris « introduit le … » et non « prend actuellement », sauf si les notes du jour le confirment.\n` +
+    `- Les allergies connues de la fiche patient sont toujours à reprendre : elles engagent la sécurité de la prescription.\n` +
+    `- N'utilise ce contexte que s'il éclaire la consultation du jour. Un antécédent sans rapport n'a pas à figurer.\n`
+  );
+}
+
+// Métadonnées renvoyées au front : sur quoi cette génération s'est appuyée.
+// C'est ce qui rend la provenance vérifiable côté interface.
+function contexteMeta(contexte) {
+  if (!contexte) return { utilise: false, documents: [] };
+  return {
+    utilise: true,
+    patient: { id: contexte.patient.id, nom: contexte.patient.nom, age: contexte.patient.age },
+    documents: contexte.documents,
+  };
+}
+
 function documentSafety(document, source, user) {
   const allowed = `${source}\n${medecinContext(user)}\n${new Date().getFullYear()}`;
   const values = [...new Set((document.match(/\b\d+(?:[.,]\d+)?\b/g) || []))];
@@ -1495,7 +1553,16 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
   }
 
   const specialiteRedacteur = (req.user && req.user.specialite) || 'médecine générale';
-    const authorVoice = authorVoiceConstraint(specialiteRedacteur, specialiste);
+  const authorVoice = authorVoiceConstraint(specialiteRedacteur, specialiste);
+
+  // Contexte antérieur : une lettre d'adressage qui ignore les documents
+  // précédents du même patient refait dire au confrère ce qu'il sait déjà.
+  const contexteL = chargerContextePatient(req);
+
+  // Référentiel du DESTINATAIRE : la lettre est lue par lui, c'est sa grille de
+  // lecture qui compte. À défaut, celui du rédacteur.
+  const referentielL = getReferentiel(specialiste) || getReferentiel(specialiteRedacteur);
+  const couvertureL  = analyserCouverture(referentielL, `${motif}\n${notes}\n${complement}`);
   const system =
     `Tu es un médecin expert en ${specialiteRedacteur}, exerçant en libéral en France. ` +
     authorVoice +
@@ -1525,16 +1592,36 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
     "INTERDICTION ABSOLUE : n'écris jamais 'ANALYSE DE PRAXI', ne sépare pas le document par '---', et n'ajoute aucun commentaire méta sur les suggestions ou informations manquantes. La lettre s'arrête à la formule de politesse et la signature. " +
     "N'ajoute aucun commentaire hors de la lettre.";
 
+  // Le référentiel du destinataire ne dicte pas la structure de la lettre (qui
+  // reste une prose confraternelle) : il indique ce que ce confrère attend de
+  // trouver. On ne reprend donc que les repères, pas le plan de document.
+  const systemL = system
+    + (referentielL
+        ? `\nATTENTES DU DESTINATAIRE (${referentielL.label}, source : ${referentielL.source.libelle}) :\n`
+          + `Éléments que ce confrère attend d'une lettre d'adressage : `
+          + `${referentielL.attendus.map(a => a.libelle).join(' ; ')}.\n`
+          + `Ne présente que ceux qui figurent réellement dans les notes. `
+          + `N'invente jamais une valeur pour compléter cette liste : une lettre incomplète mais exacte `
+          + `vaut infiniment mieux qu'une lettre complète et fausse.\n`
+        : '')
+    + consigneContexte(contexteL);
+
   const user =
     (specialiste ? `Spécialiste destinataire : ${specialiste}\n` : '') +
     (patient ? `Patient : ${patient}${age ? `, ${age}` : ''}\n` : '') +
     (motif ? `Motif d'adressage : ${motif}\n` : '') +
+    (contexteL ? `\n${contexteL.texte}\n` : '') +
     `\nNotes cliniques du médecin :\n${notes || '(aucune)'}\n` +
     (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '');
 
   try {
-    const document = finalizeDocument(await generateDocument({ system, user, maxTokens: 1500 }));
-    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
+    const document = finalizeDocument(await generateDocument({ system: systemL, user, maxTokens: 1500 }));
+    res.json({
+      document,
+      safety: documentSafety(document, `${plainClinicalText(req.body)}\n${contexteL ? contexteL.texte : ''}`, req.user),
+      referentiel: referentielPublic(referentielL, couvertureL),
+      contexte: contexteMeta(contexteL),
+    });
   } catch (err) {
     aiError(res, err);
   }
@@ -1553,6 +1640,15 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
 
   const specialiteRedacteurCR = (req.user && req.user.specialite) || 'médecine générale';
   const isAlgologie = /algologue|anesthésiste/i.test(specialiteRedacteurCR);
+
+  // Contexte antérieur du patient : ce compte-rendu sait ce qui a été prescrit
+  // la semaine dernière. Le médecin peut le désactiver (utiliserContexte:false).
+  const contexte = chargerContextePatient(req);
+
+  // Référentiel de la spécialité : structure attendue + repères chiffrés
+  // fournis au prompt, et calcul de ce que les notes ne couvrent pas.
+  const referentiel = getReferentiel(specialiteRedacteurCR);
+  const couverture  = analyserCouverture(referentiel, `${notes}\n${complement}`);
 
   const system = isAlgologie
     ? (`Tu es un médecin ${specialiteRedacteurCR}, expert en médecine de la douleur, ` +
@@ -1611,15 +1707,29 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
        "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques, pas de dièses, pas de tirets de liste. " +
        "Sépare les sections par des sauts de ligne. N'ajoute aucun commentaire hors du compte-rendu.");
 
+  // Le référentiel s'ajoute au cadrage de spécialité ; l'algologie garde sa
+  // structure propre, déjà dérivée des recommandations HAS 2024.
+  const systemComplet = system
+    + (isAlgologie ? '' : blocPrompt(referentiel, couverture))
+    + consigneContexte(contexte);
+
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
     (date ? `Date de consultation : ${date}\n` : '') +
+    (contexte ? `\n${contexte.texte}\n` : '') +
     `\nNotes brutes de consultation :\n${notes}\n` +
     (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '');
 
   try {
-    const document = finalizeDocument(await generateDocument({ system, user, maxTokens: 1800 }));
-    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
+    const document = finalizeDocument(await generateDocument({ system: systemComplet, user, maxTokens: 1800 }));
+    res.json({
+      document,
+      // Le contrôle des valeurs chiffrées inclut le contexte antérieur : une
+      // posologie reprise d'une ordonnance passée est sourcée, pas inventée.
+      safety: documentSafety(document, `${plainClinicalText(req.body)}\n${contexte ? contexte.texte : ''}`, req.user),
+      referentiel: referentielPublic(referentiel, couverture),
+      contexte: contexteMeta(contexte),
+    });
   } catch (err) {
     aiError(res, err);
   }
@@ -1876,6 +1986,21 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
 
   const spec = (req.user && req.user.specialite) || 'médecine générale';
 
+  // Sur une ordonnance, le contexte du dossier n'est pas un confort de
+  // rédaction : allergies connues et traitements en cours conditionnent la
+  // sécurité de la prescription.
+  const contexteO = chargerContextePatient(req);
+  const consigneSecuriteO = contexteO
+    ? `\nSÉCURITÉ DE LA PRESCRIPTION :\n` +
+      `La fiche du patient et ses documents antérieurs te sont fournis.\n` +
+      `- Si une molécule prescrite entre en conflit avec une ALLERGIE mentionnée dans la fiche, ` +
+      `ne la retire pas silencieusement et ne la remplace pas de ta propre initiative : ` +
+      `rédige l'ordonnance telle que demandée et signale le conflit en fin de document, ` +
+      `sur une ligne isolée préfixée « ⚠ À VÉRIFIER : ». Le choix appartient au médecin.\n` +
+      `- Ne reconduis JAMAIS de toi-même un traitement antérieur qui ne figure pas dans la demande du jour.\n` +
+      `- N'ajoute aucun médicament que le médecin n'a pas explicitement prescrit.\n`
+    : '';
+
   const formatRules =
     "Pour chaque médicament : DCI (Dénomination Commune Internationale) + nom commercial entre parenthèses si pertinent, " +
     "forme galénique, dosage unitaire, posologie précise (fréquence, moment de prise), durée de traitement ou mention 'traitement continu'. " +
@@ -1915,6 +2040,7 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
     userMsg =
       (patient ? `Patient : ${patient}\n` : '') +
       (ddn ? `Date de naissance : ${ddn}\n` : '') +
+      (contexteO ? `\n${contexteO.texte}\n` : '') +
       (medicamentsAld ? `\nMédicaments en rapport avec l'ALD (zone haute) :\n${medicamentsAld}\n` : '') +
       (medicaments ? `\nMédicaments sans rapport avec l'ALD (zone basse) :\n${medicaments}\n` : '') +
       (complement ? `\nÉléments additionnels : ${complement}\n` : '');
@@ -1936,13 +2062,21 @@ app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
     userMsg =
       (patient ? `Patient : ${patient}\n` : '') +
       (ddn ? `Date de naissance : ${ddn}\n` : '') +
+      (contexteO ? `\n${contexteO.texte}\n` : '') +
       `\nMédicaments à prescrire :\n${medicaments}\n` +
       (complement ? `\nÉléments additionnels : ${complement}\n` : '');
   }
 
   try {
-    const document = finalizeDocument(await generateDocument({ system, user: userMsg, maxTokens: 1800 }));
-    res.json({ document, safety: documentSafety(document, plainClinicalText(req.body), req.user) });
+    const document = finalizeDocument(await generateDocument({
+      system: system + consigneSecuriteO + consigneContexte(contexteO),
+      user: userMsg, maxTokens: 1800,
+    }));
+    res.json({
+      document,
+      safety: documentSafety(document, `${plainClinicalText(req.body)}\n${contexteO ? contexteO.texte : ''}`, req.user),
+      contexte: contexteMeta(contexteO),
+    });
   } catch (err) { aiError(res, err); }
 });
 
@@ -2287,6 +2421,139 @@ app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
   } catch (err) {
     aiError(res, err);
   }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  DOSSIERS PATIENTS — fiches et timeline de documents
+//
+//  Remplace le stockage localStorage du navigateur, qui cloisonnait l'historique
+//  par écran et le perdait au changement de poste. Toutes les routes sont
+//  scopées par req.user.id : un médecin ne voit jamais les dossiers d'un autre.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// GET /api/patients — liste des fiches, la plus récemment active en tête
+app.get('/api/patients', authenticateJWT, (req, res) => {
+  res.json({ patients: dossiers.listPatients(req.user.id, s(req.query.q, 120)) });
+});
+
+// POST /api/patients — création d'une fiche
+app.post('/api/patients', authenticateJWT, (req, res) => {
+  const result = dossiers.createPatient(req.user.id, req.body || {});
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json(result);
+});
+
+// GET /api/patients/:id — fiche + timeline complète des documents
+app.get('/api/patients/:id', authenticateJWT, (req, res) => {
+  const timeline = dossiers.getTimeline(req.user.id, s(req.params.id, 40));
+  if (!timeline) return res.status(404).json({ error: 'Patient introuvable.' });
+  res.json(timeline);
+});
+
+// PATCH /api/patients/:id — mise à jour partielle de la fiche
+app.patch('/api/patients/:id', authenticateJWT, (req, res) => {
+  const result = dossiers.updatePatient(req.user.id, s(req.params.id, 40), req.body || {});
+  if (result.error) {
+    return res.status(result.error === 'Patient introuvable.' ? 404 : 400).json({ error: result.error });
+  }
+  res.json(result);
+});
+
+// DELETE /api/patients/:id — supprime la fiche et ses documents
+app.delete('/api/patients/:id', authenticateJWT, (req, res) => {
+  const result = dossiers.deletePatient(req.user.id, s(req.params.id, 40));
+  if (result.error) return res.status(404).json({ error: result.error });
+  res.json(result);
+});
+
+// GET /api/patients/:id/contexte — contexte clinique antérieur condensé.
+// Alimente l'encart « Contexte » avant génération : le médecin voit ce que
+// Praxi s'apprête à réutiliser du dossier, et peut le refuser.
+app.get('/api/patients/:id/contexte', authenticateJWT, (req, res) => {
+  const contexte = dossiers.contextePatient(req.user.id, s(req.params.id, 40));
+  if (!contexte) return res.status(404).json({ error: 'Patient introuvable.' });
+  res.json({
+    patient: contexte.patient,
+    documents: contexte.documents,
+    vide: contexte.vide,
+    apercu: contexte.texte.slice(0, 1500),
+  });
+});
+
+// GET /api/documents — historique global, filtrable
+app.get('/api/documents', authenticateJWT, (req, res) => {
+  res.json({
+    documents: dossiers.listDocuments(req.user.id, {
+      patientId: s(req.query.patientId, 40) || null,
+      type:      s(req.query.type, 40) || null,
+      query:     s(req.query.q, 200),
+    }),
+  });
+});
+
+// POST /api/documents — enregistre un document généré dans la timeline
+app.post('/api/documents', authenticateJWT, (req, res) => {
+  const result = dossiers.createDocument(req.user.id, req.body || {});
+  if (result.error) return res.status(400).json({ error: result.error });
+  res.status(201).json(result);
+});
+
+// GET /api/documents/:id — relecture d'un document archivé
+app.get('/api/documents/:id', authenticateJWT, (req, res) => {
+  const doc = dossiers.getDocument(req.user.id, s(req.params.id, 40));
+  if (!doc) return res.status(404).json({ error: 'Document introuvable.' });
+  res.json({ document: doc });
+});
+
+// DELETE /api/documents/:id
+app.delete('/api/documents/:id', authenticateJWT, (req, res) => {
+  const result = dossiers.deleteDocument(req.user.id, s(req.params.id, 40));
+  if (result.error) return res.status(404).json({ error: result.error });
+  res.json(result);
+});
+
+// POST /api/dossiers/import — reprise des données localStorage héritées.
+// Idempotent : un second import ne duplique ni les fiches ni les documents.
+app.post('/api/dossiers/import', authenticateJWT, (req, res) => {
+  const result = dossiers.importerDepuisLocal(req.user.id, {
+    patients:  Array.isArray(req.body.patients)  ? req.body.patients  : [],
+    documents: Array.isArray(req.body.documents) ? req.body.documents : [],
+  });
+  res.json(result);
+});
+
+// GET /api/referentiels — référentiels documentaires disponibles
+app.get('/api/referentiels', authenticateJWT, (_req, res) => {
+  res.json({ referentiels: listReferentiels() });
+});
+
+// GET /api/referentiels/mien — référentiel correspondant à la spécialité du compte
+app.get('/api/referentiels/mien', authenticateJWT, (req, res) => {
+  const ref = getReferentiel((req.user && req.user.specialite) || '');
+  res.json({ referentiel: referentielPublic(ref, null) });
+});
+
+// GET /health — sonde de l'hébergeur (Railway healthcheck).
+// Signale aussi si le stockage est éphémère : sans volume monté, les dossiers
+// patients disparaissent au redéploiement, et cela doit se voir sans avoir à
+// lire les logs de démarrage.
+app.get('/health', (_req, res) => {
+  let stockageInscriptible = false;
+  try {
+    fs.accessSync(DATA_DIR, fs.constants.W_OK);
+    stockageInscriptible = true;
+  } catch (_) {}
+
+  res.json({
+    status: 'ok',
+    uptime: Math.round(process.uptime()),
+    ia: Boolean(anthropic),
+    stockage: {
+      chemin: DATA_DIR,
+      inscriptible: stockageInscriptible,
+      persistant: Boolean(process.env.DATA_DIR),
+    },
+  });
 });
 
 // SPA fallback

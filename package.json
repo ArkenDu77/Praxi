@@ -3,10 +3,15 @@
   "version": "0.1.0",
   "description": "Praxi — assistant médico-administratif pour médecins libéraux",
   "main": "server.js",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "jest tests/ --forceExit --testTimeout=15000",
+    "smoke": "node scripts/smoke.js",
+    "screenshots": "node scripts/screenshots.js",
     "ingest": "node scripts/ingest.js"
   },
   "dependencies": {

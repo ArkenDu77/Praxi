@@ -329,6 +329,59 @@ de photos). Les prompts système imposent :
 - Aucune donnée patient n'est stockée côté serveur : les documents générés restent
   sur l'appareil du médecin (localStorage).
 
+## Déploiement Railway
+
+`railway.json` décrit le build (Nixpacks), la commande de démarrage et la sonde
+de santé. Railway injecte `PORT` : le serveur l'utilise déjà, rien à configurer.
+
+### 1. Volume persistant — obligatoire
+
+Le système de fichiers de Railway est éphémère : **sans volume, tous les comptes
+médecins et tous les dossiers patients disparaissent à chaque redéploiement.**
+Ce n'était qu'ennuyeux tant que l'historique vivait dans le navigateur ; depuis
+que les dossiers patients sont côté serveur, c'est une perte de données
+médicales.
+
+1. Service → **Variables** → **Add Volume**, point de montage `/data`
+2. Ajouter la variable `DATA_DIR=/data`
+3. Ajouter `RAG_DIR=/data/rag` si la base de connaissances est utilisée
+
+Fichiers écrits dans `DATA_DIR` : `users.json`, `waitlist.json`, **`dossiers.json`**
+(fiches patients + documents).
+
+### 2. Variables d'environnement
+
+| Variable | Obligatoire | Note |
+| --- | --- | --- |
+| `DATA_DIR` | oui | `/data` — sinon stockage éphémère |
+| `JWT_SECRET` | oui | le serveur refuse de démarrer sans, en production |
+| `ADMIN_TOKEN` | oui | idem |
+| `ANTHROPIC_API_KEY` | oui | sans elle, la génération renvoie 503 |
+| `APP_URL` | oui | URL publique — sert aux liens de réinitialisation et au CORS |
+| `RAG_DIR` | si RAG | `/data/rag` |
+| `SMTP_USER` / `SMTP_PASS` | non | mot de passe d'application Gmail, sans espaces |
+
+### 3. Vérifier le déploiement
+
+```bash
+curl https://<votre-app>.up.railway.app/health
+```
+
+```json
+{ "status": "ok", "ia": true,
+  "stockage": { "chemin": "/data", "inscriptible": true, "persistant": true } }
+```
+
+`"persistant": false` signifie que `DATA_DIR` n'est pas défini : le volume n'est
+pas pris en compte et les données seront perdues au prochain déploiement.
+
+### Reprise des données existantes
+
+Les fiches et l'historique créés avant la bascule serveur vivent dans le
+`localStorage` du navigateur. Ils sont importés automatiquement à la première
+ouverture de l'application, une seule fois par navigateur, sans doublon si
+l'opération est rejouée. Rien à lancer à la main.
+
 ## Déploiement VPS
 
 ```bash
