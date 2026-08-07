@@ -1384,22 +1384,65 @@ function analyzeBySpecialty(source, body, deductions, suggestions) {
   }
 }
 
+// Guidance par défaut, par type de document.
+//
+// Elle était intégralement écrite pour la lettre de liaison : sur un
+// compte-rendu ou une ordonnance, le médecin lisait « le dossier permet une
+// lettre de liaison structurée » et des justifications adressées à un
+// « spécialiste destinataire » qui n'existe pas. Ce n'était pas un libellé mal
+// choisi mais du contenu produit pour le mauvais document.
+//
+// Un compte-rendu est archivé, pas envoyé : ce qui compte est la complétude du
+// dossier pour la consultation suivante, pas ce qu'un confrère y cherchera.
+const GUIDANCE_DOCUMENT = {
+  liaison: {
+    deduction: 'Le dossier fourni permet une lettre de liaison structurée ; une synthèse orientée vers la question clinique du spécialiste est recommandée.',
+    suggestions: [
+      { id:'retour', label:'Solliciter un retour d’avis après la consultation', rationale:'Facilite le suivi et la coordination des soins', category:'orientation', confidence:90 },
+      { id:'antecedents', label:'Mentionner les antécédents pertinents s’ils sont connus', rationale:'Enrichit le dossier sans surinterpréter', category:'clinique', confidence:78 },
+      { id:'traitements', label:'Récapituler les traitements en cours et leur tolérance', rationale:'Information utile au spécialiste destinataire', category:'clinique', confidence:82 },
+      { id:'allergies', label:'Préciser les allergies connues ou leur absence', rationale:'Sécurité thérapeutique', category:'clinique', confidence:75 },
+      { id:'gravite', label:'Signaler l’absence de signe de gravité si applicable', rationale:'Élément rassurant pour le confrère', category:'clinique', confidence:74 },
+    ],
+  },
+  cr: {
+    deduction: 'Le dossier fourni permet un compte-rendu structuré ; une synthèse diagnostique explicite et un délai de réévaluation en renforceraient la valeur pour le suivi.',
+    suggestions: [
+      { id:'synthese', label:'Formuler explicitement la synthèse diagnostique', rationale:'C’est la rubrique relue en premier à la consultation suivante', category:'clinique', confidence:88 },
+      { id:'constantes', label:'Reporter les constantes mesurées ce jour', rationale:'Permet de suivre l’évolution d’une consultation à l’autre', category:'clinique', confidence:84 },
+      { id:'traitements', label:'Récapituler les traitements en cours et leur tolérance', rationale:'Évite de reconduire un traitement mal supporté', category:'clinique', confidence:82 },
+      { id:'allergies', label:'Préciser les allergies connues ou leur absence', rationale:'Sécurité thérapeutique', category:'clinique', confidence:75 },
+      { id:'suivi', label:'Fixer un délai de réévaluation', rationale:'Rend le suivi vérifiable à la consultation suivante', category:'orientation', confidence:80 },
+    ],
+  },
+  ordonnance: {
+    deduction: 'Les éléments fournis permettent une ordonnance conforme ; la posologie complète et la durée de traitement en conditionnent la validité.',
+    suggestions: [
+      { id:'posologie', label:'Vérifier posologie, forme et durée pour chaque ligne', rationale:'Une ordonnance incomplète est refusée en pharmacie', category:'clinique', confidence:92 },
+      { id:'allergies', label:'Contrôler les allergies connues du patient', rationale:'Sécurité thérapeutique', category:'clinique', confidence:88 },
+      { id:'interactions', label:'Vérifier les interactions avec le traitement en cours', rationale:'Risque iatrogène, particulièrement en polymédication', category:'clinique', confidence:85 },
+      { id:'surveillance', label:'Préciser la surveillance biologique si elle s’impose', rationale:'Certaines molécules l’exigent avant renouvellement', category:'orientation', confidence:78 },
+    ],
+  },
+};
+// Certificats et protocoles se rapprochent du compte-rendu : document conservé,
+// pas de destinataire à convaincre.
+GUIDANCE_DOCUMENT.consult    = GUIDANCE_DOCUMENT.cr;
+GUIDANCE_DOCUMENT.mdph       = GUIDANCE_DOCUMENT.cr;
+GUIDANCE_DOCUMENT.ald        = GUIDANCE_DOCUMENT.cr;
+GUIDANCE_DOCUMENT.certificat = GUIDANCE_DOCUMENT.cr;
+
 function ensureMinimumGuidance({ deductions, suggestions, source, body }) {
-  if (deductions.length === 0)
-    pushUniqueDeduction(deductions, 'Le dossier fourni permet une lettre de liaison structurée ; une synthèse orientée vers la question clinique du spécialiste est recommandée.');
-  if (body.motif)
+  const guidance = GUIDANCE_DOCUMENT[body.documentType] || GUIDANCE_DOCUMENT.liaison;
+
+  if (deductions.length === 0) pushUniqueDeduction(deductions, guidance.deduction);
+  // Ces deux déductions ne valent que pour un document adressé à un confrère.
+  if (body.motif && body.documentType === 'liaison')
     pushUniqueDeduction(deductions, `L’adressage pour « ${s(body.motif, 120)} » justifie de préciser au confrère les éléments clés du contexte et la question posée.`);
   if (body.specialiste || body.specialty)
     pushUniqueDeduction(deductions, `La demande d’avis ${s(body.specialiste || body.specialty, 80)} appelle une mise en avant des éléments pertinents pour cette spécialité.`);
 
-  const fallback = [
-    { id:'retour', label:'Solliciter un retour d’avis après la consultation', rationale:'Facilite le suivi et la coordination des soins', category:'orientation', confidence:90 },
-    { id:'antecedents', label:'Mentionner les antécédents pertinents s’ils sont connus', rationale:'Enrichit le dossier sans surinterpretér', category:'clinique', confidence:78 },
-    { id:'traitements', label:'Récapituler les traitements en cours et leur tolérance', rationale:'Information utile au spécialiste destinataire', category:'clinique', confidence:82 },
-    { id:'allergies', label:'Préciser les allergies connues ou leur absence', rationale:'Sécurité thérapeutique', category:'clinique', confidence:75 },
-    { id:'gravite', label:'Signaler l’absence de signe de gravité si applicable', rationale:'Élément rassurant pour le confrère', category:'clinique', confidence:74 }
-  ];
-  for (const item of fallback) {
+  for (const item of guidance.suggestions) {
     if (suggestions.length >= 3) break;
     pushUniqueSuggestion(suggestions, item);
   }

@@ -219,3 +219,62 @@ describe('secrets par défaut', () => {
     expect(lancer({ JWT_SECRET: 'un-vrai-secret-de-32-caracteres-ok', ADMIN_TOKEN: 'un-vrai-token' }).code).toBe(0);
   });
 });
+
+// ─── GUIDANCE PAR TYPE DE DOCUMENT ─────────────────────────────────────────
+// La guidance par défaut était écrite pour la lettre de liaison et servie
+// telle quelle sur tous les écrans : sur un compte-rendu, le médecin lisait
+// « le dossier permet une lettre de liaison structurée » et des justifications
+// adressées à un « spécialiste destinataire » inexistant. Contrairement aux
+// libellés d'interface, il s'agissait de contenu généré pour le mauvais
+// document — la nuance qui sépare une coquille d'un défaut de routage.
+
+describe('guidance clinique adaptée au type de document', () => {
+  const request = require('supertest');
+  const app = require('../server');
+  const DESTINATAIRE = /lettre de liaison|spécialiste destinataire|confrère/i;
+  let token;
+
+  beforeAll(async () => {
+    const r = await request(app).post('/api/auth/register').send({
+      prenom: 'Guid', nom: 'Ance', email: `guidance.${Date.now()}@example.com`,
+      password: 'TestPassword1', specialites: ['Cardiologue'], ville: 'Lyon',
+    });
+    token = r.body.token;
+  });
+
+  const analyser = (documentType, extra = {}) =>
+    request(app).post('/api/clinical/analyze')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ documentType, notes: 'Patient tabagique, FA connue, PA 138/84.', ...extra })
+      .then(r => r.body.analysis);
+
+  test('un compte-rendu ne mentionne aucun destinataire', async () => {
+    const a = await analyser('cr');
+    expect(JSON.stringify(a.deductions) + JSON.stringify(a.suggestions)).not.toMatch(DESTINATAIRE);
+    expect(a.deductions[0]).toMatch(/compte-rendu/i);
+  });
+
+  test('une ordonnance parle de posologie, pas de courrier', async () => {
+    const a = await analyser('ordonnance', { medicaments: 'Bisoprolol 5 mg' });
+    expect(JSON.stringify(a.deductions) + JSON.stringify(a.suggestions)).not.toMatch(DESTINATAIRE);
+    expect(a.deductions[0]).toMatch(/ordonnance/i);
+  });
+
+  test('la lettre de liaison conserve sa guidance orientée destinataire', async () => {
+    const a = await analyser('liaison');
+    expect(a.deductions[0]).toMatch(/lettre de liaison/i);
+  });
+
+  test('le motif d’adressage n’est commenté que pour la lettre', async () => {
+    const cr = await analyser('cr', { motif: 'palpitations' });
+    expect(JSON.stringify(cr.deductions)).not.toMatch(/adressage/i);
+    const liaison = await analyser('liaison', { motif: 'palpitations' });
+    expect(JSON.stringify(liaison.deductions)).toMatch(/adressage/i);
+  });
+
+  test('un type inconnu retombe sur une guidance sans planter', async () => {
+    const a = await analyser('type-inexistant');
+    expect(Array.isArray(a.deductions)).toBe(true);
+    expect(a.deductions.length).toBeGreaterThan(0);
+  });
+});

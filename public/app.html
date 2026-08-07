@@ -594,13 +594,22 @@ a, button, input, select, textarea, summary, [role="button"],
   border-radius: 8px; padding: 6px 12px;
   font-size: 12.5px; font-weight: 500; color: var(--text-muted);
   cursor: pointer; font-family: inherit; box-shadow: var(--shadow-sm);
-  transition: border-color .18s, color .18s, background .18s;
+  /* transform en dernier et sur sa propre durée : le retour de frappe doit
+     être plus rapide que le changement de couleur, sinon le bouton paraît
+     répondre après coup. */
+  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease,
+              background-color var(--dur-fast) ease,
+              transform var(--dur-press) var(--ease-out);
 }
-.tool-btn:hover { background: var(--bg-hover); }
 .tool-btn svg { width: 13px; height: 13px; }
-.tool-btn:hover { border-color: var(--accent); color: var(--accent); }
-.tool-btn.copied { border-color: var(--success); color: var(--success); }
-.tool-btn.saved  { border-color: var(--success); color: var(--success); }
+@media (hover: hover) and (pointer: fine) {
+  .tool-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+}
+/* Le geste est confirmé par la pression elle-même, avant même le résultat. */
+.tool-btn:active { transform: scale(.96); }
+/* Retour d'action : l'état réussi arrive franchement puis se retire seul.
+   Pas d'animation d'entrée — le bouton est déjà là, seule sa couleur change. */
+.tool-btn.copied, .tool-btn.saved { border-color: var(--success); color: var(--success); }
 .edit-hint {
   display: none; align-items: center; gap: 5px;
   font-size: 12px; color: var(--text-dim); margin-bottom: 6px;
@@ -616,13 +625,28 @@ a, button, input, select, textarea, summary, [role="button"],
 .result-body {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  border-radius: 10px; padding: 30px 34px;
+  /* Ombre un peu plus portée que sur les cartes de l'application : le document
+     se pose sur la page au lieu d'être une zone parmi d'autres. */
+  box-shadow: 0 1px 2px rgba(22,35,47,.05), 0 8px 28px rgba(22,35,47,.07);
+  border-radius: 12px; padding: 40px 44px;
   font-family: inherit;
-  font-size: 15px; line-height: 1.7; color: var(--text);
+  font-size: 15.5px; line-height: 1.75; color: var(--text);
   white-space: pre-wrap; word-wrap: break-word;
-  max-width: 74ch;
-  transition: border-color .2s, box-shadow .2s;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+html[data-theme="dark"] .result-body {
+  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.35);
+}
+
+/* Édition en place : l'affordance apparaît au survol du document, pas en
+   permanence — un liseré bleu posé en continu sur un document qu'on relit
+   fatigue et suggère un champ de formulaire. */
+@media (hover: hover) and (pointer: fine) {
+  .result-body[contenteditable="true"]:hover { border-color: var(--border2); }
+}
+
+@media (max-width: 720px) {
+  .result-body { padding: 24px 20px; }
 }
 .result-body[contenteditable="true"] { cursor: text; }
 .result-body[contenteditable="true"]:focus {
@@ -1038,14 +1062,39 @@ a, button, input, select, textarea, summary, [role="button"],
 /* Le document rendu section par section : chaque titre en majuscules du
    texte généré devient une vraie rubrique. Sans ça, le compte-rendu est un
    bloc de texte que l'œil doit découper lui-même à chaque relecture. */
-.cr-doc { background: var(--bg-card); border-radius: 12px; }
-.cr-section { padding: 15px 0; border-top: 1px solid var(--border); }
-.cr-section:first-child { border-top: 0; padding-top: 0; }
-.cr-section-t {
-  font-size: 11px; font-weight: 700; letter-spacing: .09em;
-  text-transform: uppercase; color: var(--accent); margin-bottom: 7px;
+/* ─── Le document lui-même ───
+   C'est l'écran qu'un médecin montre à un confrère : il doit se lire comme un
+   document, pas comme une sortie d'outil. Trois décisions portent tout :
+
+   1. La séparation des rubriques passe par le RYTHME, pas par un filet. Un
+      soulignement à chaque titre découpe la page en tranches ; l'espace fait
+      le même travail sans ajouter de trait à regarder.
+   2. La hiérarchie repose sur trois niveaux nets — en-tête discret, titre de
+      rubrique, corps — plutôt que sur des variations de gris.
+   3. La mesure est bornée à ~72 caractères et la colonne est centrée : au-delà,
+      l'œil perd la ligne suivante ; alignée à gauche dans une page large, elle
+      laissait un vide qui déséquilibrait l'écran. */
+.cr-doc { max-width: 72ch; margin: 0 auto; }
+
+.cr-entete {
+  font-size: 13px; line-height: 1.6; color: var(--text-muted);
+  white-space: pre-wrap;
+  padding-bottom: 18px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
 }
-.cr-section-c { font-size: 15px; line-height: 1.72; color: var(--text); white-space: pre-wrap; }
+
+/* Pas de filet : c'est l'espace au-dessus du titre qui ouvre la rubrique. */
+.cr-section + .cr-section { margin-top: 26px; }
+
+.cr-section-t {
+  font-size: 12.5px; font-weight: 650; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 8px;
+}
+.cr-section-c {
+  font-size: 15.5px; line-height: 1.75; color: var(--text);
+  white-space: pre-wrap; hyphens: auto;
+}
 
 /* Provenance : sur quoi cette génération s'est appuyée. Un médecin qui
    relit doit pouvoir remonter à la source d'une affirmation, sinon il
@@ -1306,9 +1355,35 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 .clinical-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.clinical-alert{border-color:var(--danger-glow);background:var(--danger-dim)}
 .clinical-suggestion{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
 .clinical-suggestion:last-child{border-bottom:0}
-.suggestion-toggle{flex:none;border:1px solid var(--border2);background:var(--bg-card2);color:var(--text-muted);border-radius:10px;min-width:52px;min-height:44px;padding:0 14px;font:600 12px Inter,sans-serif;cursor:pointer;transition:border-color var(--dur-fast) ease,background-color var(--dur-fast) ease,color var(--dur-fast) ease,transform var(--dur-press) var(--ease-out);white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* Bascule Oui/Non. L'état « Non » était gris sur fond gris : il se lisait
+   comme un bouton désactivé, alors que c'est la moitié d'un choix. Les deux
+   états sont désormais également présents — seul le remplissage change — et le
+   libellé de l'état inactif reste visible en filigrane pour dire qu'on peut
+   basculer. */
+.suggestion-toggle{
+  flex:none;position:relative;border:1px solid var(--border2);
+  background:var(--bg-card);color:var(--text);
+  border-radius:10px;min-width:78px;min-height:44px;padding:0 8px;
+  font:600 12px Inter,sans-serif;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:space-between;gap:6px;
+  transition:border-color var(--dur-fast) ease,background-color var(--dur-fast) ease,
+             color var(--dur-fast) ease,transform var(--dur-press) var(--ease-out);
+  white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+}
+.suggestion-toggle::before{content:'Non';flex:1;text-align:center;border-radius:7px;padding:6px 0;transition:background-color var(--dur-fast) ease,color var(--dur-fast) ease}
+.suggestion-toggle::after{content:'Oui';flex:1;text-align:center;border-radius:7px;padding:6px 0;transition:background-color var(--dur-fast) ease,color var(--dur-fast) ease}
+/* Segment actif rempli, segment inactif lisible mais en retrait. */
+.suggestion-toggle::before{background:var(--bg-hover);color:var(--text)}
+.suggestion-toggle::after{background:transparent;color:var(--text-dim)}
+.suggestion-toggle.on::before{background:transparent;color:var(--text-dim)}
+.suggestion-toggle.on::after{background:var(--accent);color:var(--accent-contrast)}
+.suggestion-toggle.on{border-color:var(--accent)}
 .suggestion-toggle:active{transform:scale(.97)}
-.suggestion-toggle.on{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+/* Le texte du bouton est porté par ::before/::after : on masque le libellé
+   que le JS y écrit, sans toucher à ce que lisent les lecteurs d'écran
+   (aria-pressed porte déjà l'état). */
+.suggestion-toggle{font-size:0}
+.suggestion-toggle::before,.suggestion-toggle::after{font-size:12px}
 .suggestion-body{flex:1;min-width:0;padding-top:10px}.suggestion-body .suggestion-text{display:block;font-weight:500;line-height:1.45;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:var(--accent-dim);color:var(--accent)}
 .confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}.confidence-line:last-child{border:0}.confidence-plus{color:var(--success)}.confidence-minus{color:var(--warning)}.confidence-optional{color:var(--text-dim)}
@@ -1529,6 +1604,78 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
      l'une à l'autre restent une source d'erreur de saisie. */
   .result-tools, .chip-row, .quick-tpl-row { gap: 12px; }
 }
+/* ═══════════════════════════════════════════════════════════════════════
+   PANNEAU DE VÉRIFICATION — hiérarchie de lecture
+   ═══════════════════════════════════════════════════════════════════════
+   Trois niveaux visuellement distincts : ce qui demande une décision, l'état
+   du dossier, puis le facultatif replié. */
+
+/* 1. Décision attendue — le seul bloc qui a le droit d'être coloré. */
+.cv-action, .cv-manque {
+  border-radius: 11px; padding: 14px 16px; margin-bottom: 12px;
+}
+.cv-action { background: var(--danger-dim); border: 1px solid var(--danger); }
+.cv-manque { background: var(--warning-dim); border: 1px solid var(--warning); }
+.cv-action-t, .cv-manque-t {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13.5px; font-weight: 650; margin-bottom: 8px;
+}
+.cv-action-t { color: var(--danger); }
+.cv-manque-t { color: var(--warning); }
+.cv-action-l { margin: 0; padding-left: 20px; }
+.cv-action-l li { font-size: 13.5px; line-height: 1.6; color: var(--text); margin-bottom: 3px; }
+.cv-action-h { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
+
+.cv-ok {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--success-dim); border: 1px solid var(--success);
+  border-radius: 11px; padding: 12px 16px; margin-bottom: 12px;
+  font-size: 13.5px; font-weight: 600; color: var(--success);
+}
+
+/* 2. État du dossier — compact, sur une seule bande. */
+.cv-etat {
+  display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
+  background: var(--bg-card2); border: 1px solid var(--border);
+  border-radius: 11px; padding: 14px 16px; margin-bottom: 12px;
+}
+.cv-etat-score { flex: none; text-align: center; min-width: 74px; }
+.cv-etat-score strong { display: block; font-size: 26px; line-height: 1.1; color: var(--text); letter-spacing: -.02em; }
+.cv-etat-score span { font-size: 11px; color: var(--text-dim); }
+.cv-etat-faits { flex: 1; min-width: 220px; }
+.cv-etat-faits p { font-size: 13px; color: var(--text-muted); line-height: 1.55; margin: 0 0 8px; }
+.cv-etat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.cv-etat-chips span {
+  font-size: 12px; color: var(--text-muted);
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 6px; padding: 3px 8px;
+}
+.cv-etat-chips .cv-vide { color: var(--text-dim); border-style: dashed; }
+
+/* 3. Facultatif — replié, compteur visible pour éviter d'ouvrir à vide. */
+.cv-fold { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); margin-bottom: 8px; }
+.cv-fold > summary {
+  list-style: none; cursor: pointer; padding: 12px 15px;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 13.5px; font-weight: 600; color: var(--text);
+  transition: background-color var(--dur-fast) ease;
+}
+.cv-fold > summary::-webkit-details-marker { display: none; }
+@media (hover: hover) and (pointer: fine) { .cv-fold > summary:hover { background: var(--bg-hover); } }
+.cv-count {
+  flex: none; min-width: 22px; text-align: center;
+  background: var(--accent-dim); color: var(--accent);
+  border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600;
+}
+.cv-fold > summary::after {
+  content: ''; width: 7px; height: 7px; flex: none; margin-left: 2px;
+  border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim);
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.cv-fold[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
+.cv-fold-body { padding: 0 15px 14px; }
+.cv-fold-hint { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px; }
 </style>
 </head>
 <body>
@@ -3879,30 +4026,92 @@ async function submitQuickClinicalAnswer() {
     renderClinicalReview(pending.key, pending.btn, pending.label, data.analysis, payload);
   } catch (err) { showError(GEN[pending.key].errId, err.message); }
 }
+// Panneau de vérification finale.
+//
+// Il empilait sept blocs de même poids : éléments retenus, score, incohérences,
+// à compléter, interprétations, questions, suggestions. Rien ne disait par où
+// commencer, et ce qui demandait une décision (une incohérence relevée) avait
+// exactement le même traitement visuel qu'un compteur informatif.
+//
+// Trois niveaux désormais :
+//   1. CE QUI DEMANDE UNE DÉCISION — dépliés, en tête, jamais repliables.
+//   2. L'ÉTAT DU DOSSIER — une ligne compacte : score et éléments retenus.
+//   3. LE FACULTATIF — replié, avec un compteur qui dit ce qu'il y a dedans.
+// Un bloc vide n'est pas rendu : « Aucune incohérence détectée » occupe autant
+// de place qu'une vraie incohérence et dilue le signal.
 function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   const modal = ensureClinicalModal(); clinicalPending = { key, btn, label, analysis, sourcePayload };
   const score = modal.querySelector('#clinical-score'); score.textContent = analysis.confidence + '%';
-  const scoreBox = score.parentElement; scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--warning)' : '#ef4444';
+  const scoreBox = score.parentElement;
+  scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--warning)' : 'var(--danger)';
   document.getElementById('clinical-score-label').textContent = analysis.confidenceLabel || (analysis.confidence > 85 ? 'Prêt à générer' : analysis.confidence >= 70 ? 'Bon dossier' : 'À compléter');
   if (!clinicalQuestionProgress[key]) clinicalQuestionProgress[key] = { total: analysis.questions.length, answered: 0 };
-  const suggestions = analysis.suggestions.length
-    ? suggestionsHtml(analysis.suggestions, key)
+
+  const suggestions  = analysis.suggestions.length ? suggestionsHtml(analysis.suggestions, key) : '';
+  const progress     = clinicalQuestionProgress[key];
+  const recommended  = analysis.missing.map(friendlyMissing);
+  const optional     = (analysis.optionalMissing || []).map(friendlyMissing);
+  const incoherences = analysis.inconsistencies || [];
+  const deductions   = analysis.deductions || [];
+
+  const questions = analysis.questions.length
+    ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>`
     : '';
-  const progress = clinicalQuestionProgress[key];
-  const questions = analysis.questions.length ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>` : '<div style="font-size:13px;color:var(--success)">Questions essentielles couvertes.</div>';
-  const recommended = analysis.missing.map(friendlyMissing);
-  const optional = (analysis.optionalMissing || []).map(friendlyMissing);
-  modal.querySelector('#clinical-body').innerHTML = `<div class="clinical-grid">
-    ${analysis.scoreSummary ? `<div class="clinical-block full"><p class="clinical-summary">${escapeHtml(analysis.scoreSummary)}</p></div>` : ''}
-    ${sourcePayload && sourcePayload.specialiste ? `<div class="clinical-block full"><h3>Optimisée pour : ${escapeHtml(sourcePayload.specialiste)}</h3>${clinicalList(analysis.specialtyFocus || [],'Adaptation selon la spécialité destinataire.')}</div>` : ''}
-    <div class="clinical-block"><h3>Éléments retenus</h3>${clinicalList(analysis.facts,'Aucun fait exploitable identifié.')}</div>
-    <div class="clinical-block"><h3>Score dossier · ${analysis.confidence} %</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 8px">Le score reflète la richesse du dossier. Les points en gris sont facultatifs.</p>${confidenceBreakdownHtml(analysis.confidenceBreakdown)}<div style="margin-top:8px;font-size:12px;color:var(--accent)">Format conseillé : ${escapeHtml(analysis.recommendedLength)}<button type="button" class="mini-apply" id="apply-recommended-format">Appliquer</button></div></div>
-    <div class="clinical-block${analysis.inconsistencies.length?' clinical-alert':''}"><h3>Incohérences à vérifier</h3>${clinicalList(analysis.inconsistencies,'Aucune incohérence détectée.')}</div>
-    <div class="clinical-block"><h3>À compléter si possible</h3>${clinicalList(recommended, optional.length ? 'Éléments facultatifs restants : ' + optional.join(', ') : 'Éléments essentiels présents.')}</div>
-    <div class="clinical-block full"><h3>Interprétations proposées · cochez celles à intégrer</h3>${deductionsHtml(analysis.deductions)}</div>
-    <div class="clinical-block"><h3>Compléter rapidement</h3>${questions}</div>
-    <div class="clinical-block full"><h3>Suggestions pour ${escapeHtml(nomDocument(key))}</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 10px">Activez “ Oui ” pour intégrer l’élément dans ${escapeHtml(nomDocument(key))}. Les pistes du spécialiste sont affichées à titre informatif uniquement.</p>${suggestions || ''}</div>
-  </div>`;
+
+  // Un dépliant ne s'affiche que s'il a un contenu, et son compteur annonce
+  // ce qu'on trouvera dedans : sans lui, on déplie pour découvrir un bloc vide.
+  const repli = (titre, n, contenu, ouvert) => !n ? '' :
+    `<details class="cv-fold"${ouvert ? ' open' : ''}>
+      <summary><span>${escapeHtml(titre)}</span><span class="cv-count">${n}</span></summary>
+      <div class="cv-fold-body">${contenu}</div>
+    </details>`;
+
+  modal.querySelector('#clinical-body').innerHTML = `
+    ${incoherences.length ? `
+      <div class="cv-action">
+        <div class="cv-action-t">
+          <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          ${incoherences.length > 1 ? `${incoherences.length} incohérences à trancher` : 'Une incohérence à trancher'}
+        </div>
+        <ul class="cv-action-l">${incoherences.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
+        <div class="cv-action-h">Praxi ne choisira pas à votre place : les deux versions resteraient dans le document.</div>
+      </div>` : ''}
+
+    ${recommended.length ? `
+      <div class="cv-manque">
+        <div class="cv-manque-t">À compléter avant génération</div>
+        <ul class="cv-action-l">${recommended.map(m => `<li>${escapeHtml(m)}</li>`).join('')}</ul>
+        ${optional.length ? `<div class="cv-action-h">Facultatif : ${escapeHtml(optional.join(', '))}.</div>` : ''}
+      </div>` : ''}
+
+    ${!incoherences.length && !recommended.length ? `
+      <div class="cv-ok">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg>
+        Rien ne bloque la génération.
+      </div>` : ''}
+
+    <div class="cv-etat">
+      <!-- Le score n'est pas répété ici : l'en-tête de la modale l'affiche déjà
+           en permanence. Deux fois le même chiffre, c'est un chiffre de trop. -->
+      <div class="cv-etat-faits">
+        ${analysis.scoreSummary ? `<p>${escapeHtml(analysis.scoreSummary)}</p>` : ''}
+        <div class="cv-etat-chips">${(analysis.facts || []).slice(0, 6).map(f => `<span>${escapeHtml(f)}</span>`).join('') || '<span class="cv-vide">Aucun fait exploitable identifié</span>'}</div>
+      </div>
+      <button type="button" class="mini-apply" id="apply-recommended-format">Format ${escapeHtml(analysis.recommendedLength)}</button>
+    </div>
+
+    ${repli('Détail du score', (analysis.confidenceBreakdown || []).length, confidenceBreakdownHtml(analysis.confidenceBreakdown))}
+    ${repli('Interprétations à intégrer', deductions.length, deductionsHtml(deductions))}
+    ${repli(`Suggestions pour ${nomDocument(key)}`, analysis.suggestions.length,
+        `<p class="cv-fold-hint">Basculez sur « Oui » pour intégrer l’élément dans ${escapeHtml(nomDocument(key))}. Les pistes du spécialiste sont informatives.</p>${suggestions}`)}
+    ${repli('Compléter par questions', analysis.questions.length, questions)}
+    ${sourcePayload && sourcePayload.specialiste
+        ? repli(`Attentes du destinataire — ${escapeHtml(sourcePayload.specialiste)}`,
+                (analysis.specialtyFocus || []).length,
+                clinicalList(analysis.specialtyFocus || [], ''))
+        : ''}
+  `;
+
   bindSuggestionToggles(modal);
   bindDeductionRows(modal);
   const next = document.getElementById('clinical-quick-next'); if (next) next.addEventListener('click', submitQuickClinicalAnswer);
@@ -3911,7 +4120,6 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   modal.querySelector('#clinical-cancel').textContent = 'Revenir aux notes';
   const continueBtn = modal.querySelector('#clinical-continue'); continueBtn.textContent = 'Vérifier avant génération'; delete continueBtn.dataset.step;
   openClinicalModal(modal);
-  modal.querySelector('#clinical-body').scrollTop = 0;
 }
 
 async function prepareClinicalGeneration(key, btn) {
@@ -3976,8 +4184,7 @@ function startAiProgress(errId, kind, options = {}) {
 
   box.innerHTML =
     '<div class="gen-work-head">' +
-      '<span class="spinner dark"></span>' +
-      '<span>' + escapeHtml(options.titre || 'Génération en cours') + '</span>' +
+      '<span>' + escapeHtml(options.titre || '') + '</span>' +
     '</div>' +
     '<div class="gen-stages">' +
       etapes.map((e, i) =>
@@ -4058,7 +4265,10 @@ function renderResult(el, text) {
     // sinon l'export et l'impression perdraient les rubriques.
     el.innerHTML = '<div class="cr-doc">' + sections.map(s => {
       const corps = s.lignes.join('\n').trim();
-      if (!s.titre) return corps ? `<div class="cr-section-c">${escapeHtml(corps)}</div>` : '';
+      // Ce qui précède la première rubrique est l'en-tête du praticien et la
+      // date. C'est de l'identification, pas du contenu clinique : il se
+      // compose plus petit et se détache du corps par un filet.
+      if (!s.titre) return corps ? `<div class="cr-entete">${escapeHtml(corps)}</div>` : '';
       return '<div class="cr-section">' +
         `<div class="cr-section-t">${escapeHtml(s.titre)} :</div>` +
         `<div class="cr-section-c">${escapeHtml(corps)}</div>` +
@@ -4277,10 +4487,16 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
   setLoading(btn, true);
   // Le libellé des étapes change quand un dossier est rattaché : le médecin
   // voit que le contexte antérieur est effectivement repris.
+  // Le bouton affiche déjà « Génération en cours… ». Le panneau ne le répète
+  // pas : il dit ce que le bouton ne peut pas dire — sur quel dossier on
+  // travaille, et si des antécédents sont repris.
+  const nbAnterieurs = patientLie ? (patientLie.nbDocuments || 0) : 0;
   const stopProgress = startAiProgress(
     cfg.errId,
     patientLie ? 'generate-contexte' : 'generate',
-    { titre: patientLie ? `Génération — dossier ${patientLie.nom}` : 'Génération en cours' }
+    { titre: patientLie
+        ? `Dossier ${patientLie.nom}${nbAnterieurs ? ` — ${nbAnterieurs} document(s) repris` : ' — premier document'}`
+        : 'Document isolé — aucun antécédent repris' }
   );
   try {
     let payload = Object.assign({}, built.payload);
