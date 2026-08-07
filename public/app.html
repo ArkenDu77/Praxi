@@ -2005,6 +2005,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
         <label class="label">Nom du patient</label>
         <input class="input" id="c-patient" placeholder="Ex. Mme Martin Sophie" />
       </div>
+      <!-- L'âge manquait ici alors que le gabarit du compte-rendu le prévoit :
+           le jeton de pseudonymisation ne pouvait jamais être résolu et sortait
+           en clair dans le document. Il est aussi cliniquement utile — un CR
+           sans âge se lit mal. -->
+      <div class="field" style="max-width:130px">
+        <label class="label">Âge <span class="label-opt">Facultatif</span></label>
+        <input class="input" id="c-age" placeholder="Ex. 68 ans" />
+      </div>
       <div class="field" style="max-width:200px">
         <label class="label">Date</label>
         <input class="input" id="c-date" type="date" />
@@ -3410,7 +3418,52 @@ function resubstitute(text, substitutions, patient) {
   }
   const today = new Intl.DateTimeFormat('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }).format(new Date());
   out = out.replace(/Information non renseignée\s*\(date d['’]émission\)/gi, today);
-  return out;
+  return nettoyerJetonsResiduels(out);
+}
+
+/**
+ * Filet de sécurité : retire tout jeton d'identité qui aurait survécu à la
+ * restitution.
+ *
+ * Un jeton ne survit que si le modèle l'a écrit sans qu'on le lui ait fourni —
+ * c'est ce qui se produisait sur l'écran Compte-rendu, dépourvu de champ Âge :
+ * « AGE_PATIENT » sortait en clair, deux fois, dans un document destiné à être
+ * signé. La cause est traitée côté serveur (la consigne ne cite plus que les
+ * jetons réellement transmis) ; ce filet garantit qu'aucune régression de prompt
+ * ne puisse à nouveau faire fuiter un jeton jusqu'à l'écran.
+ *
+ * On retire la mention entière plutôt que le seul jeton : supprimer « AGE_PATIENT »
+ * dans « patient de AGE_PATIENT, admis pour… » laisserait « patient de , admis ».
+ */
+function nettoyerJetonsResiduels(texte) {
+  let out = texte;
+  // Prépositions qui introduisent habituellement la donnée masquée.
+  const PREP = '(?:âgée?\\s+de|née?\\s+le|de|le)';
+
+  for (const jeton of ['AGE_PATIENT', 'DDN_PATIENT', 'PATIENT_CONFIDENTIEL']) {
+    if (!out.includes(jeton)) continue;
+    console.warn(`[praxi] jeton non restitué retiré du document : ${jeton}`);
+    out = out
+      // 1. Apposition entre deux virgules — « M. Dupont, âgé de X, consulte ».
+      //    Les DEUX virgules partent, sinon il reste « M. Dupont, consulte ».
+      .replace(new RegExp(`,\\s*${PREP}?\\s*${jeton}\\s*,`, 'gi'), ' ')
+      // 2. Entre parenthèses, crochets ou tirets — « le patient (X) présente ».
+      .replace(new RegExp(`\\s*[(\\[]\\s*${PREP}?\\s*${jeton}\\s*[)\\]]`, 'gi'), '')
+      .replace(new RegExp(`\\s*[—–-]\\s*${PREP}?\\s*${jeton}\\s*(?=[—–-]|$)`, 'gim'), '')
+      // 3. Introduit par une préposition — « âgé de X », « né le X ».
+      .replace(new RegExp(`\\s*${PREP}\\s+${jeton}\\b`, 'gi'), '')
+      // 4. Occurrence isolée restante.
+      .replace(new RegExp(`\\s*\\b${jeton}\\b`, 'g'), '');
+  }
+
+  // Ponctuation laissée orpheline par les retraits ci-dessus.
+  return out
+    .replace(/[ \t]+([,;.])/g, '$1')      // espace avant ponctuation
+    .replace(/,\s*,/g, ',')               // virgules jumelles
+    .replace(/,\s*([.;])/g, '$1')         // virgule collée à un point
+    .replace(/^[ \t]*[,;]\s*/gm, '')      // ponctuation en début de ligne
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+$/gm, '');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -3447,6 +3500,7 @@ const GEN = {
       if (!notes) return { err: 'Renseignez les notes de consultation.' };
       return { payload: {
         patient: document.getElementById('c-patient').value,
+        age:     document.getElementById('c-age').value,
         date:    document.getElementById('c-date').value,
         notes
       }};
@@ -3721,6 +3775,24 @@ function confidenceBreakdownHtml(items) {
     return `<div class="confidence-line"><span>${escapeHtml(item.label)}</span><strong class="${cls}">${item.value >= 0 ? '+' : ''}${item.value} %</strong></div>`;
   }).join('');
 }
+// Désignation du document en cours, pour que le copilote parle du document
+// qu'on rédige. Les libellés étaient écrits pour la lettre de liaison et
+// s'affichaient tels quels sur tous les écrans : « Suggestions pour votre
+// lettre » alors qu'on rédige un compte-rendu. Le routage, lui, est correct —
+// le serveur reçoit documentType et adapte réellement son analyse.
+const NOM_DOCUMENT = {
+  liaison:    'cette lettre',
+  cr:         'ce compte-rendu',
+  consult:    'ce compte-rendu',
+  ordonnance: 'cette ordonnance',
+  mdph:       'ce certificat',
+  ald:        'ce protocole',
+  certificat: 'ce certificat',
+  resume:     'cette analyse',
+  avis:       'cet avis',
+};
+function nomDocument(key) { return NOM_DOCUMENT[key] || 'ce document'; }
+
 function suggestionItemHtml(s, index) {
   return `<div class="clinical-suggestion">
     <button type="button" class="suggestion-toggle" aria-pressed="false">Non</button>
@@ -3728,7 +3800,7 @@ function suggestionItemHtml(s, index) {
     <span class="suggestion-body"><span class="suggestion-text" role="button" tabindex="0">${escapeHtml(s.label)}</span><small class="clinical-confidence">Confiance ${Number(s.confidence) || 70} %</small><small class="clinical-rationale">${escapeHtml(s.rationale)}</small></span>
   </div>`;
 }
-function suggestionsHtml(items) {
+function suggestionsHtml(items, key) {
   const auteur = items.filter(s => s.role !== 'specialiste');
   const specialiste = items.filter(s => s.role === 'specialiste');
   let html = '';
@@ -3739,7 +3811,7 @@ function suggestionsHtml(items) {
     html += `<div class="specialist-insights">
       <div class="specialist-insights-header">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Ce que le spécialiste pourra envisager — non inclus dans la lettre
+        Ce que le spécialiste pourra envisager — non inclus dans le document
       </div>
       <div class="specialist-insights-list">
         ${specialiste.map(s => `<div class="specialist-insight-item"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>${escapeHtml(s.label)}</div>`).join('')}
@@ -3814,7 +3886,7 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   document.getElementById('clinical-score-label').textContent = analysis.confidenceLabel || (analysis.confidence > 85 ? 'Prêt à générer' : analysis.confidence >= 70 ? 'Bon dossier' : 'À compléter');
   if (!clinicalQuestionProgress[key]) clinicalQuestionProgress[key] = { total: analysis.questions.length, answered: 0 };
   const suggestions = analysis.suggestions.length
-    ? suggestionsHtml(analysis.suggestions)
+    ? suggestionsHtml(analysis.suggestions, key)
     : '';
   const progress = clinicalQuestionProgress[key];
   const questions = analysis.questions.length ? `<div class="quick-progress">Question ${progress.answered + 1} / ${Math.max(progress.total, progress.answered + analysis.questions.length)}</div><strong style="font-size:13px">${escapeHtml(analysis.questions[0])}</strong><div class="quick-answer"><input id="clinical-quick-input" placeholder="Réponse courte…"><button class="btn btn-ghost" id="clinical-quick-next">Suivante</button></div><div style="font-size:11px;color:var(--text-dim);margin-top:8px">Appuyez sur Entrée pour passer à la question suivante.</div>` : '<div style="font-size:13px;color:var(--success)">Questions essentielles couvertes.</div>';
@@ -3829,7 +3901,7 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
     <div class="clinical-block"><h3>À compléter si possible</h3>${clinicalList(recommended, optional.length ? 'Éléments facultatifs restants : ' + optional.join(', ') : 'Éléments essentiels présents.')}</div>
     <div class="clinical-block full"><h3>Interprétations proposées · cochez celles à intégrer</h3>${deductionsHtml(analysis.deductions)}</div>
     <div class="clinical-block"><h3>Compléter rapidement</h3>${questions}</div>
-    <div class="clinical-block full"><h3>Suggestions pour votre lettre</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 10px">Activez “ Oui ” pour intégrer l’élément dans votre lettre. Les pistes du spécialiste sont affichées à titre informatif uniquement.</p>${suggestions || ''}</div>
+    <div class="clinical-block full"><h3>Suggestions pour ${escapeHtml(nomDocument(key))}</h3><p style="font-size:12px;color:var(--text-muted);line-height:1.5;margin:0 0 10px">Activez “ Oui ” pour intégrer l’élément dans ${escapeHtml(nomDocument(key))}. Les pistes du spécialiste sont affichées à titre informatif uniquement.</p>${suggestions || ''}</div>
   </div>`;
   bindSuggestionToggles(modal);
   bindDeductionRows(modal);
@@ -4894,8 +4966,12 @@ function lierPatient(p) {
     const ddn = document.getElementById('ord-ddn');
     if (ddn) ddn.value = p.ddn;
   }
-  const age = document.getElementById('ct-age');
-  if (age && p.age !== null && p.age !== undefined && !age.value.trim()) age.value = p.age + ' ans';
+  if (p.age !== null && p.age !== undefined) {
+    ['ct-age', 'c-age', 'l-age'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el && !el.value.trim()) el.value = p.age + ' ans';
+    });
+  }
 }
 
 // Conservé : d'anciens appels passent encore par usePatient().

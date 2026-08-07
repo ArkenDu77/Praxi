@@ -64,6 +64,36 @@ describe('documentSafety — valeurs chiffrées non sourcées', () => {
     const document = `Fait le ${now.getDate()}/${now.getMonth() + 1}/${now.getFullYear()}.`;
     expect(documentSafety(document, 'Consultation de contrôle.', medecin).requiresReview).toBe(false);
   });
+
+  // Signalé en production : le bandeau « valeur(s) sans correspondance — 07 »
+  // se déclenchait sur le 07 de « 07 août 2026 ». Une alerte fausse sur un
+  // élément aussi visible décrédibilise le vrai signal.
+  test("n'alerte pas sur une date écrite en toutes lettres", () => {
+    const now = new Date();
+    const jour = String(now.getDate()).padStart(2, '0');
+    const mois = now.toLocaleDateString('fr-FR', { month: 'long' });
+    const document = `Lyon, le ${jour} ${mois} ${now.getFullYear()}\nPatient vu ce jour.`;
+    const safety = documentSafety(document, 'Patient vu ce jour.', medecin);
+    expect(safety.unsupportedNumbers).toEqual([]);
+    expect(safety.requiresReview).toBe(false);
+  });
+
+  test("n'alerte pas sur un mois et une année sans quantième", () => {
+    const now = new Date();
+    const mois = now.toLocaleDateString('fr-FR', { month: 'long' });
+    const document = `Bilan de ${mois} ${now.getFullYear()}.`;
+    expect(documentSafety(document, 'Bilan.', medecin).requiresReview).toBe(false);
+  });
+
+  // Les dates sont retirées par leur forme, pas en autorisant leurs chiffres :
+  // autoriser globalement le quantième rendait indétectable une posologie
+  // inventée qui vaut ce même nombre, un jour sur trente.
+  test('une posologie inventée égale au quantième du jour reste détectée', () => {
+    const quantieme = new Date().getDate();
+    const safety = documentSafety(`Posologie ${quantieme} mg.`, 'Paracétamol prescrit.', medecin);
+    expect(safety.unsupportedNumbers).toContain(String(quantieme));
+    expect(safety.requiresReview).toBe(true);
+  });
 });
 
 // ─── STOCKAGE JSON ─────────────────────────────────────────────────────────

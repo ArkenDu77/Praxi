@@ -17,7 +17,9 @@ const vm   = require('vm');
 const APP = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8');
 
 const DEBUT = '// Les champs de texte libre soumis à la pseudonymisation';
-const FIN   = 'function resubstitute(';
+// Le bloc s'arrête après nettoyerJetonsResiduels(), que resubstitute() appelle :
+// couper à la fin de resubstitute() laissait une référence non résolue.
+const FIN   = 'function nettoyerJetonsResiduels(';
 
 function extraireBloc() {
   const debut = APP.indexOf(DEBUT);
@@ -25,7 +27,7 @@ function extraireBloc() {
   if (debut === -1 || finDeclaration === -1) {
     throw new Error('Bloc de pseudonymisation introuvable dans public/app.html — marqueurs à mettre à jour.');
   }
-  // resubstitute() se termine à la première accolade en colonne 0 après sa
+  // La fonction se termine à la première accolade en colonne 0 après sa
   // déclaration : le script inline suit la même convention partout.
   const finBloc = APP.indexOf('\n}\n', finDeclaration) + 3;
   return APP.slice(debut, finBloc);
@@ -35,10 +37,10 @@ const sandbox = { console };
 vm.createContext(sandbox);
 vm.runInContext(
   extraireBloc() +
-  '\n;globalThis.__api = { PSEUDO_FIELDS, IDENTITY_TOKENS, pseudonymize, pseudonymizePayload, resubstitute };',
+  '\n;globalThis.__api = { PSEUDO_FIELDS, IDENTITY_TOKENS, pseudonymize, pseudonymizePayload, resubstitute, nettoyerJetonsResiduels };',
   sandbox
 );
-const { PSEUDO_FIELDS, pseudonymize, pseudonymizePayload, resubstitute } = sandbox.__api;
+const { PSEUDO_FIELDS, pseudonymize, pseudonymizePayload, resubstitute, nettoyerJetonsResiduels } = sandbox.__api;
 
 // ─── COUVERTURE ────────────────────────────────────────────────────────────
 // Trois écrans (certificat MDPH, protocole ALD, certificat médical) affichaient
@@ -162,5 +164,105 @@ describe('analyse de document collé', () => {
     pseudonymizePayload('resume', payload);
     expect(payload.text).not.toMatch(/1580375116001/);
     expect(payload.text).not.toMatch(/rue des Lilas/);
+  });
+});
+
+// ─── JETONS NON RESTITUÉS ───────────────────────────────────────────────────
+// Constaté en production sur l'écran « Compte-rendu de consultation » : le
+// document généré contenait « AGE_PATIENT » en clair, deux fois. Ce formulaire
+// n'avait pas de champ Âge, le jeton ne pouvait donc jamais être résolu — mais
+// le prompt serveur annonçait son existence au modèle, qui l'écrivait quand
+// même. La cause est traitée côté serveur ; ce filet garantit qu'aucun jeton
+// n'atteint l'écran même si une régression de prompt le réintroduit.
+
+describe('nettoyage des jetons non restitués', () => {
+  const JETONS = /AGE_PATIENT|DDN_PATIENT|PATIENT_CONFIDENTIEL/;
+
+  const cas = [
+    ['préposition simple', 'Patient de AGE_PATIENT, admis pour douleur thoracique.'],
+    ['apposition entre virgules', 'M. Dupont, âgé de AGE_PATIENT, consulte ce jour.'],
+    ['entre parenthèses', 'Le patient (AGE_PATIENT) présente une dyspnée.'],
+    ['en début de phrase', 'Né le DDN_PATIENT, il est suivi depuis 2019.'],
+    ['seul sur sa ligne', 'MOTIF :\nAGE_PATIENT\nToux fébrile.'],
+    ['en fin de document', 'Conclusion : surveillance à 3 mois. AGE_PATIENT'],
+    ['occurrences multiples', 'AGE_PATIENT puis encore AGE_PATIENT.'],
+  ];
+
+  test.each(cas)('retire le jeton — %s', (_nom, texte) => {
+    expect(nettoyerJetonsResiduels(texte)).not.toMatch(JETONS);
+  });
+
+  test.each(cas)('ne laisse pas de ponctuation orpheline — %s', (_nom, texte) => {
+    const r = nettoyerJetonsResiduels(texte);
+    expect(r).not.toMatch(/,\s*,/);       // virgules jumelles
+    expect(r).not.toMatch(/\s,/);         // espace avant virgule
+    expect(r).not.toMatch(/^\s*[,;]/m);   // ponctuation en tête de ligne
+  });
+
+  test('une apposition retirée ne laisse pas de virgule avant le verbe', () => {
+    expect(nettoyerJetonsResiduels('M. Dupont, âgé de AGE_PATIENT, consulte ce jour.'))
+      .toBe('M. Dupont consulte ce jour.');
+  });
+
+  test('un texte sans jeton est rendu inchangé', () => {
+    const intact = 'Suivi depuis 2019, traitement de 500 mg, patient de 45 ans, RAS.';
+    expect(nettoyerJetonsResiduels(intact)).toBe(intact);
+  });
+
+  test('les valeurs chiffrées cliniques ne sont pas touchées', () => {
+    const t = 'Dépistage entre 50 et 74 ans. Posologie 1500 mg. AGE_PATIENT';
+    const r = nettoyerJetonsResiduels(t);
+    expect(r).toContain('entre 50 et 74 ans');
+    expect(r).toContain('1500 mg');
+    expect(r).not.toMatch(JETONS);
+  });
+
+  test('resubstitute applique le nettoyage en bout de chaîne', () => {
+    // Aucune substitution d'âge fournie : le jeton ne peut pas être résolu.
+    const out = resubstitute('Patient de AGE_PATIENT, vu ce jour.', new Map(), '');
+    expect(out).not.toMatch(JETONS);
+  });
+});
+
+// ─── CAUSE RACINE : CONSIGNE DE JETONS CÔTÉ SERVEUR ────────────────────────
+// Le prompt annonçait la liste complète des jetons en dur. Le modèle lisait
+// donc « AGE_PATIENT représente une donnée disponible mais masquée, recopie-la
+// à chaque emplacement naturel de l'âge » même quand aucun âge n'avait été
+// transmis, et l'écrivait consciencieusement.
+
+describe('consigne de jetons construite depuis la requête', () => {
+  process.env.JWT_SECRET  = process.env.JWT_SECRET  || 'test-secret-key-min-32-chars-000000';
+  process.env.ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'test-admin-token';
+  const { consigneJetons } = require('../server');
+
+  test('sans âge transmis, AGE_PATIENT est explicitement interdit', () => {
+    const r = consigneJetons({ body: { patient: 'PATIENT_CONFIDENTIEL', notes: 'Toux fébrile.' } });
+    expect(r).toMatch(/INTERDICTION/);
+    expect(r).toMatch(/n'écris JAMAIS[^.]*AGE_PATIENT/);
+  });
+
+  test('avec âge transmis, AGE_PATIENT est annoncé et non interdit', () => {
+    const r = consigneJetons({ body: { patient: 'PATIENT_CONFIDENTIEL', age: 'AGE_PATIENT', notes: 'x' } });
+    expect(r).toMatch(/JETONS DE PSEUDONYMISATION[^.]*AGE_PATIENT/);
+    expect(r).not.toMatch(/n'écris JAMAIS[^.]*AGE_PATIENT/);
+  });
+
+  test('un corps sans aucun jeton n\'annonce rien et interdit les trois', () => {
+    const r = consigneJetons({ body: { notes: 'Consultation de suivi.' } });
+    expect(r).not.toMatch(/JETONS DE PSEUDONYMISATION/);
+    for (const j of ['PATIENT_CONFIDENTIEL', 'AGE_PATIENT', 'DDN_PATIENT']) {
+      expect(r).toContain(j);
+    }
+    expect(r).toMatch(/INTERDICTION/);
+  });
+
+  test('les marqueurs numérotés sont annoncés quand ils sont présents', () => {
+    const r = consigneJetons({ body: { notes: 'Vit au [adresse retirée 1] depuis 2019.' } });
+    expect(r).toMatch(/\[adresse retirée 1\]/);
+  });
+
+  test('un marqueur absent n\'est pas annoncé', () => {
+    const r = consigneJetons({ body: { notes: 'Rien de particulier.' } });
+    expect(r).not.toMatch(/numéro retiré/);
   });
 });

@@ -1545,6 +1545,62 @@ function finalizeDocument(text) {
   return stripPraxiArtifacts(text);
 }
 
+// Jetons de pseudonymisation reconnus, et ce qu'ils masquent.
+const JETONS_IDENTITE = [
+  { jeton: 'PATIENT_CONFIDENTIEL', quoi: 'nom du patient' },
+  { jeton: 'AGE_PATIENT',          quoi: "âge du patient" },
+  { jeton: 'DDN_PATIENT',          quoi: 'date de naissance' },
+];
+const JETONS_MARQUEURS = [
+  { motif: /\[adresse retirée \d+\]/,  exemple: '[adresse retirée 1]', quoi: 'adresse' },
+  { motif: /\[numéro retiré \d+\]/,    exemple: '[numéro retiré 1]',   quoi: 'numéro' },
+];
+
+/**
+ * Consigne sur les jetons de pseudonymisation, construite à partir de ce que la
+ * requête contient RÉELLEMENT.
+ *
+ * La version précédente annonçait la liste complète en dur. Le modèle lisait donc
+ * « AGE_PATIENT représente une donnée disponible mais masquée, recopie-la à
+ * chaque emplacement naturel de l'âge » y compris quand aucun âge n'avait été
+ * transmis — l'écran Compte-rendu n'ayant pas de champ Âge, le jeton ne pouvait
+ * être ni envoyé ni restitué, et sortait en clair dans le document signé.
+ *
+ * Les jetons absents sont désormais interdits explicitement : sans cela, le
+ * modèle continue d'en inventer par analogie avec ceux qu'on lui présente.
+ */
+function consigneJetons(req) {
+  const corps = JSON.stringify(req.body || {});
+
+  const presents = JETONS_IDENTITE.filter(t => corps.includes(t.jeton));
+  const absents  = JETONS_IDENTITE.filter(t => !corps.includes(t.jeton));
+  const marqueurs = JETONS_MARQUEURS.filter(m => m.motif.test(corps));
+
+  const listePresents = [
+    ...presents.map(t => t.jeton),
+    ...marqueurs.map(m => `des marqueurs de la forme ${m.exemple}`),
+  ];
+
+  let regle = '';
+  if (listePresents.length) {
+    regle +=
+      `JETONS DE PSEUDONYMISATION : ${listePresents.join(', ')} ` +
+      `${listePresents.length > 1 ? 'représentent' : 'représente'} des données réellement disponibles mais masquées. ` +
+      "Recopie-les strictement, à l'identique, à chaque emplacement naturel, " +
+      "sans les reformuler, sans les traduire, sans changer leur numéro, et sans écrire 'Information non renseignée' à leur place. ";
+  }
+
+  if (absents.length) {
+    regle +=
+      `INTERDICTION : n'écris JAMAIS ${absents.map(t => t.jeton).join(', ')} ` +
+      `dans le document — ${absents.length > 1 ? 'ces données ne sont pas fournies' : 'cette donnée n\'est pas fournie'} ` +
+      `(${absents.map(t => t.quoi).join(', ')}). ` +
+      "Omets naturellement la mention correspondante plutôt que d'écrire un jeton, un crochet ou une valeur inventée. ";
+  }
+
+  return regle;
+}
+
 function clinicalGenerationRules(req, documentType) {
   const mode = ['express','standard','detaille'].includes(req.body.mode) ? req.body.mode : 'standard';
   const lengths = { express: 'EXPRESS : 5 à 8 lignes, lecture en moins de 20 secondes', standard: 'STANDARD : 10 à 15 lignes', detaille: 'DÉTAILLÉ : complet mais sans répétition' };
@@ -1567,10 +1623,7 @@ function clinicalGenerationRules(req, documentType) {
     // replace dans le document reçu. Le modèle doit donc les recopier au
     // caractère près, sinon la restitution échoue et le document sort avec un
     // trou à la place du nom, de l'âge ou de la date de naissance.
-    "JETONS DE PSEUDONYMISATION : PATIENT_CONFIDENTIEL, AGE_PATIENT, DDN_PATIENT, ainsi que les marqueurs de la forme " +
-    "[adresse retirée 1] et [numéro retiré 1], représentent des données réellement disponibles mais masquées. " +
-    "Recopie-les strictement, à l'identique, à chaque emplacement naturel — nom, âge, date de naissance, adresse, numéro — " +
-    "sans les reformuler, sans les traduire, sans changer leur numéro, et sans écrire 'Information non renseignée' à leur place. " +
+    consigneJetons(req) +
     "Si une autre donnée manque, omets naturellement la phrase ou la rubrique au lieu de répéter 'Information non renseignée', sauf champ légal strictement obligatoire. N'utilise aucune valeur chiffrée absente des données source. " +
     `Éléments attendus par la spécialité destinataire : ${focus.length ? focus.join(' ; ') : 'non spécifiés'}. Ne les présente que s'ils figurent dans la source.\n` +
     `Déductions identifiées (à formuler comme interprétations cliniques dans le texte, jamais comme faits établis) : ${deductions.length ? deductions.join(' ; ') : 'aucune'}.\n` +
@@ -1650,17 +1703,40 @@ function valeursNumeriques(texte) {
  *    produit sur toute ordonnance et qui ne sont pas des valeurs cliniques ;
  *  - la date du jour, que les documents signés portent par construction.
  */
+const MOIS_FR = 'janvier|février|fevrier|mars|avril|mai|juin|juillet|août|aout|septembre|octobre|novembre|décembre|decembre';
+
+/**
+ * Retire du document ce qui n'est pas une valeur clinique et ne doit donc pas
+ * entrer dans le contrôle : numérotation de liste et expressions de date.
+ *
+ * Les dates sont retirées par leur FORME plutôt que par leurs chiffres. La
+ * version précédente autorisait globalement le quantième et le numéro de mois
+ * du jour : le 7 du mois, « 7 mg » inventé devenait indétectable. En retirant
+ * « le 07 août 2026 » en tant qu'expression, le faux positif disparaît sans
+ * ouvrir de trou dans le signal.
+ */
+function retirerNonClinique(document) {
+  return String(document || '')
+    // Numérotation de liste en début de ligne (« 1. », « 2) »).
+    .replace(/^[ \t]*\d+\s*[.)]\s/gm, '')
+    // « 07/08/2026 », « 7-8-26 ».
+    .replace(/\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b/g, ' ')
+    // « le 07 août 2026 », « 1er janvier 2026 ».
+    .replace(new RegExp(`\\b\\d{1,2}(?:er)?\\s+(?:${MOIS_FR})\\s+\\d{4}\\b`, 'gi'), ' ')
+    // « août 2026 » sans quantième.
+    .replace(new RegExp(`\\b(?:${MOIS_FR})\\s+\\d{4}\\b`, 'gi'), ' ');
+}
+
 function documentSafety(document, source, user) {
-  const aujourdHui = new Date();
   const autorisees = new Set([
     ...valeursNumeriques(source),
     ...valeursNumeriques(medecinContext(user)),
-    String(aujourdHui.getFullYear()),
-    String(aujourdHui.getDate()),
-    String(aujourdHui.getMonth() + 1),
+    // L'année courante peut figurer seule dans un en-tête, hors expression de
+    // date complète : elle reste tolérée.
+    String(new Date().getFullYear()),
   ]);
 
-  const corps = String(document || '').replace(/^[ \t]*\d+\s*[.)]\s/gm, '');
+  const corps = retirerNonClinique(document);
   const unsupportedNumbers = [...new Set(valeursNumeriques(corps))].filter(n => !autorisees.has(n));
   return { checked: true, unsupportedNumbers, requiresReview: unsupportedNumbers.length > 0 };
 }
@@ -2785,5 +2861,9 @@ module.exports.finalizeDocument = finalizeDocument;
 // silencieuse coûte le plus cher — un document faux non signalé, ou une base de
 // comptes écrasée par une lecture qui aurait dû échouer.
 module.exports.documentSafety = documentSafety;
+// Exposé pour les tests : c'est la fonction qui décide quels jetons de
+// pseudonymisation sont annoncés au modèle. En annoncer un qui n'a pas été
+// transmis le fait sortir en clair dans un document signé.
+module.exports.consigneJetons  = consigneJetons;
 module.exports.readJsonFile   = readJsonFile;
 module.exports.writeJsonFile  = writeJsonFile;
