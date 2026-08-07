@@ -63,9 +63,17 @@ html[data-theme="dark"] {
   --accent:    #38BDF8;
   --accent2:   #0EA5E9;
   --accent-contrast: #050A10;
-  --accent-dim: var(--accent-dim);
-  --accent-glow: var(--accent-glow);
-  --accent-border: var(--accent-border);
+  /* Ces trois variables se référençaient elles-mêmes (`--accent-dim: var(--accent-dim)`).
+     Une propriété personnalisée qui se cite elle-même est invalide au calcul :
+     elle prend la valeur « invalide garantie », et toute déclaration qui
+     l'utilise tombe. En thème sombre, les 45 usages de ces jetons étaient donc
+     sans effet — halo de focus des champs, fond de l'élément de menu actif,
+     pastille d'avatar, état sélectionné des onglets de vue. Le plus coûteux :
+     `.input:focus { box-shadow: 0 0 0 3px var(--accent-dim) }` disparaissait,
+     et le champ actif ne se distinguait plus que par 1 px de bordure. */
+  --accent-dim: rgba(56,189,248,0.11);
+  --accent-glow: rgba(56,189,248,0.28);
+  --accent-border: rgba(56,189,248,0.34);
   --highlight: #BAE6FD;
   --danger:    #F87171;
   --danger-dim: rgba(248,113,113,0.10);
@@ -244,12 +252,15 @@ a, button, input, select, textarea, summary, [role="button"],
   outline: none;
 }
 .textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
+/* C'est la phrase qui répond à « où partent les données de mes patients ? »,
+   la question qui décide de l'achat. Elle était composée comme une mention
+   légale de bas de page : 11,5 px dans le gris le plus pâle de la palette. */
 .anon-hint {
-  font-size: 11.5px; color: var(--text-dim);
-  margin-top: 7px; display: flex; align-items: center; gap: 5px;
-  user-select: none; pointer-events: none;
+  font-size: 12.5px; color: var(--text-muted);
+  margin-top: 9px; display: flex; align-items: flex-start; gap: 6px;
+  line-height: 1.5; user-select: none; pointer-events: none;
 }
-.anon-hint svg { width: 13px; height: 13px; flex-shrink: 0; }
+.anon-hint svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--success); }
 .select {
   -webkit-appearance: none; appearance: none; cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
@@ -537,8 +548,11 @@ a, button, input, select, textarea, summary, [role="button"],
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 12px; gap: 14px; flex-wrap: wrap;
 }
+/* Le titre du document produit était le plus petit texte de l'écran (11 px),
+   plus petit que les boutons d'export posés à côté de lui. Il nomme pourtant
+   l'objet le plus important de la page. */
 .result-title {
-  font-size: 11px; font-weight: 500; letter-spacing: .1em;
+  font-size: 13px; font-weight: 600; letter-spacing: .08em;
   text-transform: uppercase; color: var(--accent);
 }
 .result-tools { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -561,14 +575,21 @@ a, button, input, select, textarea, summary, [role="button"],
 }
 .result.show .edit-hint { display: flex; }
 .edit-hint svg { width: 12px; height: 12px; }
+/* Le document généré est ce que le médecin relit, corrige, signe et envoie à un
+   confrère. Il était rendu en JetBrains Mono : une lettre de liaison affichée
+   en chasse fixe ne se lit pas comme un courrier médical, elle se lit comme une
+   sortie de terminal — et c'est l'écran sur lequel se joue la crédibilité de
+   l'outil. On revient à la fonte de lecture du reste de l'application, à une
+   taille de lecture confortable et sur une longueur de ligne bornée. */
 .result-body {
   background: var(--bg-card);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-sm);
-  border-radius: 10px; padding: 26px 30px;
-  font-family: 'JetBrains Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
-  font-size: 13.5px; line-height: 1.75; color: var(--text);
+  border-radius: 10px; padding: 30px 34px;
+  font-family: inherit;
+  font-size: 15px; line-height: 1.7; color: var(--text);
   white-space: pre-wrap; word-wrap: break-word;
+  max-width: 74ch;
   transition: border-color .2s, box-shadow .2s;
 }
 .result-body[contenteditable="true"] { cursor: text; }
@@ -951,8 +972,21 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 .final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px Inter,sans-serif}.final-row input:focus{outline:none;border-color:var(--accent)}
 .clinical-foot{flex:none;display:flex;align-items:center;justify-content:stretch;gap:10px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg-card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.35);position:relative;z-index:2}
 .clinical-foot .btn{flex:1;justify-content:center;min-height:48px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.praxi-verification{margin:14px 0 0;padding:13px 15px;background:var(--success-dim);border:1px solid var(--success);border-radius:9px}
-.praxi-verification strong{display:block;font-size:12px;color:var(--success);margin-bottom:7px}.praxi-verification div{font-size:11px;color:var(--text-muted);line-height:1.7}
+/* Le cadre était vert et titré en vert quel que soit son contenu : il annonçait
+   « Relecture des valeurs chiffrées recommandée » et « 2 informations non
+   renseignées » dans une boîte de succès, juste sous une bannière d'alerte
+   orange qui disait la même chose. Un indicateur toujours vert n'informe de
+   rien et apprend à ne plus le lire. Le ton suit maintenant l'état réel. */
+.praxi-verification{margin:14px 0 0;padding:13px 15px;border-radius:9px;
+  background:var(--success-dim);border:1px solid var(--success)}
+.praxi-verification.attention{background:var(--warning-dim);border-color:var(--warning)}
+.praxi-verification strong{display:block;font-size:12.5px;color:var(--success);margin-bottom:7px}
+.praxi-verification.attention strong{color:var(--warning)}
+.praxi-verification div{font-size:12px;color:var(--text-muted);line-height:1.75}
+.praxi-verification .pv-ligne{display:flex;gap:7px;align-items:baseline}
+.praxi-verification .pv-marque{flex-shrink:0;font-weight:700}
+.praxi-verification .pv-ok{color:var(--success)}
+.praxi-verification .pv-attention{color:var(--warning)}
 .safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:var(--warning-dim);border:1px solid var(--warning);color:var(--warning)}
 @media(min-width:701px){
   .clinical-modal{padding:20px;align-items:center}
@@ -1114,6 +1148,36 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   .consult-nav { flex-direction: column-reverse; align-items: stretch; }
   .consult-nav .btn { width: 100%; justify-content: center; min-height: 50px; }
   .autosave-pill { top: 12px; right: 12px; }
+}
+
+/* ─── ERGONOMIE TACTILE ───────────────────────────────────────────────────
+   Les aménagements tactiles de l'application étaient tous conditionnés à
+   `max-width: 700px`. Or l'appareil visé est la tablette du cabinet, autour de
+   1024 px : elle recevait donc la densité prévue pour la souris. Mesuré sur la
+   rangée d'actions du document — celle qu'on utilise à chaque génération —
+   .tool-btn faisait 29 px de haut, .vue-btn 31 px, .quick-tpl-btn 27 px, pour
+   8 px d'écart entre eux. C'est au-dessus du plancher WCAG 2.2 (24 px) et
+   nettement sous le seuil de confort des recommandations tactiles (44 px).
+
+   `pointer: coarse` interroge le périphérique et non la largeur d'écran : le
+   poste de bureau garde sa densité, la tablette gagne des cibles atteignables,
+   quelle que soit son orientation. */
+@media (pointer: coarse) {
+  .tool-btn      { min-height: 44px; padding: 10px 16px; font-size: 13.5px; }
+  .tool-btn svg  { width: 15px; height: 15px; }
+  .vue-btn       { min-height: 44px; padding: 10px 18px; font-size: 13.5px; }
+  .chip          { min-height: 44px; padding: 11px 18px; font-size: 13.5px; }
+  .quick-tpl-btn { min-height: 44px; padding: 10px 18px; font-size: 13.5px; }
+  .hist-del      { min-width: 44px; min-height: 44px; }
+  .mic-btn       { width: 44px; height: 44px; top: 8px; right: 8px; }
+  .with-mic .textarea { padding-right: 62px; }
+  .side-link     { min-height: 46px; }
+  .step          { min-height: 48px; }
+  .ms-opt        { min-height: 46px; }
+  .btn           { min-height: 48px; }
+  /* L'espacement compte autant que la taille : deux cibles de 44 px collées
+     l'une à l'autre restent une source d'erreur de saisie. */
+  .result-tools, .chip-row, .quick-tpl-row { gap: 12px; }
 }
 </style>
 </head>
@@ -3416,17 +3480,47 @@ function renderResult(el, text) {
     el.dataset.editBound = '1';
   }
 }
-function renderPraxiVerification(resultHost, options, safety) {
+function renderPraxiVerification(resultHost, options, safety, outEl) {
   const old = resultHost.querySelector('.praxi-verification'); if (old) old.remove();
-  const analysis = options.clinicalAnalysis || {};
-  const box = document.createElement('div'); box.className = 'praxi-verification';
-  box.innerHTML = `<strong>Vérification Praxi</strong><div>
-    ${safety && !safety.requiresReview ? '✓ Aucune valeur chiffrée non sourcée détectée.' : '⚠ Relecture des valeurs chiffrées recommandée.'}<br>
-    ✓ ${(analysis.deductions || []).length} interprétation(s) conservée(s).<br>
-    ✓ ${(options.acceptedSuggestions || []).length} suggestion(s) intégrée(s) après validation.<br>
-    ${(analysis.missing || []).length} information(s) recommandée(s) restent non renseignée(s).
-  </div>`;
-  resultHost.appendChild(box);
+  const analysis    = options.clinicalAnalysis || {};
+  const deductions  = (analysis.deductions || []).length;
+  const suggestions = (options.acceptedSuggestions || []).length;
+  const manquantes  = (analysis.missing || []).length;
+  const aRelire     = Boolean(safety && safety.requiresReview);
+
+  // Une coche ne s'affiche que si elle atteste réellement quelque chose : un
+  // « ✓ 0 suggestion(s) intégrée(s) » ne valide rien, il décore un zéro.
+  const ligne = (etat, texte) => {
+    const marque = etat === 'ok' ? '✓' : etat === 'attention' ? '⚠' : '·';
+    const classe = etat === 'ok' ? 'pv-ok' : etat === 'attention' ? 'pv-attention' : '';
+    return `<div class="pv-ligne"><span class="pv-marque ${classe}">${marque}</span><span>${escapeHtml(texte)}</span></div>`;
+  };
+
+  // Les valeurs en cause sont nommées ici. Elles faisaient auparavant l'objet
+  // d'un second bandeau orange placé juste au-dessus, qui répétait le même
+  // constat dans la même couleur : deux alertes pour un seul fait.
+  const chiffres = (safety && safety.unsupportedNumbers) || [];
+  const lignes = [
+    aRelire
+      ? ligne('attention', chiffres.length
+          ? `Valeur(s) chiffrée(s) sans correspondance dans vos notes — ${chiffres.join(', ')}. À relire avant signature.`
+          : 'Valeur(s) chiffrée(s) sans correspondance dans vos notes — à relire avant signature.')
+      : ligne('ok', 'Aucune valeur chiffrée non sourcée détectée.'),
+    deductions  ? ligne('ok', `${deductions} interprétation(s) clinique(s) conservée(s).`) : null,
+    suggestions ? ligne('ok', `${suggestions} suggestion(s) intégrée(s) après votre validation.`) : null,
+    manquantes  ? ligne('attention', `${manquantes} information(s) recommandée(s) restent non renseignée(s).`) : null,
+  ].filter(Boolean);
+
+  const attention = aRelire || manquantes > 0;
+  const box = document.createElement('div');
+  box.className = 'praxi-verification' + (attention ? ' attention' : '');
+  box.innerHTML = `<strong>${attention ? 'Vérification Praxi — à relire' : 'Vérification Praxi'}</strong><div>${lignes.join('')}</div>`;
+
+  // Placé juste sous le document, et non en fin de page derrière le bloc
+  // « souhaitez-vous ajouter des éléments ? » : ce qui qualifie un document se
+  // lit à côté de lui.
+  if (outEl && outEl.parentNode) outEl.insertAdjacentElement('afterend', box);
+  else resultHost.appendChild(box);
 }
 
 async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
@@ -3465,13 +3559,8 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
     renderTools(key);
     renderChips(key, outEl.dataset.plain);
     const resultHost = document.getElementById(cfg.resId);
-    renderPraxiVerification(resultHost, options, data.safety);
     const oldSafety = resultHost.querySelector('.safety-banner'); if (oldSafety) oldSafety.remove();
-    if (data.safety && data.safety.requiresReview) {
-      const warning = document.createElement('div'); warning.className = 'safety-banner';
-      warning.textContent = 'Vérification requise : valeur(s) numérique(s) sans correspondance directe dans la source — ' + data.safety.unsupportedNumbers.join(', ') + '. Relisez avant validation.';
-      outEl.insertAdjacentElement('afterend', warning);
-    }
+    renderPraxiVerification(resultHost, options, data.safety, outEl);
     document.getElementById(cfg.resId).classList.add('show');
     document.getElementById(cfg.resId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (err) {
