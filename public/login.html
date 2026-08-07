@@ -39,7 +39,12 @@
   <a href="/" class="auth-back"><i data-lucide="arrow-left"></i> Retour à l'accueil</a>
 </div>
 
-<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<!-- Version figée + contrôle d'intégrité : `@latest` faisait suivre à Praxi
+     toute version publiée sur unpkg, y compris une version compromise, dans une
+     page qui détient le jeton de session et les documents patients. -->
+<script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"
+        integrity="sha384-hK2uiaqTSh/v1VqRxmuMQL4xmt5n0DdyBCOItx2fAs7Wv+WC8Tu0yDW1j12JooyM"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>lucide.createIcons();</script>
 <script>
 'use strict';
