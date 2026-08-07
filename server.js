@@ -2533,6 +2533,29 @@ app.get('/api/referentiels/mien', authenticateJWT, (req, res) => {
   res.json({ referentiel: referentielPublic(ref, null) });
 });
 
+// GET /health — sonde de l'hébergeur (Railway healthcheck).
+// Signale aussi si le stockage est éphémère : sans volume monté, les dossiers
+// patients disparaissent au redéploiement, et cela doit se voir sans avoir à
+// lire les logs de démarrage.
+app.get('/health', (_req, res) => {
+  let stockageInscriptible = false;
+  try {
+    fs.accessSync(DATA_DIR, fs.constants.W_OK);
+    stockageInscriptible = true;
+  } catch (_) {}
+
+  res.json({
+    status: 'ok',
+    uptime: Math.round(process.uptime()),
+    ia: Boolean(anthropic),
+    stockage: {
+      chemin: DATA_DIR,
+      inscriptible: stockageInscriptible,
+      persistant: Boolean(process.env.DATA_DIR),
+    },
+  });
+});
+
 // SPA fallback
 app.get('*', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
