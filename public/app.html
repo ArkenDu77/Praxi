@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Praxi — Application</title>
+<title>Arkiba — Application</title>
 <script>
 // Applique le thème mémorisé avant le premier rendu pour éviter tout flash.
 try { if (localStorage.getItem('praxi_theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (_) {}
@@ -49,7 +49,7 @@ try { if (localStorage.getItem('praxi_theme') === 'dark') document.documentEleme
   --sidebar-w: 264px;
 
   /* ─── CONTRAT DE MOUVEMENT ────────────────────────────────────────────
-     Praxi est un outil clinique : le mouvement sert à expliquer un
+     Arkiba est un outil clinique : le mouvement sert à expliquer un
      changement d'état, jamais à décorer. Trois règles tiennent tout :
 
      1. Une animation doit répondre à « pourquoi ça bouge ? ». Retour de
@@ -1693,7 +1693,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
 <!-- ─── SIDEBAR ─── -->
 <aside class="sidebar" id="sidebar">
-  <a href="/" class="side-logo">Prax<span>i</span></a>
+  <a href="/" class="side-logo">Arkib<span>a</span></a>
 
   <div class="side-user" id="side-user" title="Modifier mon profil">
     <div class="side-avatar" id="side-avatar">·</div>
@@ -2480,7 +2480,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   <!-- ── AVIS SPÉCIALISÉ ── -->
   <section class="view" id="view-avis">
     <h1 class="page-title">Avis spécialisé</h1>
-    <p class="page-sub">Décrivez un cas, joignez des photos : Praxi interroge une base de connaissances médicale indexée et vous rend un avis argumenté et sourcé.</p>
+    <p class="page-sub">Décrivez un cas, joignez des photos : Arkiba interroge une base de connaissances médicale indexée et vous rend un avis argumenté et sourcé.</p>
 
     <div class="field">
       <label class="label">
@@ -2834,7 +2834,7 @@ function api(path, opts = {}) {
   });
 }
 
-// Tout ce que Praxi écrit sur le poste. Le thème est délibérément absent : il
+// Tout ce qu'Arkiba écrit sur le poste. Le thème est délibérément absent : il
 // ne porte aucune donnée de santé et survit à la déconnexion.
 //
 // Seuls le jeton et le profil étaient effacés jusqu'ici. L'historique des
@@ -3782,7 +3782,7 @@ const GEN = {
   }
 };
 
-// ─── PRAXI V2 : analyse clinique avant toute génération ─────────────────────
+// ─── ARKIBA V2 : analyse clinique avant toute génération ─────────────────────
 const CLINICAL_PREFS_KEY = 'praxi_clinical_preferences';
 const lastClinicalOptions = {};
 let clinicalPending = null;
@@ -4074,7 +4074,7 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
           ${incoherences.length > 1 ? `${incoherences.length} incohérences à trancher` : 'Une incohérence à trancher'}
         </div>
         <ul class="cv-action-l">${incoherences.map(i => `<li>${escapeHtml(i)}</li>`).join('')}</ul>
-        <div class="cv-action-h">Praxi ne choisira pas à votre place : les deux versions resteraient dans le document.</div>
+        <div class="cv-action-h">Arkiba ne choisira pas à votre place : les deux versions resteraient dans le document.</div>
       </div>` : ''}
 
     ${recommended.length ? `
@@ -4468,7 +4468,7 @@ function renderPraxiVerification(resultHost, options, safety, outEl) {
   const attention = aRelire || manquantes > 0;
   const box = document.createElement('div');
   box.className = 'praxi-verification' + (attention ? ' attention' : '');
-  box.innerHTML = `<strong>${attention ? 'Vérification Praxi — à relire' : 'Vérification Praxi'}</strong><div>${lignes.join('')}</div>`;
+  box.innerHTML = `<strong>${attention ? 'Vérification Arkiba — à relire' : 'Vérification Arkiba'}</strong><div>${lignes.join('')}</div>`;
 
   // Placé juste sous le document, et non en fin de page derrière le bloc
   // « souhaitez-vous ajouter des éléments ? » : ce qui qualifie un document se
@@ -4818,7 +4818,7 @@ function downloadPdf(cfg, key) {
     doc.setDrawColor(200, 215, 230).setLineWidth(0.2);
     doc.line(M, H - 13, W - M, H - 13);
     doc.setFont('helvetica', 'italic').setFontSize(8).setTextColor(155, 165, 175);
-    doc.text('Document généré par Praxi · praxi-production.up.railway.app', W / 2, H - 8, { align: 'center' });
+    doc.text('Document généré par Arkiba · praxi-production.up.railway.app', W / 2, H - 8, { align: 'center' });
     doc.text('Page ' + pageNum, W - M, H - 8, { align: 'right' });
   }
 
@@ -5510,7 +5510,7 @@ function micShowListening(btn) {
   const el = micStatusEl(btn);
   if (!el) return;
   el.className = 'mic-status listening show';
-  el.innerHTML = '<span class="mic-dot"></span><span class="mic-status-body">Praxi vous écoute — parlez naturellement.' +
+  el.innerHTML = '<span class="mic-dot"></span><span class="mic-status-body">Arkiba vous écoute — parlez naturellement.' +
     '<span class="mic-status-hint">Le texte s\'ajoute au fur et à mesure. Vous pouvez continuer à taper à tout moment. Cliquez à nouveau sur le micro pour arrêter.</span></span>';
 }
 function micShowError(btn, message, hint) {
@@ -5596,7 +5596,7 @@ function toggleMic(btn) {
       case 'service-not-allowed':
         state.manualStop = true;
         micShowError(btn,
-          'Praxi n\'a pas l\'autorisation d\'utiliser le micro.',
+          'Arkiba n\'a pas l\'autorisation d\'utiliser le micro.',
           'Autorisez le micro dans les réglages du navigateur (icône cadenas dans la barre d\'adresse), ou tapez vos notes : rien n\'est perdu.');
         break;
       case 'audio-capture':
@@ -6518,7 +6518,7 @@ function initAvis() {
   });
 }
 </script>
-<!-- Version figée + contrôle d'intégrité : `@latest` faisait suivre à Praxi
+<!-- Version figée + contrôle d'intégrité : `@latest` faisait suivre à Arkiba
      toute version publiée sur unpkg, y compris une version compromise, dans une
      page qui détient le jeton de session et les documents patients. -->
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"

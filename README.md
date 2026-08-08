@@ -1,4 +1,4 @@
-# Praxi — Stack technique
+# Arkiba — Stack technique
 
 Assistant médico-administratif pour médecins libéraux français.
 Génération de lettres de liaison, comptes-rendus de consultation et résumés de documents
@@ -108,10 +108,10 @@ injecté dans le system prompt — aucun champ vide entre crochets n'apparaît d
 | GET    | `/admin/ingest` | Jobs récents + état des index |
 
 ```bash
-curl http://localhost:3001/api/admin/list -H "x-admin-token: praxi-admin-dev"
+curl http://localhost:3001/api/admin/list -H "x-admin-token: arkiba-admin-dev"
 
 curl -X PATCH http://localhost:3001/api/admin/status/1 \
-  -H "x-admin-token: praxi-admin-dev" \
+  -H "x-admin-token: arkiba-admin-dev" \
   -H "Content-Type: application/json" \
   -d '{"status":"invited"}'
 ```
@@ -120,7 +120,7 @@ curl -X PATCH http://localhost:3001/api/admin/status/1 \
 
 ### Bouclier clinique V2
 
-Avant chaque génération, Praxi effectue une revue clinique explicable et affiche séparément :
+Avant chaque génération, Arkiba effectue une revue clinique explicable et affiche séparément :
 
 - les faits présents dans la source ;
 - les déductions prudentes ;

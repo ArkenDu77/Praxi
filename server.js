@@ -21,8 +21,8 @@ const PORT = process.env.PORT || 3000;
 // générer des documents en son nom), un ADMIN_TOKEN connu à vider la liste des
 // inscrits. On refuse donc de démarrer dès qu'un secret par défaut est en place,
 // sauf demande explicite pour le poste de développement.
-const DEV_JWT_SECRET  = 'praxi-dev-secret-change-me';
-const DEV_ADMIN_TOKEN = 'praxi-admin-dev';
+const DEV_JWT_SECRET  = 'arkiba-dev-secret-change-me';
+const DEV_ADMIN_TOKEN = 'arkiba-admin-dev';
 
 const ADMIN_TOKEN    = process.env.ADMIN_TOKEN || DEV_ADMIN_TOKEN;
 const JWT_SECRET     = process.env.JWT_SECRET  || DEV_JWT_SECRET;
@@ -33,12 +33,12 @@ const secretsParDefaut = [
   ADMIN_TOKEN === DEV_ADMIN_TOKEN ? 'ADMIN_TOKEN' : null,
 ].filter(Boolean);
 
-if (secretsParDefaut.length && process.env.PRAXI_ALLOW_DEV_SECRETS !== '1') {
+if (secretsParDefaut.length && process.env.ARKIBA_ALLOW_DEV_SECRETS !== '1') {
   console.error(
     `[FATAL] Secret(s) par défaut détecté(s) : ${secretsParDefaut.join(', ')}.\n` +
     "        Un JWT_SECRET par défaut laisse forger un jeton pour n'importe quel compte médecin.\n" +
     "        Un ADMIN_TOKEN par défaut ouvre /api/admin/list (identités, emails, villes des inscrits).\n" +
-    '        Définissez ces variables dans l\'environnement — ou PRAXI_ALLOW_DEV_SECRETS=1 en local.'
+    '        Définissez ces variables dans l\'environnement — ou ARKIBA_ALLOW_DEV_SECRETS=1 en local.'
   );
   process.exit(1);
 }
@@ -91,11 +91,11 @@ function emailLayout(title, bodyHtml) {
 <tr><td align="center">
 <table width="100%" style="max-width:520px;background:#0D1520;border:1px solid #1A2535;border-radius:12px;overflow:hidden;">
 <tr><td style="padding:28px 36px 24px;border-bottom:1px solid #1A2535;">
-  <span style="font-size:22px;color:#EDF2F7;font-weight:700;letter-spacing:-.02em;">Prax<span style="color:#38BDF8;">i</span></span>
+  <span style="font-size:22px;color:#EDF2F7;font-weight:700;letter-spacing:-.02em;">Arkib<span style="color:#38BDF8;">a</span></span>
 </td></tr>
 <tr><td style="padding:32px 36px 36px;">${bodyHtml}</td></tr>
 <tr><td style="padding:18px 36px;border-top:1px solid #1A2535;text-align:center;">
-  <p style="margin:0;font-size:12px;color:#3D5166;">© 2025 Praxi — Assistant médical IA</p>
+  <p style="margin:0;font-size:12px;color:#3D5166;">© 2025 Arkiba — Assistant médical IA</p>
 </td></tr>
 </table>
 </td></tr></table>
@@ -107,7 +107,7 @@ async function sendPasswordResetEmail(email, prenom, token) {
   const url  = `${APP_URL}/reset-password.html?token=${token}`;
   const body = `
     <p style="margin:0 0 16px;font-size:18px;font-weight:600;color:#EDF2F7;">Bonjour Dr ${prenom},</p>
-    <p style="margin:0 0 24px;font-size:14.5px;color:#6B8299;line-height:1.65;">Vous avez demandé la réinitialisation de votre mot de passe Praxi. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.</p>
+    <p style="margin:0 0 24px;font-size:14.5px;color:#6B8299;line-height:1.65;">Vous avez demandé la réinitialisation de votre mot de passe Arkiba. Cliquez sur le bouton ci-dessous pour en choisir un nouveau.</p>
     <div style="text-align:center;margin:28px 0;">
       <a href="${url}" style="display:inline-block;background:#38BDF8;color:#050A10;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;">Réinitialiser mon mot de passe</a>
     </div>
@@ -115,9 +115,9 @@ async function sendPasswordResetEmail(email, prenom, token) {
     <p style="margin:12px 0 0;font-size:13px;color:#3D5166;word-break:break-all;">Lien direct : <a href="${url}" style="color:#38BDF8;">${url}</a></p>
     <p style="margin:24px 0 0;font-size:13px;color:#3D5166;">Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.</p>`;
   await transporter.sendMail({
-    from: `"Praxi" <${SMTP_USER}>`,
+    from: `"Arkiba" <${SMTP_USER}>`,
     to: email,
-    subject: 'Réinitialisation de votre mot de passe Praxi',
+    subject: 'Réinitialisation de votre mot de passe Arkiba',
     html: emailLayout('Réinitialisation du mot de passe', body)
   });
 }
@@ -917,7 +917,7 @@ function aiError(res, err) {
   res.status(status).json({ error: message });
 }
 
-// ─── PRAXI V2 : moteur clinique explicable ────────────────────────────────────────────
+// ─── ARKIBA V2 : moteur clinique explicable ────────────────────────────────────────────
 // Déterministe, disponible même sans IA. Ne transforme jamais une suggestion en fait.
 const CLINICAL_PROFILES = {
   cardiologue: {
@@ -1579,8 +1579,8 @@ function clinicalAnalysis(body = {}) {
 function stripPraxiArtifacts(text) {
   if (!text || typeof text !== 'string') return text;
   return text
-    .replace(/\n-{2,}\s*\n\s*ANALYSE\s+DE\s+PRAXI[\s\S]*$/i, '')
-    .replace(/\n\s*ANALYSE\s+DE\s+PRAXI[\s\S]*$/i, '')
+    .replace(/\n-{2,}\s*\n\s*ANALYSE\s+DE\s+ARKIBA[\s\S]*$/i, '')
+    .replace(/\n\s*ANALYSE\s+DE\s+ARKIBA[\s\S]*$/i, '')
     .trim();
 }
 
@@ -1653,10 +1653,10 @@ function clinicalGenerationRules(req, documentType) {
   const focus = Array.isArray(analysis.specialtyFocus) ? analysis.specialtyFocus.map(x => s(x, 120)).filter(Boolean).slice(0, 8) : [];
   const deductions = Array.isArray(analysis.deductions) ? analysis.deductions.map(x => s(x, 300)).filter(Boolean).slice(0, 8) : [];
   const unresolved = Array.isArray(analysis.inconsistencies) ? analysis.inconsistencies.map(x => s(x, 300)).filter(Boolean).slice(0, 8) : [];
-  return `\nCONTRAT DE SÉCURITÉ CLINIQUE PRAXI V2 (${documentType}) :\n` +
+  return `\nCONTRAT DE SÉCURITÉ CLINIQUE ARKIBA V2 (${documentType}) :\n` +
     `Longueur : ${lengths[mode]}. Style du praticien : ${style}.\n` +
     "Le document produit doit être exclusivement le document médical final, prêt à être signé et transmis. " +
-    "N'écris JAMAIS de section 'ANALYSE DE PRAXI', de mention de Praxi, ni de méta-commentaire sur la génération, les suggestions non retenues ou les informations manquantes. " +
+    "N'écris JAMAIS de section 'ANALYSE DE ARKIBA', de mention d'Arkiba, ni de méta-commentaire sur la génération, les suggestions non retenues ou les informations manquantes. " +
     "Sépare strictement les faits fournis des déductions : seuls les faits et déductions validées entrent dans le corps du document, en prose médicale continue. " +
     "Les suggestions explicitement validées par le médecin s'intègrent naturellement dans une ou deux phrases cliniques du texte (ex. 'Un Holter ECG pourrait être utile si vous le jugez indiqué'), jamais dans une rubrique séparée. " +
     "S'il n'y a aucune suggestion validée, n'ajoute strictement rien à ce sujet. " +
@@ -1840,7 +1840,7 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
     "N'écris jamais de champ vide entre crochets comme [date] ou [nom]. " +
     "Si une information est absente, omets naturellement la phrase ou la rubrique. " +
     "Écris dans un style direct : 'Les palpitations évoluent depuis…', 'L’ECG réalisé au cabinet est normal'. Évite 'À l’anamnèse', 'est revenu dans les limites de la normale' et les périphrases. " +
-    "INTERDICTION ABSOLUE : n'écris jamais 'ANALYSE DE PRAXI', ne sépare pas le document par '---', et n'ajoute aucun commentaire méta sur les suggestions ou informations manquantes. La lettre s'arrête à la formule de politesse et la signature. " +
+    "INTERDICTION ABSOLUE : n'écris jamais 'ANALYSE DE ARKIBA', ne sépare pas le document par '---', et n'ajoute aucun commentaire méta sur les suggestions ou informations manquantes. La lettre s'arrête à la formule de politesse et la signature. " +
     "N'ajoute aucun commentaire hors de la lettre.";
 
   // Le référentiel du destinataire ne dicte pas la structure de la lettre (qui
@@ -2736,7 +2736,7 @@ app.delete('/api/patients/:id', authenticateJWT, (req, res) => {
 
 // GET /api/patients/:id/contexte — contexte clinique antérieur condensé.
 // Alimente l'encart « Contexte » avant génération : le médecin voit ce que
-// Praxi s'apprête à réutiliser du dossier, et peut le refuser.
+// Arkiba s'apprête à réutiliser du dossier, et peut le refuser.
 app.get('/api/patients/:id/contexte', authenticateJWT, (req, res) => {
   const contexte = dossiers.contextePatient(req.user.id, s(req.params.id, 40));
   if (!contexte) return res.status(404).json({ error: 'Patient introuvable.' });
@@ -2840,7 +2840,7 @@ app.use((req, res, next) => {
 // ── START (uniquement si lancé directement, pas via require() en test) ──
 if (require.main === module) {
   app.listen(PORT, () => {
-    console.log(`\n  Praxi backend ✓`);
+    console.log(`\n  Arkiba backend ✓`);
     console.log(`  → http://localhost:${PORT}`);
     // Le jeton lui-même n'est pas journalisé : les logs d'un PaaS sont lisibles
     // par tous les collaborateurs du projet et repartent souvent vers un

@@ -1,5 +1,5 @@
 /**
- * Praxi — Tests des garde-fous de sécurité et d'intégrité des données.
+ * Arkiba — Tests des garde-fous de sécurité et d'intégrité des données.
  *
  * Chaque bloc correspond à un défaut constaté sur le code réel : le test est
  * écrit pour échouer sur la version d'avant, pas pour décrire l'intention.
@@ -212,7 +212,7 @@ describe('secrets par défaut', () => {
   });
 
   test('les secrets par défaut restent utilisables sur demande explicite', () => {
-    expect(lancer({ PRAXI_ALLOW_DEV_SECRETS: '1' }).code).toBe(0);
+    expect(lancer({ ARKIBA_ALLOW_DEV_SECRETS: '1' }).code).toBe(0);
   });
 
   test('un démarrage avec de vrais secrets passe', () => {

@@ -1,4 +1,4 @@
-/* Praxi — styles partagés des pages d'authentification (login / register) */
+/* Arkiba — styles partagés des pages d'authentification (login / register) */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* Tactile : coupe le double-tap-to-zoom sur les éléments interactifs, sans

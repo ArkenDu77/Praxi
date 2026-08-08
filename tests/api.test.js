@@ -1,5 +1,5 @@
 /**
- * Praxi — Tests API (Jest + Supertest)
+ * Arkiba — Tests API (Jest + Supertest)
  *
  * Setup : npm install --save-dev jest supertest
  * Run   : npx jest tests/api.test.js
@@ -274,13 +274,13 @@ describe('POST /api/clinical/analyze — bouclier clinique V2', () => {
   });
 });
 
-describe('finalizeDocument — suppression ANALYSE DE PRAXI', () => {
+describe('finalizeDocument — suppression ANALYSE DE ARKIBA', () => {
   const { finalizeDocument } = require('../server');
-  const sample = `Dr Test\n\nCher Confrère,\n\nLettre de liaison.\n\nDr Test\n\n---\n\nANALYSE DE PRAXI\n\nAucune suggestion validée.`;
+  const sample = `Dr Test\n\nCher Confrère,\n\nLettre de liaison.\n\nDr Test\n\n---\n\nANALYSE DE ARKIBA\n\nAucune suggestion validée.`;
 
-  test('retire la section ANALYSE DE PRAXI du document final', () => {
+  test('retire la section ANALYSE DE ARKIBA du document final', () => {
     const out = finalizeDocument(sample);
-    expect(out).not.toMatch(/ANALYSE DE PRAXI/i);
+    expect(out).not.toMatch(/ANALYSE DE ARKIBA/i);
     expect(out).not.toMatch(/---/);
     expect(out).toContain('Lettre de liaison.');
   });
