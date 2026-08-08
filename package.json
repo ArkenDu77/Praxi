@@ -1,7 +1,7 @@
 {
-  "name": "praxi",
+  "name": "arkiba",
   "version": "0.1.0",
-  "description": "Praxi — assistant médico-administratif pour médecins libéraux",
+  "description": "Arkiba — assistant médico-administratif pour médecins libéraux",
   "main": "server.js",
   "engines": {
     "node": ">=20"

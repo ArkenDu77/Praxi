@@ -1,5 +1,5 @@
 /**
- * Praxi — Tests dossiers patients (timeline) et référentiels de spécialité
+ * Arkiba — Tests dossiers patients (timeline) et référentiels de spécialité
  *
  * Run : npx jest tests/dossiers.test.js
  */

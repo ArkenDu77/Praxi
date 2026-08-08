@@ -1,5 +1,5 @@
 /**
- * Praxi — Tests de la brique RAG et de l'avis spécialisé
+ * Arkiba — Tests de la brique RAG et de l'avis spécialisé
  *
  * Run : npx jest tests/rag.test.js
  *

@@ -1,5 +1,5 @@
 /**
- * Praxi — Tests de la pseudonymisation côté client.
+ * Arkiba — Tests de la pseudonymisation côté client.
  *
  * Ces fonctions décident de ce qui sort du poste du médecin et de ce qui
  * revient dans un document signé : ce sont les deux points où une régression

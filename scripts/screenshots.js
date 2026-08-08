@@ -1,4 +1,4 @@
-// Captures d'écran de l'application Praxi, avec un dossier réaliste.
+// Captures d'écran de l'application Arkiba, avec un dossier réaliste.
 // Usage : node shot.js <label>
 const { chromium } = require('playwright');
 // Chromium fourni par l'environnement (PLAYWRIGHT_BROWSERS_PATH). Surchargeable
