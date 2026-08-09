@@ -67,6 +67,15 @@ JWT_EXPIRES_IN=7d
 |---------|-------|-------------|
 | POST   | `/api/waitlist` | Inscription liste d'attente |
 | GET    | `/api/stats` | Stats publiques (total inscrits) |
+| GET    | `/api/specialites` | Liste fermée des spécialités — source unique des menus du front |
+
+> `/api/specialites` sert exactement la liste contre laquelle `/api/waitlist`,
+> `/api/auth/register` et `/api/auth/profile` valident. Les pages `index.html`,
+> `register.html` et `app.html` peuplent leur menu depuis cette route : ne
+> réintroduisez pas de liste écrite en dur dans une page. Une copie figée dans
+> `register.html` avait divergé du serveur et faisait échouer *toutes* les
+> inscriptions avec « Spécialité requise » ; `tests/specialites.test.js`
+> verrouille désormais cet invariant.
 
 ### Authentification (médecins)
 

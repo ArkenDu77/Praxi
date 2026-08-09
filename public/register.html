@@ -73,7 +73,7 @@
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"
         integrity="sha384-hK2uiaqTSh/v1VqRxmuMQL4xmt5n0DdyBCOItx2fAs7Wv+WC8Tu0yDW1j12JooyM"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>lucide.createIcons();</script>
+<script>if (window.lucide) lucide.createIcons();</script>
 <script>
 'use strict';
 if (localStorage.getItem('praxi_token')) location.replace('/app.html');
@@ -83,12 +83,13 @@ const btn   = document.getElementById('submit');
 const errEl = document.getElementById('error');
 
 // ── Menu déroulant multi-spécialités ──
-const SPECIALITES = [
-  'Médecine générale', 'Médecine interne', 'Cardiologie', 'Pédiatrie',
-  'Gynécologie', 'Psychiatrie', 'Rhumatologie', 'Gériatrie',
-  'Médecin algologue', 'Médecin anesthésiste réanimateur', 'Autre spécialité'
-];
-
+// La liste vient de GET /api/specialites, c'est-à-dire exactement celle contre
+// laquelle le serveur valide. Cette page en embarquait une copie figée sur
+// l'ancien vocabulaire (« Médecine générale »…) alors que le serveur était passé
+// au vocabulaire praticien (« Médecin généraliste »…) : aucun libellé proposé
+// n'était accepté, et le formulaire répondait « Spécialité requise » quelle que
+// soit la sélection. Pas de copie de secours ici : sans API, l'inscription ne
+// peut de toute façon pas aboutir.
 function initMultiSelect(root, options) {
   const trigger = root.querySelector('.ms-trigger');
   const valueEl = root.querySelector('.ms-value');
@@ -143,8 +144,11 @@ function initMultiSelect(root, options) {
   trigger.addEventListener('click', toggle);
   trigger.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-    else if (e.key === 'Escape') close();
   });
+  // Échap écouté sur tout le composant, pas seulement sur le bouton : dès qu'une
+  // case était cochée le focus passait dans le panneau, Échap ne fermait plus
+  // rien, et le panneau ouvert recouvrait le bouton « Créer mon compte ».
+  root.addEventListener('keydown', e => { if (e.key === 'Escape') { close(); trigger.focus(); } });
   root.addEventListener('change', render);
   document.addEventListener('click', e => { if (!root.contains(e.target)) close(); });
 
@@ -153,7 +157,26 @@ function initMultiSelect(root, options) {
   return root;
 }
 
-initMultiSelect(document.getElementById('specialite'), SPECIALITES);
+const msSpecialite = document.getElementById('specialite');
+const msTrigger    = msSpecialite.querySelector('.ms-trigger');
+
+(async () => {
+  msSpecialite.dataset.placeholder = 'Chargement des spécialités…';
+  try {
+    const res  = await fetch('/api/specialites');
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data.specialites) || !data.specialites.length) {
+      throw new Error('liste indisponible');
+    }
+    msSpecialite.dataset.placeholder = 'Choisir une ou plusieurs spécialités…';
+    initMultiSelect(msSpecialite, data.specialites);
+  } catch {
+    // Le menu reste vide : mieux vaut le dire que laisser cocher dans le vide.
+    msSpecialite.dataset.placeholder = 'Spécialités indisponibles — rechargez la page';
+    msTrigger.setAttribute('aria-disabled', 'true');
+    initMultiSelect(msSpecialite, []);
+  }
+})();
 
 function showError(msg) { errEl.textContent = msg; errEl.classList.add('show'); window.scrollTo(0,0); }
 function clearError()   { errEl.textContent = ''; errEl.classList.remove('show'); }

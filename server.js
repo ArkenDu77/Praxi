@@ -240,8 +240,9 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+      // fonts.googleapis.com ne sert que des feuilles de style : l'autoriser
+      // comme source de scripts élargissait la surface sans rien débloquer.
       scriptSrc: ["'self'", "'unsafe-inline'",
-        "https://fonts.googleapis.com",
         "https://unpkg.com",
         "https://cdnjs.cloudflare.com",
       ],
@@ -388,6 +389,20 @@ function parseSpecialites(body) {
 
 // ── ROUTES ──
 
+// GET /api/specialites
+// Source unique de vérité pour tous les menus « spécialité » du front
+// (inscription, liste d'attente, profil). Les pages ont longtemps embarqué leur
+// propre copie de la liste : celle de register.html et celle de index.html sont
+// restées sur l'ancien vocabulaire (« Médecine générale », « Cardiologie ») quand
+// le serveur est passé au vocabulaire praticien (« Médecin généraliste »,
+// « Cardiologue ») et s'est mis à valider contre une liste fermée. Aucun libellé
+// ne correspondait plus : les deux formulaires renvoyaient « Spécialité requise »
+// / « Spécialité invalide » quelle que soit la sélection. Une liste servie par le
+// serveur ne peut plus diverger de celle qui valide.
+app.get('/api/specialites', (_req, res) => {
+  res.json({ specialites: SPECIALITES });
+});
+
 // POST /api/waitlist
 app.post('/api/waitlist', (req, res) => {
   const ip = clientIp(req);
@@ -460,8 +475,8 @@ app.patch('/api/admin/status/:id', (req, res) => {
   const { status } = req.body;
   if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Statut invalide.' });
 
-  const id = parseInt(req.params.id);
-  if (isNaN(id)) return res.status(400).json({ error: 'ID invalide.' });
+  const id = parseInt(req.params.id, 10);
+  if (Number.isNaN(id)) return res.status(400).json({ error: 'ID invalide.' });
 
   const db  = readDB();
   const idx = db.entries.findIndex(e => e.id === id);
@@ -834,7 +849,11 @@ app.patch('/api/auth/profile', authenticateJWT, (req, res) => {
   if ('prenom' in req.body)     u.prenom     = s(req.body.prenom);
   if ('nom' in req.body)        u.nom        = s(req.body.nom);
   if ('specialites' in req.body || 'specialite' in req.body) {
-    const list   = parseSpecialites(req.body);
+    const list = parseSpecialites(req.body);
+    // Sans ce garde-fou, un libellé hors liste était filtré silencieusement et la
+    // requête répondait 200 en ayant effacé la spécialité du compte — le front
+    // affichait « enregistré » et le champ revenait vide au rechargement.
+    if (!list.length) return res.status(400).json({ error: 'Spécialité requise' });
     u.specialites = list;
     u.specialite  = list.join(', ');
   }

@@ -4,3 +4,9 @@ waitlist.json
 users.json
 # Index vectoriel généré (racine uniquement — surtout pas lib/rag/, qui est du code)
 /rag/
+# Captures produites par `npm run screenshots` / `shot-document.js`. 8 Mo de PNG
+# régénérables étaient suivis par git : chaque clone les payait, et une capture
+# modifiée produisait un diff binaire illisible en revue.
+/.screenshots/
+# Fichiers temporaires d'écriture atomique (writeJsonFile) laissés par un crash.
+*.tmp
