@@ -294,6 +294,9 @@ a, button, input, select, textarea, summary, [role="button"],
   -webkit-appearance: none; appearance: none; cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px;
+  /* Un intitulé trop long pour le champ se termine par des points de
+     suspension au lieu d'être coupé en plein mot. */
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 
 /* ── Sélecteur multi-spécialités (menu déroulant animé) ── */
@@ -1160,23 +1163,38 @@ html[data-theme="dark"] .result-body {
 .repere-row:first-child { border-top: 0; }
 .repere-n { font-weight: 600; color: var(--text); flex: none; min-width: 130px; }
 
-/* ─── Sélecteur de patient en tête de formulaire ───
+/* ─── Sélecteur de dossier en tête de formulaire ───
    Rattacher le document à un dossier est l'action qui donne accès à tout le
-   reste (contexte, timeline). Elle se voit avant les champs. */
+   reste (contexte, timeline). Elle se voit avant les champs.
+
+   La disposition était en ligne — intitulé, menu et note côte à côte, le menu
+   en `flex: 1; min-width: 190px`. Sur un téléphone, les 190 px restants
+   coupaient l'option en plein mot (« Aucun dossier — document i »), l'intitulé
+   se composait en 11 px là où tous les autres champs sont en 12 px, et la note
+   repassait à la ligne en se décalant du menu.
+   Le bloc reprend donc la composition de tout le reste de l'application :
+   intitulé au-dessus, contrôle sur toute la largeur, aide en dessous. */
 .patient-pick {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: grid; gap: 9px;
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 11px; padding: 12px 15px; margin-bottom: 18px;
+  border-radius: 11px; padding: 13px 15px 14px; margin-bottom: 18px;
   transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
 }
 .patient-pick[data-lie="1"] { border-color: var(--accent-border); background: var(--accent-dim); }
 .patient-pick-l {
-  font-size: 11px; font-weight: 600; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--text-dim); flex: none;
+  font-size: 12px; font-weight: 600; letter-spacing: .045em;
+  text-transform: uppercase; color: var(--text-muted);
 }
-.patient-pick .select { flex: 1; min-width: 190px; width: auto; }
-.ctx-note { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+/* Le menu occupe la largeur du bloc sur mobile ; sur grand écran, le borner
+   évite une ligne de 700 px pour une liste de noms courts. */
+.patient-pick .select { width: 100%; min-height: 44px; }
+@media (min-width: 700px) { .patient-pick .select { max-width: 420px; } }
+.ctx-note { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; }
 .ctx-note b { color: var(--accent); font-weight: 600; }
+
+/* Version exécutée, sous les statistiques d'usage. */
+.app-build { margin-top: 16px; font-size: 12px; color: var(--text-dim); }
+.app-build.perimee { color: var(--danger); font-weight: 500; }
 
 @media (max-width: 640px) {
   .dossier-top { gap: 12px; }
@@ -2718,6 +2736,10 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
       <div class="label" style="margin-bottom:16px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Statistiques d'usage</div>
       <div id="usage-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
+      <!-- Version exécutée par cet appareil. À demander à un testeur qui
+           reproduit un bogue déjà corrigé : elle dit si son navigateur sert
+           encore une ancienne copie de l'application. -->
+      <p class="app-build" id="app-build"></p>
     </div>
   </section>
 
@@ -2811,6 +2833,12 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 // ═══════════════════════════════════════════════════════════════════════
 //  AUTH — JWT obligatoire, redirection vers /login.html sinon
 // ═══════════════════════════════════════════════════════════════════════
+// Version de ce fichier. Le serveur la relit dans le fichier qu'il sert et la
+// publie sur /api/version : comparer les deux dit si le navigateur exécute
+// bien la version en ligne, ou une copie gardée en cache. À incrémenter quand
+// un correctif doit impérativement atteindre les appareils déjà ouverts.
+const APP_BUILD = '2026-08-10.1';
+
 const TOKEN_KEY  = 'praxi_token';
 const PROFIL_KEY = 'praxi_profil';
 
@@ -3820,16 +3848,30 @@ function initClinicalPreferences() {
 }
 initClinicalPreferences();
 
+// Écrans qui produisent un document rédigé par l'IA — les seuls où « Longueur »
+// et « Mon style » veulent dire quelque chose.
+//
+// Le placement se faisait auparavant sur un simple critère de structure :
+// « cette vue a-t-elle une barre .actions ? ». Or « Mes patients » et « Profil »
+// en ont une aussi, pour leurs propres boutons. Les deux réglages atterrissaient
+// donc au bas de la fiche patient et sous les statistiques d'usage, où ils ne
+// pilotent rien. La liste est désormais explicite : un nouvel écran n'hérite
+// plus des réglages par accident de mise en page.
+//
+// L'avis spécialisé en est absent volontairement : ce n'est pas un document à
+// signer, il n'a ni longueur imposée ni style rédactionnel appris.
+const VUES_DE_GENERATION = new Set([
+  'consult', 'liaison', 'cr', 'resume', 'mdph', 'ald', 'certificat', 'ordonnance',
+]);
+
 function placeClinicalSettings(viewName) {
   const settings = document.getElementById('generation-settings');
+  if (!settings) return;
   const view = document.getElementById('view-' + (viewName || 'liaison'));
-  if (!settings || !view) return;
-  // L'avis spécialisé n'est pas un document à signer : ni longueur imposée, ni
-  // style rédactionnel appris. Ces réglages n'ont pas de sens ici.
-  if (viewName === 'avis') { settings.style.display = 'none'; return; }
-  const action = view.querySelector('.actions');
-  if (action) { action.appendChild(settings); settings.style.display = 'flex'; }
-  else settings.style.display = 'none';
+  const action = VUES_DE_GENERATION.has(viewName) && view ? view.querySelector('.actions') : null;
+  if (!action) { settings.style.display = 'none'; return; }
+  action.appendChild(settings);
+  settings.style.display = 'flex';
 }
 placeClinicalSettings('consult');
 
@@ -4127,6 +4169,7 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
 }
 
 async function prepareClinicalGeneration(key, btn) {
+  couperDictee();   // avant cfg.build() : la dictée en cours doit être dans le champ lu
   const cfg = GEN[key]; clearError(cfg.errId);
   const built = cfg.build(); if (built.err) { showError(cfg.errId, built.err); return; }
   setLoading(btn, true);
@@ -4387,9 +4430,12 @@ function injectPatientPicks() {
     const bloc = document.createElement('div');
     bloc.className = 'patient-pick';
     bloc.setAttribute('data-patient-pick', viewId);
+    // Un vrai <label for> : l'intitulé devient cliquable comme sur les autres
+    // champs, et le menu est annoncé correctement par les lecteurs d'écran.
+    const selectId = viewId + '-pick';
     bloc.innerHTML =
-      '<span class="patient-pick-l">Dossier</span>' +
-      '<select class="select" data-pick-select></select>' +
+      '<label class="patient-pick-l" for="' + selectId + '">Dossier</label>' +
+      '<select class="select" id="' + selectId + '" data-pick-select></select>' +
       '<span class="ctx-note" data-pick-note></span>';
     // Le sélecteur doit être le premier élément de l'écran, juste sous le
     // sous-titre. On vise donc un enfant DIRECT de la vue : un querySelector
@@ -4481,7 +4527,14 @@ function renderPraxiVerification(resultHost, options, safety, outEl) {
   else resultHost.appendChild(box);
 }
 
+// Toute soumission coupe la dictée en cours. Le médecin qui clique directement
+// sur « Générer » sans repasser par l'icône micro laissait l'enregistrement
+// tourner en arrière-plan, sur un écran qu'il avait déjà quitté des yeux.
+// L'appel est synchrone et fige le champ avant sa lecture par cfg.build().
+function couperDictee() { if (typeof stopMic === 'function') stopMic(); }
+
 async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
+  couperDictee();
   const cfg = GEN[key];
   clearError(cfg.errId);
 
@@ -5262,6 +5315,25 @@ function renderUsageStats() {
       <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeHtml(it.label)}</div>
     </div>`
   ).join('');
+  afficherVersion();
+}
+
+// Compare la version de ce fichier à celle que le serveur sert réellement.
+// Un écart signifie que le navigateur exécute une copie mise en cache : c'est
+// la première chose à vérifier quand un bogue déjà corrigé réapparaît sur un
+// appareil et pas sur un autre.
+async function afficherVersion() {
+  const el = document.getElementById('app-build');
+  if (!el) return;
+  el.textContent = 'Version ' + APP_BUILD;
+  try {
+    const { build } = await api('/api/version');
+    if (build && build !== APP_BUILD) {
+      el.classList.add('perimee');
+      el.textContent = 'Version ' + APP_BUILD + ' — une version plus récente (' + build +
+        ') est en ligne. Rechargez la page pour l\'obtenir.';
+    }
+  } catch (_) {/* hors ligne : la version locale reste affichée */}
 }
 
 function persistHistory(list) { historyCache = list; updateHistoryCount(); }
@@ -5475,12 +5547,35 @@ async function readPdf(file) {
 // ═══════════════════════════════════════════════════════════════════════
 // La dictée est un outil secondaire : la saisie manuelle reste active en
 // permanence, y compris pendant l'écoute. Trois garanties de fiabilité :
-//  1. le texte est reconstruit depuis la liste complète des résultats
-//     (élimine les doublons observés sur Chrome Android / tablette) ;
+//  1. le texte affiché est reconstruit à chaque événement à partir d'énoncés
+//     indexés, jamais accumulé par concaténation aveugle ;
 //  2. l'écoute redémarre seule après les coupures silencieuses du navigateur
 //     (arrêt automatique après quelques secondes sans parole) ;
 //  3. toute erreur affiche un message clair sous le champ concerné, avec
 //     bascule immédiate en saisie manuelle — jamais de blocage silencieux.
+//
+// ── Pourquoi ce n'est pas un simple `texte += transcript` ──
+// Les moteurs ne livrent PAS leurs résultats de la même façon, et un
+// correctif validé sur un seul navigateur ne prouve rien pour les autres.
+// Deux comportements observés hors de Chrome répétaient le texte en boucle :
+//
+//   a) Safari iOS EMPILE ses résultats intermédiaires au lieu de remplacer le
+//      précédent, et chacun reprend l'énoncé complet depuis le début. La liste
+//      contient donc « patient de », « patient de soixante », « patient de
+//      soixante-douze ans » — les concaténer écrit trois fois la même phrase.
+//
+//   b) `continuous` étant ignoré sur iOS, l'écoute s'arrête après chaque
+//      énoncé et l'application la relance. Or la liste de résultats n'est pas
+//      toujours vidée par ce nouveau `start()` : le moteur relivre alors les
+//      énoncés déjà validés, qui repartaient une seconde fois dans le champ à
+//      chaque relance — le texte grossissait tant que le micro tournait.
+//
+// D'où le modèle ci-dessous : un tableau d'énoncés indexé de façon stable sur
+// toute la dictée, un alignement recalculé à chaque relance pour savoir si le
+// moteur a vidé sa liste ou non, et un champ toujours RÉÉCRIT depuis ce
+// tableau. Réécrire est idempotent ; ajouter ne l'est pas.
+//
+// scripts/dictee-check.js rejoue une dictée contre ces profils de moteur.
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let activeRec = null;
 
@@ -5504,7 +5599,7 @@ function micShowListening(btn) {
   if (!el) return;
   el.className = 'mic-status listening show';
   el.innerHTML = '<span class="mic-dot"></span><span class="mic-status-body">Arkiba vous écoute — parlez naturellement.' +
-    '<span class="mic-status-hint">Le texte s\'ajoute au fur et à mesure. Vous pouvez continuer à taper à tout moment. Cliquez à nouveau sur le micro pour arrêter.</span></span>';
+    '<span class="mic-status-hint">Le texte s\'ajoute au fur et à mesure. Vous pouvez continuer à taper à tout moment. La dictée s\'arrête au clic sur le micro — et automatiquement dès que vous lancez la génération.</span></span>';
 }
 function micShowError(btn, message, hint) {
   const el = micStatusEl(btn);
@@ -5522,10 +5617,78 @@ function micHideStatus(btn) {
   if (el && !el.classList.contains('error')) el.classList.remove('show');
 }
 
+// ── Assemblage des résultats ─────────────────────────────────────────────
+
+// Espace de séparation entre le texte déjà présent et la dictée qui s'ajoute.
+function micEspacer(v) { return v && !/\s$/.test(v) ? v + ' ' : v; }
+
+// Les fragments intermédiaires d'un même énoncé se contiennent l'un l'autre
+// quand le moteur republie la phrase entière au lieu de remplacer son
+// résultat (Safari iOS). On ne garde donc un fragment que s'il n'est pas déjà
+// repris par le suivant : « patient de » + « patient de soixante » ne doit
+// afficher que le second.
+function micAssemblerInterim(fragments) {
+  const gardes = [];
+  for (let i = 0; i < fragments.length; i++) {
+    const courant = (fragments[i] || '').trim();
+    if (!courant) continue;
+    const suivant = (fragments[i + 1] || '').trim();
+    if (suivant && suivant.startsWith(courant)) continue;   // repris par le suivant
+    gardes.push(courant);
+  }
+  return gardes.join(' ');
+}
+
+// Le moteur vient de redémarrer : ses index repartent-ils de zéro, ou
+// continue-t-il de livrer les énoncés déjà validés ? On tranche en comparant
+// le début de sa liste à ce que nous avons retenu — une constatation, pas une
+// hypothèse sur le navigateur.
+function micOrigineDuMoteur(results, enonces) {
+  const deja = enonces.length;
+  if (!deja) return 0;
+  let n = 0;
+  while (n < deja && n < results.length &&
+         results[n].isFinal && results[n][0] && results[n][0].transcript === enonces[n]) n++;
+  // Tous nos énoncés retrouvés en tête : la liste a été conservée, ses index
+  // sont ceux de la dictée entière. Sinon elle est repartie vide, et son
+  // index 0 correspond au premier énoncé encore à venir.
+  return n === deja ? 0 : deja;
+}
+
+// Réécrit le champ depuis l'état — jamais d'ajout incrémental. Les énoncés
+// sont recollés avec une espace unique : certains moteurs préfixent leurs
+// transcriptions, d'autres non, et l'un comme l'autre donnait « ansdouleur ».
+function micPeindre(s) {
+  const enCours = micAssemblerInterim(
+    Object.keys(s.interims).map(Number).sort((a, b) => a - b)
+      .filter(k => k >= s.coupure).map(k => s.interims[k]));
+  const dicte = [...s.enonces.slice(s.coupure), enCours]
+    .map(t => (t || '').trim()).filter(Boolean).join(' ');
+  s.ecrire(s.base + dicte);
+}
+
+// Fige à l'écran ce qui n'a pas encore été validé par le moteur. Appelé quand
+// le médecin coupe lui-même : il n'y aura pas de second passage pour valider
+// ces mots, et les perdre serait pire que de garder la version intermédiaire.
+function micFigerInterims(s) {
+  const idx = Object.keys(s.interims).map(Number).sort((a, b) => a - b)
+    .filter(k => k >= s.coupure);
+  const texte = micAssemblerInterim(idx.map(k => s.interims[k]));
+  s.interims = {};
+  if (texte) s.enonces[idx.length ? idx[idx.length - 1] : s.enonces.length] = texte;
+}
+
+// Arrêt de la dictée en cours. Le champ est figé SYNCHRONEMENT : l'appelant
+// (une soumission de formulaire, le plus souvent) lit la valeur juste après,
+// sans pouvoir attendre l'événement `end` du moteur, qui arrive plus tard.
 function stopMic() {
   if (!activeRec) return;
-  activeRec.manualStop = true;
-  try { activeRec.rec.stop(); } catch (_) {}
+  const s = activeRec;
+  s.manualStop = true;
+  micFigerInterims(s);
+  micPeindre(s);
+  try { s.rec.stop(); } catch (_) {}
+  s.cleanup();
 }
 
 function toggleMic(btn) {
@@ -5542,9 +5705,12 @@ function toggleMic(btn) {
   const state = {
     btn, target,
     rec: new SpeechRec(),
-    baseText: target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value,
-    sessionFinal: '',
-    ignoreUntil: 0,        // résultats déjà intégrés (repris si l'utilisateur tape)
+    // Texte présent avant la dictée (ou repris du clavier si le médecin tape).
+    base: micEspacer(target.value),
+    enonces: [],           // énoncés validés, index stable sur toute la dictée
+    interims: {},          // fragments en cours, même indexation
+    coupure: 0,            // premier index encore reflété dans le champ
+    origine: null,         // décalage des index du moteur, revu à chaque relance
     manualStop: false,
     programmatic: false,   // distingue nos écritures des frappes de l'utilisateur
     restarts: 0
@@ -5554,33 +5720,41 @@ function toggleMic(btn) {
   rec.continuous = true;
   rec.interimResults = true;
 
-  const setValue = v => {
+  state.ecrire = v => {
     state.programmatic = true;
     target.value = v;
     target.dispatchEvent(new Event('input', { bubbles: true })); // autosave du texte dicté
     state.programmatic = false;
   };
 
-  // Si le médecin tape pendant la dictée, on repart de son texte : la saisie
-  // manuelle a toujours priorité, rien n'est écrasé.
+  // Si le médecin tape pendant la dictée, son texte devient la nouvelle base :
+  // la saisie manuelle a toujours priorité, rien n'est écrasé. Les énoncés
+  // déjà reconnus restent mémorisés — les oublier ferait échouer la détection
+  // d'alignement à la relance suivante, et le moteur les republierait.
   const onUserType = () => {
     if (state.programmatic) return;
-    state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
-    state.sessionFinal = '';
-    state.ignoreUntil = state.resultCount || 0;
+    state.base = micEspacer(target.value);
+    state.coupure = state.enonces.length;
+    state.interims = {};
   };
   target.addEventListener('input', onUserType);
 
   rec.onresult = e => {
-    let finalT = '', interim = '';
-    for (let i = state.ignoreUntil; i < e.results.length; i++) {
+    if (state.manualStop) return;    // arrêt demandé : plus rien n'entre dans le champ
+    if (state.origine === null) state.origine = micOrigineDuMoteur(e.results, state.enonces);
+    // Les fragments en cours sont RECONSTRUITS depuis la liste livrée, jamais
+    // fusionnés avec les précédents : quand le moteur valide un énoncé, il
+    // retire les intermédiaires qui l'annonçaient, et les conserver de notre
+    // côté réécrivait la phrase une seconde fois.
+    state.interims = {};
+    for (let i = 0; i < e.results.length; i++) {
       const r = e.results[i];
-      if (r.isFinal) finalT += r[0].transcript;
-      else           interim += r[0].transcript;
+      const texte = r[0] ? r[0].transcript : '';
+      const idx = state.origine + i;
+      if (r.isFinal) state.enonces[idx] = texte;
+      else state.interims[idx] = texte;
     }
-    state.resultCount = e.results.length;
-    state.sessionFinal = finalT;
-    setValue(state.baseText + finalT + interim);
+    micPeindre(state);
   };
 
   rec.onerror = e => {
@@ -5609,40 +5783,40 @@ function toggleMic(btn) {
   };
 
   rec.onend = () => {
-    // Consolide ce qui a été dicté avant un éventuel redémarrage.
-    if (state.sessionFinal) {
-      state.baseText = state.baseText + state.sessionFinal;
-      if (!/\s$/.test(state.baseText)) state.baseText += ' ';
-      state.sessionFinal = '';
-    }
-    setValue(state.baseText.replace(/\s$/, ''));
-    state.ignoreUntil = 0;
-    state.resultCount = 0;
+    // Les fragments non validés disparaissent avec le passage : le moteur les
+    // reproposera s'ils correspondaient à de la parole. Les énoncés validés,
+    // eux, restent dans `state.enonces` — c'est ce qui permet de reconnaître
+    // le moteur qui relivre sa liste au passage suivant.
+    state.interims = {};
+    state.origine = null;
+    micPeindre(state);
 
-    // Le navigateur coupe l'écoute après quelques secondes de silence :
-    // on la relance tant que le médecin n'a pas arrêté lui-même.
+    // Le navigateur coupe l'écoute après quelques secondes de silence — et
+    // Safari iOS la coupe après chaque énoncé, `continuous` étant ignoré.
+    // On la relance tant que le médecin n'a pas arrêté lui-même.
     if (!state.manualStop && activeRec === state && state.restarts < 60) {
       state.restarts += 1;
-      state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
       setTimeout(() => {
         if (activeRec !== state || state.manualStop) return;
         try { rec.start(); }
         catch (_) {
-          micCleanup(state);
+          state.cleanup();
           micShowError(btn, 'La dictée s\'est interrompue.', 'Cliquez sur le micro pour reprendre — le texte déjà dicté est conservé.');
         }
       }, 200);
       return;
     }
-    micCleanup(state);
+    state.cleanup();
   };
 
-  function micCleanup(s) {
-    s.btn.classList.remove('listening');
-    s.target.removeEventListener('input', onUserType);
-    micHideStatus(s.btn);
-    if (activeRec === s) activeRec = null;
-  }
+  // Idempotent : `stopMic` l'appelle tout de suite pour que l'interface suive
+  // le geste du médecin, et l'événement `end` du moteur le rappellera ensuite.
+  state.cleanup = () => {
+    state.btn.classList.remove('listening');
+    target.removeEventListener('input', onUserType);
+    micHideStatus(state.btn);
+    if (activeRec === state) activeRec = null;
+  };
 
   try {
     rec.start();
@@ -6119,6 +6293,7 @@ function consultRxText() {
 }
 
 function consultRxGenerate() {
+  couperDictee();
   clearError('rx-error');
   const text = consultRxText();
   if (!text) { showError('rx-error', 'Sélectionnez au moins un examen, un soin ou un médicament à prescrire.'); return false; }
@@ -6446,6 +6621,7 @@ async function avisResumer() {
 }
 
 async function avisDemander(btn) {
+  couperDictee();
   clearError('av-error');
   const specialite = document.getElementById('av-specialite').value;
   const cas = document.getElementById('av-cas').value.trim();

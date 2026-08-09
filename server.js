@@ -317,7 +317,35 @@ app.use((err, req, res, next) => {
   next(err);
 });
 
-app.use(express.static(path.join(__dirname, 'public')));
+// Le shell applicatif est un unique fichier HTML qui embarque tout le
+// JavaScript : app.html fait 300 Ko et n'a pas d'URL versionnée. Servi avec le
+// `public, max-age=0` par défaut d'express.static, il restait stockable par
+// n'importe quel cache partagé, et Safari iOS est connu pour resservir une
+// page ajoutée à l'écran d'accueil sans repasser par le réseau. Un correctif
+// pouvait donc être en ligne depuis des jours sans jamais atteindre l'appareil
+// d'un testeur — et l'ancien bogue continuait de s'y manifester.
+//
+// `no-cache` n'interdit pas la mise en cache : il impose la revalidation à
+// chaque chargement. Quand rien n'a changé, la réponse reste un 304 vide.
+const CACHE_HTML = 'no-cache';
+app.use(express.static(path.join(__dirname, 'public'), {
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('.html')) res.setHeader('Cache-Control', CACHE_HTML);
+  },
+}));
+
+// Version du shell applicatif effectivement servie. Un « c'est corrigé » ne
+// veut rien dire tant qu'on ignore quelle version tourne sur l'appareil qui
+// reproduit le bogue : cette route permet de le vérifier, et l'application
+// l'affiche dans l'écran Profil.
+const APP_BUILD = (() => {
+  try {
+    const source = fs.readFileSync(path.join(__dirname, 'public', 'app.html'), 'utf8');
+    const trouve = source.match(/const APP_BUILD = '([^']+)'/);
+    return trouve ? trouve[1] : 'inconnue';
+  } catch (_) { return 'inconnue'; }
+})();
+app.get('/api/version', (_req, res) => res.json({ build: APP_BUILD }));
 
 // Rate limit (mémoire) — chaque route a son propre compteur via le namespace `ns`
 const rlMap = new Map();
@@ -2853,6 +2881,7 @@ app.use((req, res, next) => {
   if (/^\/(api|admin)(\/|$)/.test(req.path)) {
     return res.status(404).json({ error: 'Route inconnue.' });
   }
+  res.setHeader('Cache-Control', CACHE_HTML);   // même règle que express.static
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 

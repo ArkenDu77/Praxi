@@ -11,6 +11,7 @@
     "dev": "node --watch server.js",
     "test": "jest tests/ --forceExit --testTimeout=15000",
     "smoke": "node scripts/smoke.js",
+    "dictee": "node scripts/dictee-check.js",
     "screenshots": "node scripts/screenshots.js",
     "ingest": "node scripts/ingest.js"
   },
