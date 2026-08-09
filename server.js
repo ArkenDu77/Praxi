@@ -272,7 +272,7 @@ function clientIp(req) {
 
 // CORS : autoriser uniquement l'origine de production + localhost dev.
 // Comparaison stricte, et non par préfixe : `origin.startsWith(APP_URL)`
-// acceptait aussi `https://praxi.up.railway.app.exemple-malveillant.fr`.
+// acceptait aussi `https://www.arkiba.fr.exemple-malveillant.fr`.
 const ALLOWED_ORIGINS = new Set([
   process.env.APP_URL || 'http://localhost:3001',
   'http://localhost:3000',

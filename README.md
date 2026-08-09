@@ -231,11 +231,11 @@ d'administration.
 
 ```bash
 # Lancer une ingestion complète
-curl -X POST "https://praxi.up.railway.app/admin/ingest?specialite=dermatologie" \
+curl -X POST "https://www.arkiba.fr/admin/ingest?specialite=dermatologie" \
   -H "x-admin-token: $ADMIN_TOKEN"
 
 # Suivre l'avancement
-curl "https://praxi.up.railway.app/admin/ingest/<job-id>" -H "x-admin-token: $ADMIN_TOKEN"
+curl "https://www.arkiba.fr/admin/ingest/<job-id>" -H "x-admin-token: $ADMIN_TOKEN"
 
 # Rafraîchir une seule source, ou repartir d'un index vide
 curl -X POST "…/admin/ingest?specialite=dermatologie&sources=sfd,has" -H "x-admin-token: $ADMIN_TOKEN"
