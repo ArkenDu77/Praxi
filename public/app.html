@@ -3771,7 +3771,11 @@ const GEN = {
   // d'impression et d'historique.
   avis: {
     btnLabel: "Demander l'avis",
-    endpoint: 'avis-specialise',
+    // `endpoint` ne sert qu'à construire `/api/generate/<endpoint>`. L'avis passe
+    // par /api/avis-specialise, qui n'existe pas sous /api/generate : la valeur
+    // 'avis-specialise' était un 404 en attente si un chemin y menait un jour.
+    // `null`, comme pour `rx`, marque une entrée qui ne génère pas via l'API.
+    endpoint: null,
     errId: 'av-error', resId: 'av-result', outId: 'av-out',
     label: 'Avis spécialisé',
     getPatient: () => {
@@ -4896,7 +4900,6 @@ const MIGRATION_KEY = 'praxi_migration_v2';
 
 let patientsCache = [];
 let historyCache  = [];
-let dossierCourant = null;   // patient ouvert dans la vue Dossier
 let patientLie    = null;    // patient rattaché au document en cours de rédaction
 
 function loadPatients() { return patientsCache; }
@@ -4996,9 +4999,6 @@ function renderPatients(filter = '') {
     const sous = [];
     if (p.age !== null && p.age !== undefined) sous.push(p.age + ' ans');
     if (p.patho) sous.push(p.patho);
-    const dernier = p.dernierDocument
-      ? `Dernier document : ${escapeHtml(fmtDate(p.dernierDocument.createdAt))}`
-      : 'Aucun document';
     return `
     <button class="pt-card" data-pt="${escapeHtml(p.id)}" type="button">
       <div class="dossier-avatar">${escapeHtml(initial(p.nom))}</div>
@@ -5035,7 +5035,6 @@ async function openDossier(patientId) {
     return;
   }
 
-  dossierCourant = data.patient;
   renderDossierHead(data.patient, data.stats);
   renderTimeline(data.jours);
   document.getElementById('ds-count').textContent =
@@ -5188,12 +5187,6 @@ function lierPatient(p) {
       if (el && !el.value.trim()) el.value = p.age + ' ans';
     });
   }
-}
-
-// Conservé : d'anciens appels passent encore par usePatient().
-function usePatient(id) {
-  const p = patientsCache.find(x => x.id === id);
-  if (p) lierPatient(p);
 }
 
 document.getElementById('ds-back').addEventListener('click', () => switchView('patients'));
@@ -5677,21 +5670,9 @@ function getSpecialites() {
 }
 
 // ── Menu déroulant multi-spécialités ──
-const SPECIALITES = [
-  'Médecin généraliste','Algologue','Allergologue','Anatomopathologiste',
-  'Anesthésiste-réanimateur','Angiologue','Cancérologue','Cardiologue',
-  'Chirurgien cardiaque','Chirurgien digestif','Chirurgien orthopédiste',
-  'Chirurgien plasticien','Chirurgien thoracique','Chirurgien urologue',
-  'Chirurgien vasculaire','Dermatologue','Diabétologue','Endocrinologue',
-  'Gastro-entérologue','Gériatre','Gynécologue','Hématologue','Hépatologue',
-  'Infectiologue','Interniste','Médecin du sport','Médecin du travail',
-  'Médecin nucléaire','Médecin physique et réadaptation','Néphrologue',
-  'Neurologue','Neurochirurgien','Oncologue','Ophtalmologue','ORL',
-  'Orthoptiste','Pédiatre','Pharmacologue','Pneumologue','Psychiatre',
-  'Radiologue','Radiothérapeute','Rhumatologue','Stomatologue','Urgentiste',
-  'Urologue'
-];
-
+// Options servies par GET /api/specialites, la liste contre laquelle le serveur
+// valide. Chaque page en gardait une copie en dur ; celles de register.html et
+// index.html ont fini par diverger et rejetaient toute sélection.
 function initMultiSelect(root, options) {
   const trigger = root.querySelector('.ms-trigger');
   const valueEl = root.querySelector('.ms-value');
@@ -5762,8 +5743,10 @@ function initMultiSelect(root, options) {
   trigger.addEventListener('click', toggle);
   trigger.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-    else if (e.key === 'Escape') close();
   });
+  // Échap écouté sur tout le composant, pas seulement sur le bouton : dès qu'une
+  // case était cochée le focus passait dans le panneau et Échap ne fermait plus rien.
+  root.addEventListener('keydown', e => { if (e.key === 'Escape') { close(); trigger.focus(); } });
   root.addEventListener('change', refresh);
   document.addEventListener('click', e => { if (!root.contains(e.target)) close(); });
 
@@ -5771,7 +5754,25 @@ function initMultiSelect(root, options) {
   refresh();
 }
 
-initMultiSelect(document.getElementById('p-specialite'), SPECIALITES);
+// Le menu est peuplé de façon asynchrone : on re-remplit le formulaire ensuite,
+// sinon les cases à cocher n'existent pas encore quand fillProfileForm() passe.
+let specialitesChargees = false;
+(async () => {
+  const specBox = document.getElementById('p-specialite');
+  try {
+    const res  = await fetch('/api/specialites');
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data.specialites) || !data.specialites.length) {
+      throw new Error('liste indisponible');
+    }
+    initMultiSelect(specBox, data.specialites);
+    specialitesChargees = true;
+  } catch {
+    specBox.dataset.placeholder = 'Spécialités indisponibles — rechargez la page';
+    initMultiSelect(specBox, []);
+  }
+  fillProfileForm();
+})();
 
 function fillProfileForm() {
   if (!me) return;
@@ -5801,15 +5802,22 @@ profileForm.addEventListener('submit', async e => {
   const payload = {
     prenom:      document.getElementById('p-prenom').value.trim(),
     nom:         document.getElementById('p-nom').value.trim(),
-    specialites,
     ville:       document.getElementById('p-ville').value.trim(),
     adresse:    document.getElementById('p-adresse').value.trim(),
     telephone:  document.getElementById('p-telephone').value.trim(),
     emailPro:   document.getElementById('p-emailPro').value.trim(),
     rpps:       document.getElementById('p-rpps').value.trim()
   };
+  // La spécialité n'est envoyée que si le menu a bien reçu sa liste : si
+  // /api/specialites a échoué, aucune case n'existe et envoyer un tableau vide
+  // empêcherait d'enregistrer un simple changement de téléphone.
+  if (specialitesChargees) payload.specialites = specialites;
+
   if (!payload.prenom || !payload.nom) {
     showError('profile-error', 'Le prénom et le nom sont obligatoires.'); return;
+  }
+  if (specialitesChargees && !specialites.length) {
+    showError('profile-error', 'Sélectionnez au moins une spécialité.'); return;
   }
   profileBtn.disabled = true;
   profileBtn.innerHTML = '<span class="spinner"></span><span class="btn-label">Enregistrement…</span>';
@@ -5988,7 +5996,6 @@ function mockPatient(name) {
 // ═══════════════════════════════════════════════════════════════════════
 //  CONSULTATION — parcours guidé en 3 temps (ouverture → contenu → clôture)
 // ═══════════════════════════════════════════════════════════════════════
-let consultStep = 1;
 let consultInitialized = false;
 
 function consultComposedNotes() {
@@ -6015,7 +6022,6 @@ function consultUpdateStepperContext() {
 }
 
 function ctGoto(step) {
-  consultStep = step;
   for (let i = 1; i <= 3; i++) {
     document.getElementById('ct-pane-' + i).classList.toggle('active', i === step);
   }
@@ -6524,6 +6530,6 @@ function initAvis() {
 <script src="https://unpkg.com/lucide@0.544.0/dist/umd/lucide.min.js"
         integrity="sha384-hK2uiaqTSh/v1VqRxmuMQL4xmt5n0DdyBCOItx2fAs7Wv+WC8Tu0yDW1j12JooyM"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>lucide.createIcons();</script>
+<script>if (window.lucide) lucide.createIcons();</script>
 </body>
 </html>
