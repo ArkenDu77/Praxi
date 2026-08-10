@@ -17,12 +17,15 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 </head>
 <body>
 
-<!-- TOGGLE MOBILE -->
-<button class="menu-toggle" id="menu-toggle" aria-label="Menu">
-  <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-    <path d="M4 6h16M4 12h16M4 18h16"/>
-  </svg>
-</button>
+<!-- BARRE SUPÉRIEURE — téléphone et tablette -->
+<div class="topbar">
+  <button class="menu-toggle" id="menu-toggle" aria-label="Ouvrir le menu" aria-expanded="false">
+    <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+  </button>
+  <a href="/" class="topbar-logo">Arkib<span>a</span></a>
+</div>
 <div class="sidebar-overlay" id="sidebar-overlay"></div>
 
 <!-- Indicateur global de sauvegarde automatique -->
@@ -1307,15 +1310,87 @@ renderUser();
 // ═══════════════════════════════════════════════════════════════════════
 const sidebar  = document.getElementById('sidebar');
 const overlay  = document.getElementById('sidebar-overlay');
-document.getElementById('menu-toggle').addEventListener('click', () => {
-  sidebar.classList.add('open'); overlay.classList.add('show');
-});
-overlay.addEventListener('click', () => {
-  sidebar.classList.remove('open'); overlay.classList.remove('show');
-});
+const burger   = document.getElementById('menu-toggle');
+
+function ouvrirMenu(ouvert) {
+  sidebar.classList.toggle('open', ouvert);
+  overlay.classList.toggle('show', ouvert);
+  burger.setAttribute('aria-expanded', String(ouvert));
+  burger.setAttribute('aria-label', ouvert ? 'Fermer le menu' : 'Ouvrir le menu');
+}
+burger.addEventListener('click', () => ouvrirMenu(!sidebar.classList.contains('open')));
+overlay.addEventListener('click', () => ouvrirMenu(false));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') ouvrirMenu(false); });
+
+// ─── Le tiroir au doigt ─────────────────────────────────────────────────
+// Sur téléphone, tout ce que la tablette montre en permanence — comptes-rendus,
+// lettres de liaison, certificats — vit dans le tiroir. Aller le chercher au
+// bouton à chaque changement d'écran est une friction inutile : un glissement
+// depuis le bord gauche l'ouvre, un glissement vers la gauche le referme.
+// Le tiroir suit le doigt, donc on voit ce qu'on fait avant de relâcher.
+(function tiroirAuDoigt() {
+  const BORD = 28;      // largeur de la zone d'amorce, en pixels
+  const SEUIL = 0.35;   // fraction de la largeur au-delà de laquelle on valide
+  let actif = false, x0 = 0, y0 = 0, dx = 0, ouvertAuDepart = false, oriente = false;
+
+  const largeur = () => sidebar.getBoundingClientRect().width || 288;
+  const tactile = () => window.matchMedia('(max-width: 1024px)').matches;
+
+  function suivre(v) {
+    sidebar.style.transition = 'none';
+    sidebar.style.transform = 'translateX(' + v + 'px)';
+    overlay.style.transition = 'none';
+    overlay.style.opacity = String(Math.min(1, (v + largeur()) / largeur()));
+    overlay.classList.add('show');
+  }
+  function relacher(valide) {
+    sidebar.style.transition = '';
+    sidebar.style.transform = '';
+    overlay.style.transition = '';
+    overlay.style.opacity = '';
+    ouvrirMenu(valide);
+  }
+
+  document.addEventListener('touchstart', e => {
+    if (!tactile() || e.touches.length !== 1) return;
+    const t = e.touches[0];
+    ouvertAuDepart = sidebar.classList.contains('open');
+    if (!ouvertAuDepart && t.clientX > BORD) return;
+    actif = true; oriente = false; dx = 0;
+    x0 = t.clientX; y0 = t.clientY;
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!actif) return;
+    const t = e.touches[0];
+    dx = t.clientX - x0;
+    const dy = t.clientY - y0;
+    // Tant que le geste n'est pas franchement horizontal, on laisse la page
+    // défiler : un glissement vertical ne doit jamais entrouvrir le tiroir.
+    if (!oriente) {
+      if (Math.abs(dx) < 10 && Math.abs(dy) < 10) return;
+      if (Math.abs(dy) > Math.abs(dx)) { actif = false; return; }
+      oriente = true;
+    }
+    const L = largeur();
+    const v = ouvertAuDepart ? Math.min(0, dx) : Math.min(0, -L + Math.max(0, dx));
+    suivre(v);
+  }, { passive: true });
+
+  const fin = () => {
+    if (!actif) return;
+    actif = false;
+    if (!oriente) { relacher(ouvertAuDepart); return; }
+    const L = largeur();
+    relacher(ouvertAuDepart ? dx > -L * SEUIL : dx > L * SEUIL);
+  };
+  document.addEventListener('touchend', fin, { passive: true });
+  document.addEventListener('touchcancel', fin, { passive: true });
+})();
 document.getElementById('side-user').addEventListener('click', () => switchView('profile'));
 
 function switchView(name) {
+  ouvrirMenu(false);
   const prev = document.querySelector('.side-link.active[data-view]');
   if (prev && prev.dataset.view !== 'patients') sessionStorage.setItem('praxi_lastView', prev.dataset.view);
   document.querySelectorAll('.side-link[data-view]').forEach(b =>

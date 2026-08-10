@@ -2967,3 +2967,143 @@ html[data-theme="dark"] .actions .btn-primary:hover:not(:disabled) {
   gap: 8px;
   margin-bottom: 14px;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Téléphone et tablette
+   Le premier écran doit montrer le travail, pas seulement l'annoncer : on
+   resserre tout ce qui précède le premier champ.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* Barre supérieure : le menu et le nom du produit, collés en haut. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 44;
+  display: none;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+html[data-theme="dark"] .topbar { background: rgba(20, 26, 36, 0.86); }
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  text-decoration: none;
+}
+.topbar-logo span { color: var(--accent); }
+
+@media (max-width: 1024px) {
+  /* La barre supérieure remplace le bouton flottant : elle occupe la largeur,
+     donc la zone de travail n'a plus besoin de lui réserver du vide en haut. */
+  body { display: block; }
+  .topbar { display: flex; }
+  .menu-toggle {
+    position: static;
+    display: flex;
+    flex: none;
+  }
+  .main { padding: 24px 16px 96px; }
+  .autosave-pill { top: auto; bottom: 14px; right: 14px; }
+
+  /* Le tiroir suit le doigt : pendant le geste, le JS pilote `transform`,
+     et la transition est neutralisée pour que le mouvement colle au doigt. */
+  .sidebar { will-change: transform; }
+  .sidebar-overlay { transition: opacity 0.22s ease; }
+}
+
+@media (max-width: 720px) {
+  /* En-tête d'écran : il annonce, il n'occupe pas la moitié de l'écran. */
+  .screen-head { margin-bottom: 16px; }
+  .page-title { font-size: 25px; }
+  .page-sub {
+    margin-top: 8px;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  /* Le choix du dossier tient sur une ligne : intitulé et sélecteur côte à
+     côte, aide en une ligne dessous. Il occupait un quart du premier écran. */
+  .patient-pick {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    border-radius: var(--r-l);
+  }
+  .patient-pick-l { margin-bottom: 5px; font-size: 9px; }
+  /* Le sélecteur prend toute la largeur : à mi-largeur, « Aucun dossier —
+     document isolé » se faisait couper par le bord du champ. */
+  .patient-pick .select { min-height: 44px; padding: 8px 36px 8px 12px; font-size: 14px; }
+  .patient-pick-aide {
+    font-size: 11.5px;
+    line-height: 1.45;
+    text-align: left;
+  }
+
+  /* Les trois étapes restent côte à côte : empilées, elles repoussaient le
+     formulaire hors de l'écran. Le rang et le nom suffisent à s'orienter. */
+  .stepper { margin-bottom: 14px; }
+  .stepper-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .step {
+    min-height: 56px;
+    padding: 8px 9px;
+    border-radius: var(--r-m);
+    gap: 2px;
+  }
+  .step-num { font-size: 8.5px; letter-spacing: 0.1em; }
+  .step-num::before { content: "É. "; }
+  .step-label { font-size: 12.5px; }
+  .stepper-patient { margin-top: 8px; padding: 8px 12px; font-size: 12.5px; }
+
+  /* Panneaux et champs : moins de marge perdue, mêmes cibles tactiles. */
+  .card, .panel { padding: 16px; margin-bottom: 14px; border-radius: var(--r-l); }
+  .card-title, .panel-title { margin-bottom: 14px; font-size: 18px; }
+  .field { margin-bottom: 14px; }
+  .field-row { gap: 12px; margin-bottom: 14px; }
+  .ecran-outils { margin-bottom: 10px; }
+  .ecran-outils .btn { width: 100%; }
+  .disclosure { margin-bottom: 10px; }
+  .disclosure-summary { min-height: 52px; padding: 0 12px; gap: 10px; }
+  .disclosure-summary svg.disclosure-icon { width: 32px; height: 32px; padding: 8px; }
+  .actions { margin-top: 16px; }
+  .generation-settings { margin-bottom: 14px; gap: 8px; }
+  .result { padding: 16px; border-radius: var(--r-l); }
+  .result-body { padding: 16px; font-size: 14.5px; }
+  .gen-work { padding: 16px; }
+
+  /* La zone de travail commence au ras de la barre : rien à faire défiler
+     avant d'atteindre le premier champ. */
+  .main { padding: 16px 14px 88px; }
+  .main::before { display: none; }
+}
+
+/* Le fond travaillé coûte cher en composition sur un téléphone, pour un
+   effet que l'écran ne rend pas. On le retire là où il ne sert pas. */
+@media (max-width: 720px) {
+  body::before { background-size: 48px 48px; opacity: 0.5; }
+  html[data-theme="dark"] body::after { display: none; }
+}
+
+@media (max-height: 760px) and (max-width: 1024px) {
+  /* Sur un téléphone, la liste complète doit tenir sans défilement interne :
+     on resserre les intitulés de groupe et le bloc médecin, jamais les cibles
+     tactiles, qui restent à 44 px. */
+  .sidebar { padding: 14px 14px 12px; }
+  .side-logo { font-size: 23px; min-height: 40px; }
+  .side-user { min-height: 52px; margin-top: 12px; padding: 7px 10px; }
+  .side-avatar { width: 34px; height: 34px; font-size: 15px; }
+  .side-nav { margin-top: 2px; }
+  .side-section { margin: 12px 0 4px; }
+  .side-foot { margin-top: 10px; padding-top: 10px; }
+}
