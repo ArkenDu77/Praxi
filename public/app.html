@@ -12,7 +12,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -91,9 +91,9 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
   /* Rayons et flou de la refonte — repris tels quels par les composants. */
   --r-sm: 6px; --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px;
   --glass-blur: blur(14px) saturate(130%);
-  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
-  --font-sans: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* ─── CONTRAT DE MOUVEMENT ────────────────────────────────────────────
      Arkiba est un outil clinique : le mouvement sert à expliquer un
@@ -395,7 +395,7 @@ html[data-theme="dark"] .sidebar {
 .label {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
   font-family: var(--font-mono);
-  font-size: 10.5px; font-weight: 500;
+  font-size: 10.5px; font-weight: 600;
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text-dim); margin-bottom: 9px;
 }
@@ -621,7 +621,7 @@ html[data-theme="dark"] .select {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   border-radius: var(--r-lg); padding: 11px 22px;
   min-height: 44px;
-  font-size: 14px; font-weight: 500; cursor: pointer; letter-spacing: -.005em;
+  font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: -.005em;
   font-family: inherit; border: 1px solid transparent;
   transition: opacity .2s, transform .12s, box-shadow .2s, background .2s, border-color .2s, color .2s, filter .2s;
 }
@@ -691,7 +691,7 @@ html[data-theme="dark"] .select {
   padding: 10px 16px; border-radius: var(--r-xl);
   background: var(--bg-card2); border: 1px solid var(--border);
   font-family: var(--font-mono);
-  font-size: 11px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase;
+  font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
   color: var(--text); cursor: pointer; user-select: none; list-style: none;
   transition: border-color .18s, color .18s, background .18s, border-radius .18s;
 }
@@ -847,7 +847,7 @@ html[data-theme="dark"] .chip { background: rgba(7,13,20,0.5); background: color
 .chip:hover { border-color: var(--accent-border); color: var(--text); }
 .chip:active { transform: translateY(1px); }
 .chip.on {
-  background: var(--accent-dim); border-color: var(--accent-border); color: var(--text); font-weight: 500;
+  background: var(--accent-dim); border-color: var(--accent-border); color: var(--text); font-weight: 600;
 }
 /* Coche discrète : l'état sélectionné ne repose pas uniquement sur la couleur */
 .chip.on::before {
@@ -899,8 +899,8 @@ html[data-theme="dark"] .chip { background: rgba(7,13,20,0.5); background: color
 }
 .hist-icon svg { width: 17px; height: 17px; }
 .hist-body { flex: 1; min-width: 0; }
-.hist-type { font-size: 11px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
-.hist-patient { font-size: 14px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hist-type { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
+.hist-patient { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .hist-date { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
 .hist-del {
   background: none; border: none; color: var(--text-dim); cursor: pointer;
@@ -928,7 +928,7 @@ html[data-theme="dark"] .card {
 .card-title {
   display: flex; align-items: center; gap: 9px;
   font-family: var(--font-mono);
-  font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
   color: var(--accent); margin-bottom: 18px;
 }
 .card-title::before {
@@ -1223,7 +1223,7 @@ html[data-theme="dark"] .gen-work {
   border: 2px solid var(--border2); position: relative;
   transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
 }
-.ai-stage[data-state="active"] { color: var(--text); font-weight: 500; }
+.ai-stage[data-state="active"] { color: var(--text); font-weight: 600; }
 .ai-stage[data-state="active"] .ai-stage-dot {
   border-color: var(--accent);
   /* Anneau pulsé : la seule boucle de l'écran, réservée à l'étape en cours. */
