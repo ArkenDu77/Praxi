@@ -11,20 +11,32 @@ a, button, input, select, summary,
 /* « Nuit clinique » — la palette de la vitrine. Connexion et inscription sont
    la suite immédiate de la landing : elles en portent le décor. */
 :root {
+  --night: #070d14;
   --night:      oklch(0.155 0.018 254);
+  --night-2: #0f161f;
   --night-2:    oklch(0.198 0.021 253);
+  --night-3: #161f29;
   --night-3:    oklch(0.235 0.024 252);
+  --night-line: #28313c;
   --night-line: oklch(0.31 0.024 252);
+  --night-line-2: #3c4957;
   --night-line-2: oklch(0.4 0.028 250);
+  --lumen: #f0f4f9;
   --lumen:      oklch(0.965 0.008 250);
+  --lumen-soft: #aeb9c5;
   --lumen-soft: oklch(0.78 0.021 250);
+  --lumen-dim: #76828e;
   --lumen-dim:  oklch(0.6 0.024 250);
+  --sky: #35cef1;
   --sky:        oklch(0.79 0.13 217);
+  --sky-ice: #a8ebfb;
   --sky-ice:    oklch(0.9 0.07 215);
+  --gold: #ebc070;
   --gold:       oklch(0.83 0.11 82);
 
   --bg:        var(--night);
   --bg-card:   var(--night-2);
+  --bg-card2: #0b121a;
   --bg-card2:  oklch(0.178 0.02 253);
   --border:    var(--night-line);
   --border2:   var(--night-line-2);
@@ -33,11 +45,17 @@ a, button, input, select, summary,
   --text-dim:  var(--lumen-dim);
   --accent:    var(--sky);
   --accent-contrast: var(--night);
+  --accent-dim: rgba(53,206,241,0.12);
   --accent-dim: color-mix(in oklab, var(--sky) 12%, transparent);
+  --accent-glow: rgba(53,206,241,0.28);
   --accent-glow: color-mix(in oklab, var(--sky) 28%, transparent);
+  --accent-border: rgba(53,206,241,0.4);
   --accent-border: color-mix(in oklab, var(--sky) 40%, transparent);
+  --danger: #ff6468;
   --danger:    oklch(0.704 0.191 22);
+  --danger-dim: rgba(194,38,48,0.12);
   --danger-dim: color-mix(in oklab, var(--danger) 12%, transparent);
+  --success: #00d491;
   --success:   oklch(0.765 0.177 163);
 
   --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px;
@@ -85,7 +103,9 @@ body {
 .auth-card {
   position: relative; z-index: 1;
   width: 100%; max-width: 460px;
+  background: rgba(15,22,31,0.72);
   background: color-mix(in oklab, var(--night-2) 72%, transparent);
+  border: 1px solid rgba(40,49,60,0.8);
   border: 1px solid color-mix(in oklab, var(--night-line) 80%, transparent);
   border-radius: var(--r-2xl);
   padding: 42px 38px;
@@ -119,6 +139,7 @@ body {
 .row .field { flex: 1; }
 /* 48 px : les champs d'authentification se remplissent souvent au doigt. */
 .input, .select {
+  background: rgba(7,13,20,0.6);
   width: 100%; background: color-mix(in oklab, var(--night) 60%, transparent);
   border: 1px solid var(--border); border-radius: var(--r-lg);
   min-height: 48px;
@@ -141,6 +162,7 @@ body {
 .ms { position: relative; }
 .ms-trigger {
   width: 100%; display: flex; align-items: center; gap: 10px;
+  background: rgba(7,13,20,0.6);
   background: color-mix(in oklab, var(--night) 60%, transparent); border: 1px solid var(--border);
   border-radius: var(--r-lg); padding: 9px 16px; min-height: 48px;
   font-family: inherit; font-size: 15px; color: var(--text);
@@ -173,10 +195,12 @@ body {
 .ms.open .ms-caret { transform: rotate(180deg); color: var(--accent); }
 .ms-panel {
   position: absolute; z-index: 40; top: calc(100% + 7px); left: 0; right: 0;
+  background: rgba(15,22,31,0.96);
   background: color-mix(in oklab, var(--night-2) 96%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--r-xl); padding: 6px; max-height: 282px; overflow-y: auto;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 30px 70px -30px rgba(0,0,0,.7);
   box-shadow: 0 30px 70px -30px oklch(0 0 0 / .7);
   opacity: 0; transform: translateY(-10px) scale(.985); transform-origin: top center;
   visibility: hidden; pointer-events: none;
@@ -193,6 +217,7 @@ body {
 .ms-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 .ms-check {
   flex: none; width: 19px; height: 19px; border-radius: 6px;
+  background: rgba(7,13,20,0.6);
   border: 1.5px solid var(--border2); background: color-mix(in oklab, var(--night) 60%, transparent);
   display: flex; align-items: center; justify-content: center;
   transition: background .18s, border-color .18s;
@@ -219,6 +244,7 @@ body {
 
 .spinner {
   width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(7,13,20,0.35);
   border: 2px solid color-mix(in oklab, var(--night) 35%, transparent); border-top-color: var(--night);
   animation: spin .7s linear infinite;
 }
@@ -229,8 +255,8 @@ body {
   border-radius: var(--r-lg); font-size: 13.5px; line-height: 1.5;
 }
 .alert.show { display: block; }
-.alert-error   { background: var(--danger-dim); border: 1px solid color-mix(in oklab, var(--danger) 40%, transparent); color: var(--danger); }
-.alert-success { background: color-mix(in oklab, var(--success) 10%, transparent); border: 1px solid color-mix(in oklab, var(--success) 35%, transparent); color: var(--success); }
+.alert-error   { background: var(--danger-dim); border: 1px solid rgba(194,38,48,0.4); border: 1px solid color-mix(in oklab, var(--danger) 40%, transparent); color: var(--danger); }
+.alert-success { background: rgba(0,212,145,0.1); background: color-mix(in oklab, var(--success) 10%, transparent); border: 1px solid rgba(0,212,145,0.35); border: 1px solid color-mix(in oklab, var(--success) 35%, transparent); color: var(--success); }
 
 .auth-foot {
   text-align: center; font-size: 13.5px; color: var(--text-muted); margin-top: 24px;
