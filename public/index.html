@@ -11,7 +11,7 @@
 <meta name="twitter:card" content="summary_large_image" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -49,9 +49,9 @@
 
   --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px;
   --glass-blur: blur(14px) saturate(130%);
-  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
-  --font-sans: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   color-scheme: dark;
 }
@@ -147,12 +147,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
   display: flex; align-items: center; gap: 10px; justify-self: start;
   min-width: 0; text-decoration: none; min-height: 44px;
 }
-.nav-logo .mark {
-  display: grid; place-items: center; width: 32px; height: 32px; flex: none;
-  border-radius: var(--r-md); border: 1px solid var(--accent-border);
-  background: var(--accent-dim); color: var(--accent);
-}
-.nav-logo .word { font-family: var(--font-display); font-size: 1.35rem; line-height: 1; color: var(--lumen); }
+.nav-logo .word { font-family: var(--font-display); font-size: 1.5rem; line-height: 1; color: var(--lumen); letter-spacing: -.02em; }
 .nav-logo .word span { color: var(--accent); }
 .nav-links { display: none; align-items: center; gap: 32px; justify-self: center; }
 .nav-links a {
@@ -164,7 +159,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   min-height: 44px; padding: 0 18px; border-radius: var(--r-lg);
-  font-family: inherit; font-size: 14px; font-weight: 500;
+  font-family: inherit; font-size: 14px; font-weight: 600;
   text-decoration: none; cursor: pointer; border: 1px solid transparent;
   /* Sans fond explicite, un <button> hérite du gris système du navigateur —
      le lien et le bouton du héros ne se ressemblaient plus. */
@@ -280,6 +275,23 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 .hero-doc-col .dictee { margin-top: 16px; font-family: var(--font-mono); font-size: .8125rem; line-height: 1.7; color: var(--lumen-soft); opacity: .6; }
 .hero-doc-col .signe { margin-top: 16px; font-size: .875rem; line-height: 1.7; color: var(--lumen); }
 .hero-doc-col mark { background: var(--accent-dim); color: var(--sky-ice); border-radius: 4px; padding: 0 4px; }
+.doc-sec {
+  margin-top: 14px; font-family: var(--font-mono);
+  font-size: .5625rem; font-weight: 600; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--accent);
+}
+.doc-sec:first-of-type { margin-top: 0; }
+.hero-doc-col .doc-body { margin-top: 5px; font-size: .8125rem; line-height: 1.6; color: var(--lumen); }
+.doc-suite { margin-top: 14px; font-family: var(--font-mono); font-size: .5625rem; letter-spacing: .14em; text-transform: uppercase; color: var(--lumen-dim); }
+/* Ce que le référentiel de la spécialité attendait et que la dictée ne couvre
+   pas : l'application le signale au médecin avant qu'il signe. */
+.doc-gap {
+  margin-top: 14px; display: flex; align-items: flex-start; gap: 8px;
+  border-left: 2px solid var(--gold); background: var(--gold-dim);
+  border-radius: 0 var(--r-md) var(--r-md) 0; padding: 8px 10px;
+  font-size: .75rem; line-height: 1.5; color: var(--lumen-soft);
+}
+.doc-gap b { color: var(--gold); font-weight: 600; }
 .src-row { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid rgba(40,49,60,.6); padding-top: 16px; }
 .src {
   display: inline-flex; max-width: 100%; align-items: center; gap: 6px;
@@ -514,10 +526,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 <!-- ═══ EN-TÊTE ═══ -->
 <header class="nav" id="nav">
   <div class="nav-in">
-    <a href="#haut" class="nav-logo">
-      <span class="mark"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4.8 2.3A.3.3 0 004.5 2h-1a.5.5 0 00-.5.5v5A4.5 4.5 0 007.5 12h1a4.5 4.5 0 004.5-4.5v-5a.5.5 0 00-.5-.5h-1a.3.3 0 00-.3.3"/><path d="M8 15v1a6 6 0 0012 0v-4"/><circle cx="20" cy="10" r="2"/></svg></span>
-      <span class="word">Arkiba<span>.</span></span>
-    </a>
+    <a href="#haut" class="nav-logo"><span class="word">Arkib<span>a</span></span></a>
     <nav class="nav-links">
       <a href="#contexte">Le problème</a>
       <a href="#capacites">Capacités</a>
@@ -619,19 +628,35 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
         <div class="sweep"></div>
         <div class="hero-doc-col">
           <p class="cap">Ce que vous dictez</p>
-          <p class="dictee">« Madame D. 62 ans, contrôle HTA. TA 148 sur 92 au cabinet, elle dit 138 sur 86 à la
-            maison. Toujours ramipril 5. Pas d'œdème, pas de dyspnée. Je monte à 10, je revois dans
-            six semaines avec un ionogramme. »</p>
+          <p class="dictee">« Dupont, 68 ans, FA connue sous apixaban. Essoufflé depuis quinze jours,
+            il monte plus son étage. TA 142 sur 88, pouls 96 irrégulier, crépitants aux deux bases,
+            chevilles gonflées. J'augmente le bisoprolol, BNP écho, je le revois dans dix jours. »</p>
         </div>
         <div class="hero-doc-col">
-          <p class="cap sky">Ce que vous signez</p>
-          <p class="signe">Suivi d'une hypertension artérielle essentielle chez une patiente de 62 ans. Pression
-            artérielle de consultation à <mark>148/92 mmHg</mark>, automesure domiciliaire à 138/86 mmHg.
-            Absence de signe d'insuffisance cardiaque. Majoration du ramipril de 5 à
-            <mark>10 mg par jour</mark>, contrôle clinique et ionogramme sanguin à six semaines.</p>
+          <p class="cap sky">Le document que vous signez</p>
+          <p class="doc-sec">Motif de consultation</p>
+          <p class="doc-body">Dyspnée d'effort d'aggravation progressive depuis quinze jours chez un
+            patient de 68 ans suivi pour fibrillation atriale permanente.</p>
+
+          <p class="doc-sec">Examen clinique et constantes</p>
+          <p class="doc-body">PA 142/88 mmHg. FC 96/min, irrégulière. Crépitants des deux bases
+            pulmonaires. Œdèmes des membres inférieurs bilatéraux. Dyspnée limitant la montée d'un
+            étage — <mark>stade NYHA II</mark>.</p>
+
+          <p class="doc-sec">Synthèse diagnostique</p>
+          <p class="doc-body">Décompensation cardiaque à fraction d'éjection non documentée, sur
+            fibrillation atriale à cadence ventriculaire insuffisamment contrôlée.</p>
+
+          <p class="doc-suite">+ Antécédents · Examens complémentaires · Conduite à tenir · Surveillance</p>
+
+          <div class="doc-gap">
+            <span><b>Le référentiel attendait aussi :</b> un ECG et son interprétation — absent de
+            votre dictée. Signalé avant signature, jamais inventé.</span>
+          </div>
+
           <div class="src-row">
-            <span class="src"><b>HAS</b>HTA de l'adulte, 2024</span>
-            <span class="src"><b>ESC</b>Guidelines 2023 · §7.2</span>
+            <span class="src"><b>HAS</b>Parcours de soins insuffisance cardiaque</span>
+            <span class="src"><b>ESC</b>NYHA · classification fonctionnelle</span>
           </div>
         </div>
       </div>
@@ -904,7 +929,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 <footer class="foot hairline-top">
   <div class="foot-in">
     <div class="foot-brand">
-      <p class="word">Arkiba<span>.</span></p>
+      <p class="word">Arkib<span>a</span></p>
       <p>L'assistant administratif des médecins libéraux · Hébergement HDS certifié, France</p>
     </div>
     <div class="foot-cols">
