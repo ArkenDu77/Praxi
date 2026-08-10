@@ -1329,8 +1329,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') ouvrirMenu(f
 // depuis le bord gauche l'ouvre, un glissement vers la gauche le referme.
 // Le tiroir suit le doigt, donc on voit ce qu'on fait avant de relâcher.
 (function tiroirAuDoigt() {
-  const BORD = 28;      // largeur de la zone d'amorce, en pixels
-  const SEUIL = 0.35;   // fraction de la largeur au-delà de laquelle on valide
+  // Safari iOS s'approprie les tout premiers pixels du bord gauche pour son
+  // geste de retour arrière : y écouter faisait les deux à la fois — le tiroir
+  // s'ouvrait ET la page revenait à la vitrine. On laisse donc le bord au
+  // navigateur et on amorce un peu plus loin, dans une bande assez large pour
+  // rester naturelle au pouce.
+  const BORD_RESERVE = 30;   // laissé au navigateur
+  const BORD_FIN = 150;      // fin de la bande d'amorce
+  const SEUIL = 0.3;    // fraction de la largeur au-delà de laquelle on valide
   let actif = false, x0 = 0, y0 = 0, dx = 0, ouvertAuDepart = false, oriente = false;
 
   const largeur = () => sidebar.getBoundingClientRect().width || 288;
@@ -1355,7 +1361,10 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') ouvrirMenu(f
     if (!tactile() || e.touches.length !== 1) return;
     const t = e.touches[0];
     ouvertAuDepart = sidebar.classList.contains('open');
-    if (!ouvertAuDepart && t.clientX > BORD) return;
+    if (!ouvertAuDepart && (t.clientX <= BORD_RESERVE || t.clientX > BORD_FIN)) return;
+    // Un champ de saisie, une liste qui défile latéralement : le geste leur
+    // appartient, pas au tiroir.
+    if (e.target.closest && e.target.closest('input, textarea, select, [contenteditable="true"]')) return;
     actif = true; oriente = false; dx = 0;
     x0 = t.clientX; y0 = t.clientY;
   }, { passive: true });
@@ -2550,7 +2559,10 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   const modal = ensureClinicalModal(); clinicalPending = { key, btn, label, analysis, sourcePayload };
   const score = modal.querySelector('#clinical-score'); score.textContent = analysis.confidence + '%';
   const scoreBox = score.parentElement;
-  scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--gold)' : 'var(--danger)';
+  // Le niveau porte la couleur : la feuille de style en tire le chiffre, la
+  // pastille et l'anneau, au lieu d'une bordure posée à la main.
+  scoreBox.dataset.niveau = analysis.confidence > 85 ? 'bon' : analysis.confidence >= 70 ? 'moyen' : 'faible';
+  scoreBox.style.setProperty('--part', Math.max(0, Math.min(100, analysis.confidence)) + '%');
   document.getElementById('clinical-score-label').textContent = analysis.confidenceLabel || (analysis.confidence > 85 ? 'Prêt à générer' : analysis.confidence >= 70 ? 'Bon dossier' : 'À compléter');
   if (!clinicalQuestionProgress[key]) clinicalQuestionProgress[key] = { total: analysis.questions.length, answered: 0 };
 
@@ -3052,6 +3064,11 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
     renderPraxiVerification(resultHost, options, data.safety, outEl);
     document.getElementById(cfg.resId).classList.add('show');
     document.getElementById(cfg.resId).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Volontairement non bloquant : le document est à l'écran, utilisable, même
+    // si le réseau du cabinet a lâché au moment de l'archiver.
+    archiverDocument(key, cfg, outEl.dataset.plain || outEl.textContent)
+      .then(() => refreshHistory())
+      .catch(err => toast('Document généré, mais l\'archivage a échoué : ' + err.message));
   } catch (err) {
     showError(cfg.errId, err.message);
   } finally {
@@ -3906,30 +3923,60 @@ function updateHistoryCount() {
 // Enregistre un document généré dans la timeline du patient.
 // Le rattachement au dossier (patientId) est ce qui rend le document
 // consultable depuis la fiche et réutilisable comme contexte plus tard.
+// ═══════════════════════════════════════════════════════════════════════
+//  ARCHIVAGE
+// ═══════════════════════════════════════════════════════════════════════
+// Un document généré puis perdu parce qu'on n'a pas pensé à appuyer sur
+// « Enregistrer » est un document à réécrire. L'archivage est donc immédiat,
+// dès que le texte existe. Le bouton reste : il sert désormais à réenregistrer
+// la version relue et corrigée, et à le dire.
+//
+// Pour qu'une relecture ne laisse pas deux entrées dans l'historique, chaque
+// écran retient l'identifiant de sa dernière pièce archivée et la remplace.
+// Le serveur ne connaît pas la mise à jour d'un document : on supprime puis on
+// recrée, sans toucher aux routes.
+const dernierArchive = {};
+
+async function archiverDocument(key, cfg, texte, patientNomForce) {
+  if (!texte || !texte.trim()) return null;
+  const histType = key === 'consult' ? 'cr' : key === 'rx' ? 'ordonnance' : key;
+  const nom = patientNomForce || (patientLie && patientLie.nom) || (cfg && cfg.getPatient()) || 'Patient';
+  // On ne remplace que la pièce du MÊME patient : sans cette garde, enchaîner
+  // deux lettres sur le même écran effaçait la première.
+  const precedent = dernierArchive[key];
+  const ancien = precedent && precedent.patient === nom ? precedent.id : null;
+  // On crée avant de supprimer : si la création échoue, l'ancienne pièce est
+  // toujours là. L'inverse laisserait le médecin sans rien.
+  const cree = await api('/api/documents', {
+    method: 'POST',
+    body: JSON.stringify({
+      patientId:  patientLie ? patientLie.id : null,
+      patientNom: nom,
+      type:       histType,
+      typeLabel:  (cfg && cfg.label) || 'Document',
+      contenu:    texte,
+      sources:    (derniereProvenance[key] || []).map(d => d.id),
+    }),
+  });
+  const id = cree && (cree.document ? cree.document.id : cree.id);
+  if (ancien && ancien !== id) {
+    try { await api('/api/documents/' + encodeURIComponent(ancien), { method: 'DELETE' }); }
+    catch (_) { /* la pièce restera en double plutôt que d'échouer la sauvegarde */ }
+  }
+  if (id) dernierArchive[key] = { id, patient: nom };
+  return id;
+}
+
 async function saveToHistory(btn, cfg, key) {
   const el = document.getElementById(cfg.outId);
   const text = el.dataset.plain || el.textContent;
   if (!text) return;
 
-  // Les documents issus du parcours consultation sont rangés sous leur type
-  // « lisible » pour que la relecture rouvre le bon écran.
-  const histType = key === 'consult' ? 'cr' : key === 'rx' ? 'ordonnance' : key;
-
   const label = btn.querySelector('span');
   const orig  = label.textContent;
 
   try {
-    await api('/api/documents', {
-      method: 'POST',
-      body: JSON.stringify({
-        patientId:  patientLie ? patientLie.id : null,
-        patientNom: (patientLie && patientLie.nom) || cfg.getPatient() || 'Patient',
-        type:       histType,
-        typeLabel:  cfg.label,
-        contenu:    text,
-        sources:    (derniereProvenance[key] || []).map(d => d.id),
-      }),
-    });
+    await archiverDocument(key, cfg, text);
     await refreshHistory();
     label.textContent = '✓ Enregistré';
     btn.classList.add('saved');
@@ -4826,19 +4873,14 @@ function consultDoCloture() {
   // le réseau du cabinet a lâché. La pièce reste dans l'historique en mémoire,
   // et un échec se dit dans un toast plutôt que d'immobiliser la consultation.
   const aArchiver = [];
-  if (contenu) aArchiver.push({ type: 'cr', typeLabel: 'Compte-rendu de consultation', contenu });
-  if (rxText)  aArchiver.push({ type: 'ordonnance', typeLabel: 'Ordonnance — examens & soins', contenu: rxText });
+  if (contenu) aArchiver.push({ key: 'consult', typeLabel: 'Compte-rendu de consultation', contenu });
+  if (rxText)  aArchiver.push({ key: 'rx', typeLabel: 'Ordonnance — examens & soins', contenu: rxText });
   if (aArchiver.length) {
-    Promise.all(aArchiver.map(piece => api('/api/documents', {
-      method: 'POST',
-      body: JSON.stringify({
-        patientId:  patientLie ? patientLie.id : null,
-        patientNom: (patientLie && patientLie.nom) || name,
-        type:       piece.type,
-        typeLabel:  piece.typeLabel,
-        contenu:    piece.contenu,
-      }),
-    })))
+    // Le compte-rendu et l'ordonnance ont déjà été archivés à la génération :
+    // on remplace ces pièces par leur version relue au lieu d'en créer de
+    // nouvelles, sinon la clôture doublait chaque consultation.
+    Promise.all(aArchiver.map(piece =>
+      archiverDocument(piece.key, { label: piece.typeLabel, getPatient: () => name }, piece.contenu, name)))
       .then(() => refreshHistory())
       .catch(err => toast('Consultation clôturée, mais l\'archivage a échoué : ' + err.message));
   }
@@ -4870,6 +4912,10 @@ function consultDoCloture() {
   document.getElementById('rx-out').innerHTML = '';
   clearDraftsFor('ct-');
   clearError('ct-error');
+  // Le dossier suivant repart de zéro : les pièces du patient qu'on vient de
+  // clôturer ne doivent plus jamais être remplacées.
+  delete dernierArchive.consult;
+  delete dernierArchive.rx;
 
   modalCloture.classList.remove('show');
   ctGoto(1);

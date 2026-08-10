@@ -2600,26 +2600,16 @@ html[data-theme="dark"] .clinical-block { background: rgba(14, 18, 25, 0.4); }
 .deduction-hit { display: flex; align-items: flex-start; gap: 10px; }
 .deduction-hit input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--accent); }
 
-.clinical-score {
-  display: flex;
-  align-items: baseline;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.clinical-score strong {
-  font-family: var(--serif);
-  font-size: 30px;
-  font-weight: 400;
-  color: var(--text);
-}
-.clinical-score small { font-size: 12px; color: var(--text-dim); }
+/* Le score du dossier est traité plus bas, avec la revue clinique. La règle
+   `#clinical-score { display: block }` qui vivait ici l'emportait par son
+   sélecteur d'identifiant et remettait le chiffre en bloc : il se posait en
+   haut de l'anneau au lieu d'en occuper le centre. */
 .clinical-score-bar {
   height: 6px;
   border-radius: 999px;
   background: var(--surface-2);
   overflow: hidden;
 }
-#clinical-score { display: block; }
 
 .clinical-foot {
   display: flex;
@@ -3022,6 +3012,17 @@ html[data-theme="dark"] .topbar { background: rgba(20, 26, 36, 0.86); }
   .sidebar-overlay { transition: opacity 0.22s ease; }
 }
 
+/* Safari iOS réserve les tout premiers pixels du bord gauche à son propre
+   geste de retour arrière. `overscroll-behavior-x` demande au navigateur de
+   ne pas transformer un débordement horizontal en navigation ; le reste se
+   règle côté JS, en n'écoutant pas le bord. */
+html, body {
+  overscroll-behavior-x: none;
+}
+
+@media (max-width: 1024px) {
+}
+
 @media (max-width: 720px) {
   /* En-tête d'écran : il annonce, il n'occupe pas la moitié de l'écran. */
   .screen-head { margin-bottom: 16px; }
@@ -3106,4 +3107,482 @@ html[data-theme="dark"] .topbar { background: rgba(20, 26, 36, 0.86); }
   .side-nav { margin-top: 2px; }
   .side-section { margin: 12px 0 4px; }
   .side-foot { margin-top: 10px; padding-top: 10px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Revue clinique avant génération
+   Sans couleur, tout se vaut : le bloquant, le facultatif, le bonus et le
+   malus se lisaient dans le même gris. Chaque nature a la sienne.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.clinical-head {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 22px 18px;
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse 70% 140% at 0% 0%, rgba(85, 198, 239, 0.13), transparent 70%);
+}
+.clinical-head h2 { font-size: 26px; margin-top: 2px; }
+
+/* Le score : un chiffre, une qualification, un arc qui donne la proportion. */
+.clinical-score {
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 0;
+  border: 0;
+}
+.clinical-score small {
+  grid-column: 1;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.clinical-score strong {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  font-family: var(--serif);
+  font-size: 25px;
+  font-weight: 400;
+  line-height: 1;
+  text-align: center;
+  /* Le chiffre est le contenu anonyme de la grille : sans boîte à lui, il
+     s'alignait à gauche de l'anneau au lieu d'en occuper le centre. */
+  justify-items: center;
+}
+.clinical-score em {
+  grid-column: 1;
+  justify-self: start;
+  padding: 4px 11px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.clinical-score[data-niveau] strong {
+  /* La part non atteinte doit rester visible : en `--surface-2` elle se
+     confondait avec le fond, et l'anneau se lisait comme un arc décentré. */
+  background: conic-gradient(var(--teinte) var(--part, 0%), var(--line-2) 0);
+  color: var(--teinte);
+  position: relative;
+}
+/* Le disque intérieur transforme le camembert en anneau, sans SVG. Il passe
+   derrière le chiffre : le parent isole la pile, le disque descend d'un cran. */
+.clinical-score[data-niveau] strong::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  z-index: -1;
+  border-radius: 50%;
+  background: var(--panel);
+}
+html[data-theme="dark"] .clinical-score[data-niveau] strong::before { background: #141a24; }
+.clinical-score[data-niveau] strong { isolation: isolate; }
+.clinical-score[data-niveau="bon"]    { --teinte: var(--success); }
+.clinical-score[data-niveau="moyen"]  { --teinte: var(--gold); }
+.clinical-score[data-niveau="faible"] { --teinte: var(--danger); }
+.clinical-score[data-niveau] em { color: var(--teinte); }
+
+/* ─── Ce qui bloque, ce qui manque, ce qui va ─── */
+
+.cv-action,
+.cv-manque,
+.cv-ok {
+  display: block;
+  margin-bottom: 12px;
+  padding: 14px 16px;
+  border: 1px solid;
+  border-left-width: 3px;
+  border-radius: var(--r-m);
+}
+.cv-action { border-color: var(--danger); background: var(--danger-soft); }
+.cv-manque { border-color: var(--gold);   background: var(--gold-soft); }
+.cv-ok {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-color: var(--success);
+  background: var(--success-soft);
+  font-size: 13.5px;
+  color: var(--success);
+}
+.cv-ok svg { flex-shrink: 0; }
+
+.cv-action-t,
+.cv-manque-t {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.cv-action-t { color: var(--danger); }
+.cv-manque-t { color: var(--gold-text); }
+.cv-action-t svg, .cv-manque-t svg { flex-shrink: 0; }
+.cv-action-l { margin: 0; padding-left: 18px; }
+.cv-action-l li { margin-bottom: 4px; font-size: 13.5px; color: var(--text-muted); }
+.cv-action-h {
+  margin-top: 8px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--gold-text);
+}
+
+/* ─── Faits retenus ─── */
+
+.cv-etat {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--bg);
+}
+html[data-theme="dark"] .cv-etat { background: rgba(14, 18, 25, 0.4); }
+.cv-etat-faits { flex: 1; min-width: 0; }
+.cv-etat-faits p { margin: 0 0 8px; font-size: 13px; color: var(--text-muted); }
+.cv-etat-chips span {
+  padding: 5px 12px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 12px;
+  color: var(--text);
+}
+html[data-theme="dark"] .cv-etat-chips span { border-color: rgba(85, 198, 239, 0.28); }
+.cv-etat-chips .cv-vide {
+  border-style: dashed;
+  border-color: var(--line-2);
+  background: none;
+  color: var(--text-dim);
+}
+.mini-apply {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.16s ease;
+}
+.mini-apply:hover { transform: translateY(-1px); }
+
+/* ─── Dépliants de la revue ─── */
+
+.cv-fold {
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--bg);
+  overflow: hidden;
+}
+html[data-theme="dark"] .cv-fold { background: rgba(14, 18, 25, 0.4); }
+.cv-fold > summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 0 14px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text);
+  cursor: pointer;
+  list-style: none;
+}
+.cv-fold > summary > span:first-child { flex: 1; min-width: 0; }
+.cv-count {
+  display: grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--accent-ice);
+}
+html[data-theme="light"] .cv-count,
+html:not([data-theme="dark"]) .cv-count { color: var(--accent); }
+.cv-fold[open] > summary { border-bottom: 1px solid var(--line); color: var(--accent-ice); }
+html[data-theme="light"] .cv-fold[open] > summary,
+html:not([data-theme="dark"]) .cv-fold[open] > summary { color: var(--accent); }
+.cv-fold-body { padding: 14px; border-top: 0; }
+.cv-fold-hint { margin: 0 0 12px; font-size: 12.5px; color: var(--text-dim); }
+
+/* ─── Détail du score : le bonus se lit vert, le malus ambre ou rouge ─── */
+
+.confidence-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.confidence-line:last-child { border-bottom: 0; }
+.confidence-line span { min-width: 0; }
+.confidence-line strong {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+.confidence-plus     { background: var(--success-soft); color: var(--success); }
+.confidence-minus    { background: var(--danger-soft);  color: var(--danger); }
+.confidence-optional { background: var(--gold-soft);    color: var(--gold-text); }
+
+/* ─── Interprétations à intégrer ─── */
+
+.clinical-deduction {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.clinical-deduction:last-child { border-bottom: 0; }
+.deduction-hit { display: flex; padding-top: 10px; }
+.deduction-hit input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+/* Ce champ n'avait aucun style : il sortait en blanc sur noir, comme un
+   corps étranger au milieu de la revue. */
+.clinical-deduction textarea {
+  margin-top: 0;
+  width: 100%;
+  min-height: 76px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--surface-2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13.5px;
+  line-height: 1.55;
+  resize: vertical;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+html[data-theme="dark"] .clinical-deduction textarea { background: rgba(14, 18, 25, 0.7); }
+.clinical-deduction textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(85, 198, 239, 0.18);
+}
+.clinical-deduction:has(input:checked) textarea {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* ─── Suggestions ─── */
+
+.clinical-suggestion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--surface-2);
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+html[data-theme="dark"] .clinical-suggestion { background: rgba(14, 18, 25, 0.55); }
+.clinical-suggestion:last-child { border-bottom: 1px solid var(--line); }
+.clinical-suggestion:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.suggestion-toggle {
+  position: relative;
+  width: 58px;
+  min-height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  background: var(--bg);
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+.suggestion-toggle::before,
+.suggestion-toggle::after { content: none; }
+.suggestion-toggle.on {
+  border-color: var(--success);
+  background: var(--success-soft);
+  color: var(--success);
+}
+.suggestion-toggle:active { transform: scale(0.96); }
+
+.suggestion-body { display: block; min-width: 0; }
+.suggestion-text {
+  display: block;
+  font-size: 13.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+.clinical-confidence {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-ice);
+}
+html[data-theme="light"] .clinical-confidence,
+html:not([data-theme="dark"]) .clinical-confidence { color: var(--accent); }
+.clinical-rationale {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+/* ─── Questions ─── */
+
+.quick-progress {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 11px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-ice);
+}
+html[data-theme="light"] .quick-progress,
+html:not([data-theme="dark"]) .quick-progress { color: var(--accent); }
+.quick-answer input {
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-m);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14.5px;
+}
+html[data-theme="dark"] .quick-answer input { background: rgba(14, 18, 25, 0.6); }
+.quick-answer input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(85, 198, 239, 0.18);
+}
+
+/* ─── Vérification finale ─── */
+
+.final-check { display: block; }
+.final-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+.final-row:last-child { border-bottom: 0; }
+.final-row input {
+  min-height: 44px;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-s);
+  background: var(--bg);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: right;
+}
+html[data-theme="dark"] .final-row input { background: rgba(14, 18, 25, 0.6); }
+.final-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(85, 198, 239, 0.18);
+}
+.final-row strong { color: var(--text); text-align: right; }
+
+.clinical-block h3 { color: var(--accent-ice); }
+html[data-theme="light"] .clinical-block h3,
+html:not([data-theme="dark"]) .clinical-block h3 { color: var(--accent); }
+.clinical-block ul { color: var(--text-muted); }
+.clinical-block li { margin-bottom: 5px; }
+
+@media (max-width: 720px) {
+  .clinical-head { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 16px 16px 14px; }
+  .clinical-head h2 { font-size: 22px; }
+  .clinical-score { justify-self: start; }
+  .clinical-score strong { width: 62px; height: 62px; font-size: 21px; }
+  .clinical-body { padding: 16px; }
+  .clinical-foot { flex-direction: column-reverse; padding: 14px 16px; }
+  .clinical-foot .btn { width: 100%; }
+  .clinical-grid { grid-template-columns: minmax(0, 1fr); }
+  .cv-etat { flex-direction: column; align-items: stretch; }
+  .mini-apply { width: 100%; }
+  .final-row { grid-template-columns: minmax(0, 1fr); }
+  .final-row input, .final-row strong { text-align: left; }
 }
