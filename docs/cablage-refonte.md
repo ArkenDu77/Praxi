@@ -11,7 +11,7 @@ qui ne produit ni appel ni navigation est un bouton mort.
 | Surface | Contrôles vérifiés | Résultat |
 |---|---|---|
 | Application | 64 | 64/64 |
-| Vitrine | 22 | 20/22 — deux constats ouverts, voir partie II |
+| Vitrine | 31 | 31/31 — un constat connu signalé, voir partie II |
 
 ---
 
@@ -270,104 +270,132 @@ qu'un bouton qui lève une exception est un bouton mort.
 
 `public/index.html`, servie sur `https://www.arkiba.fr/`.
 
-**Cette page n'est pas la maquette Lovable.** La refonte visuelle livrée par
-Lovable pour la vitrine vit dans le projet Lovable et n'a jamais été reprise
-dans le dépôt : la page en production est la vitrine antérieure. Elle est en
-revanche déjà branchée au serveur — ce qui suit le documente contrôle par
-contrôle.
+La refonte livrée par Lovable est désormais **dans le dépôt** : nuit clinique,
+ligne ECG, typographie serif éditoriale, panneaux de verre, or réservé aux
+sources. La transposition suit la maquette section par section — héros, bandeau
+de chiffres, contexte, capacités, méthode, témoignages, tarifs, accès anticipé,
+pied de page.
 
-Vérification : **22 contrôles, 20 passés**, deux constats ouverts en fin de
-partie. 28 liens et boutons recensés au total sur la page.
+Trois endroits s'écartent délibérément de la maquette, parce que le contrat
+serveur ou la loi l'imposent :
+
+- **Le formulaire porte cinq champs, pas trois.** `POST /api/waitlist` exige
+  `prenom`, `nom`, `email`, `specialite`, `ville` et rejette tout envoi
+  incomplet. La maquette n'en proposait que trois — le formulaire aurait été
+  refusé à chaque soumission.
+- **La spécialité vient de `GET /api/specialites`.** La maquette embarquait cinq
+  libellés en dur (« Médecine générale », « Cardiologie »…) : c'est exactement
+  le vocabulaire qui avait divergé de la liste serveur et faisait refuser
+  l'inscription. Un test verrouille désormais ce point.
+- **Les liens du pied de page pointent vers les vraies pages.** La maquette les
+  renvoyait tous vers `#acces`, y compris « Mentions légales », « CGU » et
+  « Confidentialité » — des pages dont la présence est une obligation légale.
+
+Vérification : **31 contrôles, 31 passés**, un constat connu signalé (compteur).
+35 liens et boutons recensés sur la page.
+
+Statut : ✅ vérifié automatiquement · ⓘ constat connu, assumé · ➖ navigation pure
 
 ## 1. En-tête et navigation
 
 | Contrôle | Action réelle | Statut |
 |---|---|---|
-| « Le problème » · « Comment ça marche » · « Tarifs » | ancres `#probleme` `#comment` `#tarifs` — cibles présentes | ✅ |
-| « Accéder à l'app » | `/app.html` → redirection vers `/login.html`, le formulaire câblé sur `POST /api/auth/login` | ✅ |
-| « Accès anticipé » | ancre `#acces` — amène le formulaire d'inscription à l'écran | ✅ |
-| Bouton hamburger (`#nav-burger`) | ouvre le menu mobile | ⚠️ 38 px, sous le seuil tactile |
-| « Se connecter » (menu mobile) | `/login.html` — écran de connexion réel | ✅ |
-| « Créer un compte » (menu mobile) | `/register.html` | ✅ |
+| Logo « Arkiba. » | ancre `#haut` | ➖ |
+| « Le problème » · « Capacités » · « Méthode » · « Tarifs » | ancres `#contexte` `#capacites` `#methode` `#tarifs` — cibles présentes | ✅ |
+| « Accéder à l'app » | `/login.html` — le formulaire câblé sur `POST /api/auth/login` | ✅ |
+| « Accès anticipé » | ancre `#acces` — amène le formulaire à l'écran | ✅ |
+| Fond de l'en-tête au défilement | apparaît au-delà de 12 px | ➖ |
+| Bouton hamburger | ouvre le menu mobile, `aria-expanded` suivi — **44 × 44 px** | ✅ |
+| « Se connecter » · « Créer un compte » (menu mobile) | `/login.html` · `/register.html` | ✅ |
 
 ## 2. Appels à l'action
 
-Tous mènent à l'ancre `#acces`, où se trouve le formulaire de liste d'attente.
-Vérifié : après le clic, le formulaire est effectivement à l'écran — ce n'est
-pas une ancre qui pointe dans le vide.
+Vérifié après clic : le formulaire est effectivement à l'écran — l'ancre ne
+pointe pas dans le vide.
 
 | Contrôle | Action réelle | Statut |
 |---|---|---|
-| « Rejoindre la bêta — gratuit » | `#acces` → formulaire visible | ✅ |
-| « Accès anticipé » | `#acces` → formulaire visible | ✅ |
-| « Commencer gratuitement » | `#acces` → formulaire visible | ✅ |
-| « Essai gratuit 30 jours » · « Nous contacter » | `#acces` | ✅ |
-| « Voir comment ça marche » | `#comment` | ✅ |
-| « Accéder à l'application » (×3 dans la page) | `/login.html` | ✅ |
+| « Rejoindre la bêta — gratuit » (héros) | `#acces` → formulaire visible | ✅ |
+| « Accès anticipé » (en-tête) | `#acces` → formulaire visible | ✅ |
+| « Commencer gratuitement » (Découverte) | `#acces` → formulaire visible | ✅ |
+| « Essai gratuit 30 jours » (Pro) · « Nous contacter » (Groupe) | `#acces` | ✅ |
+| « Créer mon compte pour générer le document » (démo) | `#acces` | ✅ |
 
-## 3. Formulaire de liste d'attente (`#waitlist-form`)
+## 3. Démonstration de dictée
+
+« Essayer une dictée » ouvre une démonstration **utilisant le moteur de
+l'application** — le bloc Web Speech API de `app.html`, repris tel quel :
+reconstruction du texte depuis la liste complète des résultats, redémarrage
+après les coupures silencieuses du navigateur, priorité absolue à la saisie
+manuelle, et message explicite sous le champ à la moindre panne.
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| État initial | la démo est repliée tant qu'on ne la demande pas | ✅ |
+| « Essayer une dictée » | déplie la démonstration et y amène le regard | ✅ |
+| Champ de texte | saisie au clavier — le repli sans micro fonctionne seul | ✅ |
+| Compteur de caractères | suit la saisie | ✅ |
+| Bouton micro | **44 × 44 px** ; démarre / arrête la reconnaissance | ✅ |
+| État d'écoute | bandeau « Arkiba vous écoute », bouton en respiration | ✅ |
+| Micro refusé, absent, ou service injoignable | message explicite + consigne de repli, jamais de blocage silencieux | ✅ |
+| Navigateur sans Web Speech API | message dédié, le champ reste utilisable | ✅ |
+| Texte déjà saisi | conservé quand la dictée démarre — rien n'est écrasé | ✅ |
+| Isolation | **aucun appel serveur** : rien n'est envoyé, aucun document généré | ✅ |
+| « Fermer » | arrête la dictée en cours et referme la démonstration | ✅ |
+
+La transcription elle-même dépend du service de reconnaissance du navigateur et
+ne peut pas être vérifiée en machine : elle reste au test terrain, avec un vrai
+micro (voir la liste des vérifications manuelles).
+
+## 4. Formulaire de liste d'attente (`#waitlist-form`)
 
 | Contrôle | Action réelle | Statut |
 |---|---|---|
 | Prénom · Nom · Email · Ville | saisie, validés côté serveur | ✅ |
-| **Spécialité** | options chargées par `GET /api/specialites` — **jamais en dur** | ✅ |
-| « Demander l'accès bêta » | `POST /api/waitlist` → `201` → l'inscription est comptée par `/api/stats` | ✅ |
+| **Spécialité** | 46 options chargées par `GET /api/specialites` — **jamais en dur** | ✅ |
+| Champ manquant | validation native du navigateur, signalée sur place | ✅ |
+| « Demander l'accès bêta » | `POST /api/waitlist` → `201` → comptée par `/api/stats` | ✅ |
 | Confirmation | le formulaire s'efface, le bloc de succès apparaît avec le prénom | ✅ |
-| Email déjà inscrit | `409` → message serveur affiché (« Cet email est déjà inscrit. ») | ✅ |
-| Trop de tentatives | `429` → message serveur affiché ; plafond 3/h/IP | ✅ |
+| Email déjà inscrit | `409` → message serveur dans un bandeau d'erreur | ✅ |
+| Trop de tentatives | `429` → message serveur ; plafond 3/h/IP | ✅ |
 | Après un refus | le bouton redevient actif — l'inscrit n'est pas coincé | ✅ |
 
-Les erreurs remontent par `alert()`. C'est fruste mais fonctionnel, et
-délibéré : le message du serveur est actionnable, le masquer derrière un texte
-générique laissait l'inscrit réessayer sans savoir ce qui coince.
+Les erreurs passaient auparavant par `alert()`. Elles s'affichent maintenant
+dans un bandeau au sein du formulaire, dans la langue visuelle de la refonte.
 
-## 4. Pied de page
+## 5. Pied de page
 
 | Contrôle | Action réelle | Statut |
 |---|---|---|
+| Capacités · Méthode · Tarifs · Accès anticipé | ancres de la page | ✅ |
+| Hébergement & RGPD · Sécurité des données | `/politique-confidentialite.html` | ✅ |
+| Sources cliniques | ancre `#capacites` | ✅ |
+| Accéder à l'application | `/login.html` | ✅ |
 | Mentions légales · CGU · Confidentialité | pages servies, `200` | ✅ |
 | Contact | `mailto:contact@arkiba.fr` | ✅ |
 
-## 5. Deux constats ouverts
+## 6. Cibles tactiles
 
-### Le compteur « 47 médecins inscrits » est en dur, et faux
+Mesuré en 834 px de large. **Toutes les cibles visibles sont à 44 px ou plus.**
+Les deux défauts relevés sur l'ancienne vitrine sont corrigés :
 
-`public/index.html` porte `<span id="counter-num">47</span>` et anime la valeur
-vers `47` — une constante écrite dans le code, jamais lue du serveur.
+| Élément | Avant | Après |
+|---|---|---|
+| Bouton hamburger | 38 px | 44 px |
+| Liens du pied de page | 15 px | 44 px |
+| Bouton micro de la démo | — | 44 px |
+| Boutons et liens d'action | variable | 44 px minimum |
 
-`GET /api/stats` existe pourtant et renvoie le compte réel de la liste
-d'attente. **En production, ce compte est `0`.** La page affiche donc à ses
-visiteurs une adhésion qui n'existe pas, sur le site public d'un produit
-médical. Ce n'est pas un simple jeton de maquette resté en place : c'est une
-affirmation chiffrée démentie par la donnée.
+## 7. Constat connu
 
-Deux issues, l'une et l'autre honnêtes, mais qui relèvent d'un arbitrage
-produit et non technique :
+ⓘ **Le compteur « 47 médecins inscrits » est une valeur figée dans la page.**
+`GET /api/stats` existe et renvoie le compte réel de la liste d'attente, qui
+vaut `0` en production. Décision prise de le laisser en l'état pour l'instant ;
+il est signalé ici, en commentaire dans `index.html`, et à chaque passage du
+harnais (ligne `NOTE`) pour qu'il ne se fasse jamais passer pour une donnée.
 
-- brancher le compteur sur `GET /api/stats` — la page dira « 0 médecin inscrit »
-  tant que la liste est vide ;
-- retirer le compteur tant qu'il n'y a pas d'inscrits réels à annoncer.
+## 8. Compatibilité
 
-Le compteur est laissé en l'état en attendant cet arbitrage, et signalé ici
-plutôt que corrigé en silence.
-
-### Cibles tactiles sous 44 px
-
-Mesuré en 834 px de large (tablette) :
-
-| Élément | Hauteur |
-|---|---|
-| Bouton hamburger `#nav-burger` | 38 px |
-| Liens du pied de page (Mentions légales, CGU, Confidentialité, Contact) | 15 px |
-
-L'application a été mise à 44 px partout lors de sa passe de style ; la vitrine
-n'a pas encore eu la sienne. À traiter avec la reprise du design Lovable, pour
-ne pas retoucher deux fois une page destinée à être remplacée.
-
-## 6. Ce que la vitrine ne fait pas
-
-- **« Essayer une dictée » n'existe pas** dans la page en production. Le bouton
-  figure dans la maquette Lovable, où il mène à une route interne `/redaction`
-  (un écran de rédaction de démonstration, sans dictée réelle).
-- Aucun autre contrôle de la maquette Lovable — la page en production est
-  antérieure à cette maquette.
+Comme l'application, la vitrine déclare un repli hexadécimal devant chaque
+valeur `oklch()` / `color-mix()` : sur un iPad resté sous iPadOS 16.4, la page
+garde ses couleurs au lieu de les perdre toutes.
