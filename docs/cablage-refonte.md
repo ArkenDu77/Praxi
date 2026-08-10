@@ -1,4 +1,21 @@
-# Refonte visuelle — contrat de câblage
+# Contrat de câblage — vitrine et application
+
+Deux surfaces, un même contrat : **chaque bouton et chaque champ doit
+déclencher une action réelle**. La partie I couvre l'application
+(`public/app.html`), la partie II la vitrine (`public/index.html`).
+
+La vérification est identique des deux côtés : un harnais pilote la page dans
+un vrai navigateur et observe le trafic réseau et la navigation. Un contrôle
+qui ne produit ni appel ni navigation est un bouton mort.
+
+| Surface | Contrôles vérifiés | Résultat |
+|---|---|---|
+| Application | 64 | 64/64 |
+| Vitrine | 31 | 31/31 — un constat connu signalé, voir partie II |
+
+---
+
+# Partie I — Application
 
 Le style de la vitrine (« nuit clinique » : encre nocturne, lumière glaciaire,
 or de confiance, typographie serif éditoriale) est transposé sur l'application
@@ -246,3 +263,139 @@ qu'un bouton qui lève une exception est un bouton mort.
    `POST /api/documents` pour chaque pièce produite, selon le même schéma que
    `saveToHistory()`, et de façon non bloquante : un réseau de cabinet qui lâche
    ne doit pas immobiliser le passage au patient suivant.
+
+---
+
+# Partie II — Vitrine
+
+`public/index.html`, servie sur `https://www.arkiba.fr/`.
+
+La refonte livrée par Lovable est désormais **dans le dépôt** : nuit clinique,
+ligne ECG, typographie serif éditoriale, panneaux de verre, or réservé aux
+sources. La transposition suit la maquette section par section — héros, bandeau
+de chiffres, contexte, capacités, méthode, témoignages, tarifs, accès anticipé,
+pied de page.
+
+Trois endroits s'écartent délibérément de la maquette, parce que le contrat
+serveur ou la loi l'imposent :
+
+- **Le formulaire porte cinq champs, pas trois.** `POST /api/waitlist` exige
+  `prenom`, `nom`, `email`, `specialite`, `ville` et rejette tout envoi
+  incomplet. La maquette n'en proposait que trois — le formulaire aurait été
+  refusé à chaque soumission.
+- **La spécialité vient de `GET /api/specialites`.** La maquette embarquait cinq
+  libellés en dur (« Médecine générale », « Cardiologie »…) : c'est exactement
+  le vocabulaire qui avait divergé de la liste serveur et faisait refuser
+  l'inscription. Un test verrouille désormais ce point.
+- **Les liens du pied de page pointent vers les vraies pages.** La maquette les
+  renvoyait tous vers `#acces`, y compris « Mentions légales », « CGU » et
+  « Confidentialité » — des pages dont la présence est une obligation légale.
+
+Vérification : **31 contrôles, 31 passés**, un constat connu signalé (compteur).
+35 liens et boutons recensés sur la page.
+
+Statut : ✅ vérifié automatiquement · ⓘ constat connu, assumé · ➖ navigation pure
+
+## 1. En-tête et navigation
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| Logo « Arkiba. » | ancre `#haut` | ➖ |
+| « Le problème » · « Capacités » · « Méthode » · « Tarifs » | ancres `#contexte` `#capacites` `#methode` `#tarifs` — cibles présentes | ✅ |
+| « Accéder à l'app » | `/login.html` — le formulaire câblé sur `POST /api/auth/login` | ✅ |
+| « Accès anticipé » | ancre `#acces` — amène le formulaire à l'écran | ✅ |
+| Fond de l'en-tête au défilement | apparaît au-delà de 12 px | ➖ |
+| Bouton hamburger | ouvre le menu mobile, `aria-expanded` suivi — **44 × 44 px** | ✅ |
+| « Se connecter » · « Créer un compte » (menu mobile) | `/login.html` · `/register.html` | ✅ |
+
+## 2. Appels à l'action
+
+Vérifié après clic : le formulaire est effectivement à l'écran — l'ancre ne
+pointe pas dans le vide.
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| « Rejoindre la bêta — gratuit » (héros) | `#acces` → formulaire visible | ✅ |
+| « Accès anticipé » (en-tête) | `#acces` → formulaire visible | ✅ |
+| « Commencer gratuitement » (Découverte) | `#acces` → formulaire visible | ✅ |
+| « Essai gratuit 30 jours » (Pro) · « Nous contacter » (Groupe) | `#acces` | ✅ |
+| « Créer mon compte pour générer le document » (démo) | `#acces` | ✅ |
+
+## 3. Démonstration de dictée
+
+« Essayer une dictée » ouvre une démonstration **utilisant le moteur de
+l'application** — le bloc Web Speech API de `app.html`, repris tel quel :
+reconstruction du texte depuis la liste complète des résultats, redémarrage
+après les coupures silencieuses du navigateur, priorité absolue à la saisie
+manuelle, et message explicite sous le champ à la moindre panne.
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| État initial | la démo est repliée tant qu'on ne la demande pas | ✅ |
+| « Essayer une dictée » | déplie la démonstration et y amène le regard | ✅ |
+| Champ de texte | saisie au clavier — le repli sans micro fonctionne seul | ✅ |
+| Compteur de caractères | suit la saisie | ✅ |
+| Bouton micro | **44 × 44 px** ; démarre / arrête la reconnaissance | ✅ |
+| État d'écoute | bandeau « Arkiba vous écoute », bouton en respiration | ✅ |
+| Micro refusé, absent, ou service injoignable | message explicite + consigne de repli, jamais de blocage silencieux | ✅ |
+| Navigateur sans Web Speech API | message dédié, le champ reste utilisable | ✅ |
+| Texte déjà saisi | conservé quand la dictée démarre — rien n'est écrasé | ✅ |
+| Isolation | **aucun appel serveur** : rien n'est envoyé, aucun document généré | ✅ |
+| « Fermer » | arrête la dictée en cours et referme la démonstration | ✅ |
+
+La transcription elle-même dépend du service de reconnaissance du navigateur et
+ne peut pas être vérifiée en machine : elle reste au test terrain, avec un vrai
+micro (voir la liste des vérifications manuelles).
+
+## 4. Formulaire de liste d'attente (`#waitlist-form`)
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| Prénom · Nom · Email · Ville | saisie, validés côté serveur | ✅ |
+| **Spécialité** | 46 options chargées par `GET /api/specialites` — **jamais en dur** | ✅ |
+| Champ manquant | validation native du navigateur, signalée sur place | ✅ |
+| « Demander l'accès bêta » | `POST /api/waitlist` → `201` → comptée par `/api/stats` | ✅ |
+| Confirmation | le formulaire s'efface, le bloc de succès apparaît avec le prénom | ✅ |
+| Email déjà inscrit | `409` → message serveur dans un bandeau d'erreur | ✅ |
+| Trop de tentatives | `429` → message serveur ; plafond 3/h/IP | ✅ |
+| Après un refus | le bouton redevient actif — l'inscrit n'est pas coincé | ✅ |
+
+Les erreurs passaient auparavant par `alert()`. Elles s'affichent maintenant
+dans un bandeau au sein du formulaire, dans la langue visuelle de la refonte.
+
+## 5. Pied de page
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| Capacités · Méthode · Tarifs · Accès anticipé | ancres de la page | ✅ |
+| Hébergement & RGPD · Sécurité des données | `/politique-confidentialite.html` | ✅ |
+| Sources cliniques | ancre `#capacites` | ✅ |
+| Accéder à l'application | `/login.html` | ✅ |
+| Mentions légales · CGU · Confidentialité | pages servies, `200` | ✅ |
+| Contact | `mailto:contact@arkiba.fr` | ✅ |
+
+## 6. Cibles tactiles
+
+Mesuré en 834 px de large. **Toutes les cibles visibles sont à 44 px ou plus.**
+Les deux défauts relevés sur l'ancienne vitrine sont corrigés :
+
+| Élément | Avant | Après |
+|---|---|---|
+| Bouton hamburger | 38 px | 44 px |
+| Liens du pied de page | 15 px | 44 px |
+| Bouton micro de la démo | — | 44 px |
+| Boutons et liens d'action | variable | 44 px minimum |
+
+## 7. Constat connu
+
+ⓘ **Le compteur « 47 médecins inscrits » est une valeur figée dans la page.**
+`GET /api/stats` existe et renvoie le compte réel de la liste d'attente, qui
+vaut `0` en production. Décision prise de le laisser en l'état pour l'instant ;
+il est signalé ici, en commentaire dans `index.html`, et à chaque passage du
+harnais (ligne `NOTE`) pour qu'il ne se fasse jamais passer pour une donnée.
+
+## 8. Compatibilité
+
+Comme l'application, la vitrine déclare un repli hexadécimal devant chaque
+valeur `oklch()` / `color-mix()` : sur un iPad resté sous iPadOS 16.4, la page
+garde ses couleurs au lieu de les perdre toutes.
