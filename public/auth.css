@@ -8,29 +8,53 @@ a, button, input, select, summary,
   touch-action: manipulation;
 }
 
-/* Thème clair, aligné sur l'application (light mode par défaut) */
+/* « Nuit clinique » — la palette de la vitrine. Connexion et inscription sont
+   la suite immédiate de la landing : elles en portent le décor. */
 :root {
-  --bg:        #F2F6FA;
-  --bg-card:   #FFFFFF;
-  --bg-card2:  #F8FAFD;
-  --border:    #E2E9F1;
-  --border2:   #CDD9E5;
-  --text:      #16232F;
-  --text-muted:#54687C;
-  --text-dim:  #64778A;
-  --accent:    #0284C7;
-  --accent-contrast: #FFFFFF;
-  --accent-dim:rgba(2,132,199,0.08);
-  --accent-glow:rgba(2,132,199,0.22);
-  --danger:    #DC2626;
-  --danger-dim:rgba(220,38,38,0.08);
-  --success:   #15803D;
+  --night:      oklch(0.155 0.018 254);
+  --night-2:    oklch(0.198 0.021 253);
+  --night-3:    oklch(0.235 0.024 252);
+  --night-line: oklch(0.31 0.024 252);
+  --night-line-2: oklch(0.4 0.028 250);
+  --lumen:      oklch(0.965 0.008 250);
+  --lumen-soft: oklch(0.78 0.021 250);
+  --lumen-dim:  oklch(0.6 0.024 250);
+  --sky:        oklch(0.79 0.13 217);
+  --sky-ice:    oklch(0.9 0.07 215);
+  --gold:       oklch(0.83 0.11 82);
+
+  --bg:        var(--night);
+  --bg-card:   var(--night-2);
+  --bg-card2:  oklch(0.178 0.02 253);
+  --border:    var(--night-line);
+  --border2:   var(--night-line-2);
+  --text:      var(--lumen);
+  --text-muted:var(--lumen-soft);
+  --text-dim:  var(--lumen-dim);
+  --accent:    var(--sky);
+  --accent-contrast: var(--night);
+  --accent-dim: color-mix(in oklab, var(--sky) 12%, transparent);
+  --accent-glow: color-mix(in oklab, var(--sky) 28%, transparent);
+  --accent-border: color-mix(in oklab, var(--sky) 40%, transparent);
+  --danger:    oklch(0.704 0.191 22);
+  --danger-dim: color-mix(in oklab, var(--danger) 12%, transparent);
+  --success:   oklch(0.765 0.177 163);
+
+  --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px;
+  --glass-blur: blur(14px) saturate(130%);
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-sans: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 }
+
+/* Contrôles natifs dessinés par le navigateur (ascenseurs, auto-remplissage) :
+   sans cette déclaration ils restent clairs sur le fond de nuit. */
+:root { color-scheme: dark; }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   font-size: 16px; line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
@@ -38,37 +62,43 @@ body {
   padding: 40px 20px; position: relative; overflow-x: hidden;
 }
 
-/* Décor : grille + halo, repris de la landing */
+/* Décor : trame et aurore, repris de la landing */
 .bg-grid {
   position: fixed; inset: 0; z-index: 0;
   background-image:
-    linear-gradient(rgba(2,132,199,.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(2,132,199,.05) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 100%);
+    linear-gradient(color-mix(in oklab, var(--sky) 9%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--sky) 9%, transparent) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
 }
 .bg-glow {
-  position: fixed; z-index: 0; width: 700px; height: 420px;
-  top: 38%; left: 50%; transform: translate(-50%, -50%);
-  background: radial-gradient(ellipse, rgba(2,132,199,.10) 0%, transparent 70%);
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 60% 45% at 50% 0%, color-mix(in oklab, var(--sky) 20%, transparent), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 12% 22%, color-mix(in oklab, var(--gold) 9%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 88% 30%, color-mix(in oklab, var(--sky) 12%, transparent), transparent 70%);
+  filter: blur(8px);
   pointer-events: none;
 }
 
 .auth-card {
   position: relative; z-index: 1;
-  width: 100%; max-width: 440px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 40px 38px;
-  box-shadow: 0 18px 48px rgba(22,35,47,.10), 0 2px 6px rgba(22,35,47,.05);
-  animation: rise .5s cubic-bezier(.2,.7,.2,1) both;
+  width: 100%; max-width: 460px;
+  background: color-mix(in oklab, var(--night-2) 72%, transparent);
+  border: 1px solid color-mix(in oklab, var(--night-line) 80%, transparent);
+  border-radius: var(--r-2xl);
+  padding: 42px 38px;
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 40px 120px -50px var(--sky);
+  animation: rise .8s cubic-bezier(.16, 1, .3, 1) both;
 }
-@keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+@keyframes rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
 
 .auth-logo {
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 28px; letter-spacing: -.02em; text-align: center;
+  font-family: var(--font-display);
+  font-size: 30px; letter-spacing: -.02em; text-align: center;
   text-decoration: none; color: var(--text); display: block; margin-bottom: 6px;
 }
 .auth-logo span { color: var(--accent); }
@@ -77,50 +107,55 @@ body {
   font-weight: 300; margin-bottom: 30px;
 }
 
-.field { margin-bottom: 16px; }
+.field { margin-bottom: 18px; }
 .field label {
-  display: block; font-size: 12px; font-weight: 500;
-  letter-spacing: .03em; color: var(--text-muted); margin-bottom: 7px;
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 9px;
 }
 .row { display: flex; gap: 12px; }
 .row .field { flex: 1; }
+/* 48 px : les champs d'authentification se remplissent souvent au doigt. */
 .input, .select {
-  width: 100%; background: var(--bg-card2);
-  border: 1px solid var(--border2); border-radius: 9px;
-  padding: 12px 14px; font-size: 14px; color: var(--text);
+  width: 100%; background: color-mix(in oklab, var(--night) 60%, transparent);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  min-height: 48px;
+  padding: 12px 16px; font-size: 15px; color: var(--text);
   outline: none; font-family: inherit; transition: border-color .18s, box-shadow .18s;
 }
 .input::placeholder { color: var(--text-dim); }
-.input:hover:not(:focus), .select:hover:not(:focus) { border-color: var(--text-dim); }
+.input:hover:not(:focus), .select:hover:not(:focus) { border-color: var(--accent-border); }
 .input:focus, .select:focus {
-  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
+  border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
 }
 .select {
   -webkit-appearance: none; appearance: none; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2399a8bd' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 16px center; padding-right: 40px;
 }
-.hint { font-size: 11.5px; color: var(--text-dim); margin-top: 6px; }
+.hint { font-size: 11.5px; color: var(--text-dim); margin-top: 7px; }
 
 /* ── Sélecteur multi-spécialités (menu déroulant animé) ── */
 .ms { position: relative; }
 .ms-trigger {
   width: 100%; display: flex; align-items: center; gap: 10px;
-  background: var(--bg-card2); border: 1px solid var(--border2);
-  border-radius: 8px; padding: 9px 14px; min-height: 46px;
-  font-family: inherit; font-size: 14px; color: var(--text);
+  background: color-mix(in oklab, var(--night) 60%, transparent); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 9px 16px; min-height: 48px;
+  font-family: inherit; font-size: 15px; color: var(--text);
   cursor: pointer; transition: border-color .2s, box-shadow .2s, background .2s;
 }
-.ms-trigger:hover { border-color: var(--border); }
+.ms-trigger:hover { border-color: var(--accent-border); }
 .ms.open .ms-trigger,
 .ms-trigger:focus-visible {
-  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
+  border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
 }
 .ms-value { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
 .ms-placeholder { color: var(--text-dim); }
 .ms-chip {
   display: inline-flex; align-items: center; gap: 6px;
-  background: var(--accent-dim); border: 1px solid rgba(2,132,199,.30);
+  background: var(--accent-dim); border: 1px solid var(--accent-border);
   color: var(--accent); border-radius: 999px;
   padding: 3px 5px 3px 11px; font-size: 12.5px; line-height: 1.4;
   animation: chip-in .2s cubic-bezier(.2,.7,.2,1) both;
@@ -138,9 +173,11 @@ body {
 .ms.open .ms-caret { transform: rotate(180deg); color: var(--accent); }
 .ms-panel {
   position: absolute; z-index: 40; top: calc(100% + 7px); left: 0; right: 0;
-  background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 11px; padding: 6px; max-height: 282px; overflow-y: auto;
-  box-shadow: 0 22px 48px rgba(22,35,47,.16);
+  background: color-mix(in oklab, var(--night-2) 96%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 6px; max-height: 282px; overflow-y: auto;
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 30px 70px -30px oklch(0 0 0 / .7);
   opacity: 0; transform: translateY(-10px) scale(.985); transform-origin: top center;
   visibility: hidden; pointer-events: none;
   transition: opacity .22s ease, transform .22s cubic-bezier(.2,.7,.2,1), visibility .22s;
@@ -148,15 +185,15 @@ body {
 .ms.open .ms-panel { opacity: 1; transform: none; visibility: visible; pointer-events: auto; }
 .ms-opt {
   display: flex; align-items: center; gap: 11px;
-  padding: 10px 11px; border-radius: 7px; cursor: pointer;
-  font-size: 13.5px; color: var(--text); user-select: none;
+  padding: 10px 12px; border-radius: var(--r-md); cursor: pointer; min-height: 44px;
+  font-size: 14px; color: var(--text); user-select: none;
   transition: background .15s;
 }
 .ms-opt:hover { background: var(--accent-dim); }
 .ms-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
 .ms-check {
   flex: none; width: 19px; height: 19px; border-radius: 6px;
-  border: 1.5px solid var(--border2); background: var(--bg-card2);
+  border: 1.5px solid var(--border2); background: color-mix(in oklab, var(--night) 60%, transparent);
   display: flex; align-items: center; justify-content: center;
   transition: background .18s, border-color .18s;
 }
@@ -168,30 +205,32 @@ body {
 .ms-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 8px; }
 
 .btn-submit {
-  width: 100%; background: var(--accent); color: var(--accent-contrast);
-  border: none; border-radius: 8px; padding: 14px;
-  font-size: 15px; font-weight: 600; cursor: pointer;
-  font-family: inherit; margin-top: 8px;
+  width: 100%; background: var(--lumen); color: var(--night);
+  border: none; border-radius: var(--r-lg); padding: 14px;
+  min-height: 50px;
+  font-size: 15px; font-weight: 500; cursor: pointer;
+  font-family: inherit; margin-top: 10px;
   display: flex; align-items: center; justify-content: center; gap: 9px;
-  transition: opacity .2s, box-shadow .2s;
+  transition: transform .2s, box-shadow .2s, opacity .2s;
 }
-.btn-submit:hover { opacity: .9; box-shadow: 0 6px 28px var(--accent-glow); }
-.btn-submit:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 18px 50px -20px var(--sky); }
+.btn-submit:active { transform: translateY(0); }
+.btn-submit:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; transform: none; }
 
 .spinner {
   width: 15px; height: 15px; border-radius: 50%;
-  border: 2px solid var(--accent-glow); border-top-color: var(--accent-contrast);
+  border: 2px solid color-mix(in oklab, var(--night) 35%, transparent); border-top-color: var(--night);
   animation: spin .7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 .alert {
   display: none; margin-bottom: 18px; padding: 12px 16px;
-  border-radius: 8px; font-size: 13.5px; line-height: 1.5;
+  border-radius: var(--r-lg); font-size: 13.5px; line-height: 1.5;
 }
 .alert.show { display: block; }
-.alert-error   { background: var(--danger-dim); border: 1px solid rgba(220,38,38,.30); color: var(--danger); }
-.alert-success { background: rgba(21,128,61,.08); border: 1px solid rgba(21,128,61,.28); color: var(--success); }
+.alert-error   { background: var(--danger-dim); border: 1px solid color-mix(in oklab, var(--danger) 40%, transparent); color: var(--danger); }
+.alert-success { background: color-mix(in oklab, var(--success) 10%, transparent); border: 1px solid color-mix(in oklab, var(--success) 35%, transparent); color: var(--success); }
 
 .auth-foot {
   text-align: center; font-size: 13.5px; color: var(--text-muted); margin-top: 24px;
@@ -200,7 +239,7 @@ body {
 .auth-foot a:hover { text-decoration: underline; }
 .auth-back {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  margin-top: 18px;
+  margin-top: 18px; min-height: 44px;
   font-size: 12.5px; color: var(--text-dim); text-decoration: none;
 }
 .auth-back:hover { color: var(--text-muted); }
