@@ -399,3 +399,41 @@ harnais (ligne `NOTE`) pour qu'il ne se fasse jamais passer pour une donnée.
 Comme l'application, la vitrine déclare un repli hexadécimal devant chaque
 valeur `oklch()` / `color-mix()` : sur un iPad resté sous iPadOS 16.4, la page
 garde ses couleurs au lieu de les perdre toutes.
+
+---
+
+## Refonte de l'application — passe Lovable (août 2026)
+
+La refonte livrée par Lovable pour l'**application** (et non la vitrine) a été
+transposée sur `public/app.html`. Le style vit désormais dans `public/app.css`,
+servi en même origine ; le bloc `<style>` en ligne a disparu.
+
+Ce qui change à l'écran, écran par écran :
+
+- **Coque** — barre latérale en verre, groupes de navigation, bloc médecin
+  cliquable, pied de barre (thème, déconnexion). Zone de travail centrée,
+  900 px, halo en haut de page, trame et grain sur le fond.
+- **En-tête d'écran** — chaque vue s'ouvre par un service en capitales
+  monospacées, un titre en DM Serif Display centré, une promesse en une phrase.
+- **Panneaux** — les champs d'un écran forment un bloc titré (« Éléments du
+  certificat », « Éléments de la lettre »…) au lieu d'une liste de champs.
+- **Action principale** — une seule par écran, pleine largeur, 56 px. Les
+  réglages « Longueur / Mon style » la précèdent au lieu de la suivre, et ne
+  s'affichent plus sur les écrans qui ne génèrent rien (profil, patients).
+- **Sélecteur de dossier** — étendu au certificat MDPH, au protocole ALD et au
+  certificat médical, avec la phrase d'aide qui dit ce que le dossier apporte.
+- **Import Doctolib** — sorti du dépliant « Utiliser un modèle », qui annonçait
+  autre chose ; le dépliant disparaît quand la spécialité n'a aucun modèle.
+- **Attente de génération** — étapes réelles (fait / en cours / à venir) et
+  squelette du document, sans pourcentage inventé.
+- **Résultat** — « Document généré », titre en serif, outils centrés, texte
+  éditable au clic, sources en pastilles ambre.
+- **Mouvement** — 140–220 ms sur `transform` et `opacity` uniquement : entrée
+  d'écran et d'étape, ondes du micro qui écoute, compteur qui saute quand il
+  change, trait qui respire sous l'étape en cours, miroitement du squelette.
+  `prefers-reduced-motion` neutralise l'ensemble.
+
+Vérifications après transposition : `verif-cablage.js` **64/64**, `npm test`
+**236/236**, aucune erreur JavaScript, toutes les cibles tactiles ≥ 44 px sur
+tablette. Le contrat bouton par bouton ci-dessus reste valable : aucun
+identifiant, aucun gestionnaire, aucun appel serveur n'a été retiré.
