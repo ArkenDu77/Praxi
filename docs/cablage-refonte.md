@@ -1,4 +1,21 @@
-# Refonte visuelle — contrat de câblage
+# Contrat de câblage — vitrine et application
+
+Deux surfaces, un même contrat : **chaque bouton et chaque champ doit
+déclencher une action réelle**. La partie I couvre l'application
+(`public/app.html`), la partie II la vitrine (`public/index.html`).
+
+La vérification est identique des deux côtés : un harnais pilote la page dans
+un vrai navigateur et observe le trafic réseau et la navigation. Un contrôle
+qui ne produit ni appel ni navigation est un bouton mort.
+
+| Surface | Contrôles vérifiés | Résultat |
+|---|---|---|
+| Application | 64 | 64/64 |
+| Vitrine | 22 | 20/22 — deux constats ouverts, voir partie II |
+
+---
+
+# Partie I — Application
 
 Le style de la vitrine (« nuit clinique » : encre nocturne, lumière glaciaire,
 or de confiance, typographie serif éditoriale) est transposé sur l'application
@@ -246,3 +263,111 @@ qu'un bouton qui lève une exception est un bouton mort.
    `POST /api/documents` pour chaque pièce produite, selon le même schéma que
    `saveToHistory()`, et de façon non bloquante : un réseau de cabinet qui lâche
    ne doit pas immobiliser le passage au patient suivant.
+
+---
+
+# Partie II — Vitrine
+
+`public/index.html`, servie sur `https://www.arkiba.fr/`.
+
+**Cette page n'est pas la maquette Lovable.** La refonte visuelle livrée par
+Lovable pour la vitrine vit dans le projet Lovable et n'a jamais été reprise
+dans le dépôt : la page en production est la vitrine antérieure. Elle est en
+revanche déjà branchée au serveur — ce qui suit le documente contrôle par
+contrôle.
+
+Vérification : **22 contrôles, 20 passés**, deux constats ouverts en fin de
+partie. 28 liens et boutons recensés au total sur la page.
+
+## 1. En-tête et navigation
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| « Le problème » · « Comment ça marche » · « Tarifs » | ancres `#probleme` `#comment` `#tarifs` — cibles présentes | ✅ |
+| « Accéder à l'app » | `/app.html` → redirection vers `/login.html`, le formulaire câblé sur `POST /api/auth/login` | ✅ |
+| « Accès anticipé » | ancre `#acces` — amène le formulaire d'inscription à l'écran | ✅ |
+| Bouton hamburger (`#nav-burger`) | ouvre le menu mobile | ⚠️ 38 px, sous le seuil tactile |
+| « Se connecter » (menu mobile) | `/login.html` — écran de connexion réel | ✅ |
+| « Créer un compte » (menu mobile) | `/register.html` | ✅ |
+
+## 2. Appels à l'action
+
+Tous mènent à l'ancre `#acces`, où se trouve le formulaire de liste d'attente.
+Vérifié : après le clic, le formulaire est effectivement à l'écran — ce n'est
+pas une ancre qui pointe dans le vide.
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| « Rejoindre la bêta — gratuit » | `#acces` → formulaire visible | ✅ |
+| « Accès anticipé » | `#acces` → formulaire visible | ✅ |
+| « Commencer gratuitement » | `#acces` → formulaire visible | ✅ |
+| « Essai gratuit 30 jours » · « Nous contacter » | `#acces` | ✅ |
+| « Voir comment ça marche » | `#comment` | ✅ |
+| « Accéder à l'application » (×3 dans la page) | `/login.html` | ✅ |
+
+## 3. Formulaire de liste d'attente (`#waitlist-form`)
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| Prénom · Nom · Email · Ville | saisie, validés côté serveur | ✅ |
+| **Spécialité** | options chargées par `GET /api/specialites` — **jamais en dur** | ✅ |
+| « Demander l'accès bêta » | `POST /api/waitlist` → `201` → l'inscription est comptée par `/api/stats` | ✅ |
+| Confirmation | le formulaire s'efface, le bloc de succès apparaît avec le prénom | ✅ |
+| Email déjà inscrit | `409` → message serveur affiché (« Cet email est déjà inscrit. ») | ✅ |
+| Trop de tentatives | `429` → message serveur affiché ; plafond 3/h/IP | ✅ |
+| Après un refus | le bouton redevient actif — l'inscrit n'est pas coincé | ✅ |
+
+Les erreurs remontent par `alert()`. C'est fruste mais fonctionnel, et
+délibéré : le message du serveur est actionnable, le masquer derrière un texte
+générique laissait l'inscrit réessayer sans savoir ce qui coince.
+
+## 4. Pied de page
+
+| Contrôle | Action réelle | Statut |
+|---|---|---|
+| Mentions légales · CGU · Confidentialité | pages servies, `200` | ✅ |
+| Contact | `mailto:contact@arkiba.fr` | ✅ |
+
+## 5. Deux constats ouverts
+
+### Le compteur « 47 médecins inscrits » est en dur, et faux
+
+`public/index.html` porte `<span id="counter-num">47</span>` et anime la valeur
+vers `47` — une constante écrite dans le code, jamais lue du serveur.
+
+`GET /api/stats` existe pourtant et renvoie le compte réel de la liste
+d'attente. **En production, ce compte est `0`.** La page affiche donc à ses
+visiteurs une adhésion qui n'existe pas, sur le site public d'un produit
+médical. Ce n'est pas un simple jeton de maquette resté en place : c'est une
+affirmation chiffrée démentie par la donnée.
+
+Deux issues, l'une et l'autre honnêtes, mais qui relèvent d'un arbitrage
+produit et non technique :
+
+- brancher le compteur sur `GET /api/stats` — la page dira « 0 médecin inscrit »
+  tant que la liste est vide ;
+- retirer le compteur tant qu'il n'y a pas d'inscrits réels à annoncer.
+
+Le compteur est laissé en l'état en attendant cet arbitrage, et signalé ici
+plutôt que corrigé en silence.
+
+### Cibles tactiles sous 44 px
+
+Mesuré en 834 px de large (tablette) :
+
+| Élément | Hauteur |
+|---|---|
+| Bouton hamburger `#nav-burger` | 38 px |
+| Liens du pied de page (Mentions légales, CGU, Confidentialité, Contact) | 15 px |
+
+L'application a été mise à 44 px partout lors de sa passe de style ; la vitrine
+n'a pas encore eu la sienne. À traiter avec la reprise du design Lovable, pour
+ne pas retoucher deux fois une page destinée à être remplacée.
+
+## 6. Ce que la vitrine ne fait pas
+
+- **« Essayer une dictée » n'existe pas** dans la page en production. Le bouton
+  figure dans la maquette Lovable, où il mène à une route interne `/redaction`
+  (un écran de rédaction de démonstration, sans dictée réelle).
+- Aucun autre contrôle de la maquette Lovable — la page en production est
+  antérieure à cette maquette.
