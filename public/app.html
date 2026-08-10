@@ -5004,10 +5004,124 @@ function downloadPdf(cfg, key) {
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
   const M = 20;
-  let pageNum = 1;
+  const maxW = W - 2 * M;
 
-  function startPage() {
-    // En-tête médecin (gauche)
+  const docTitle = cfg.label || 'Document médical';
+  const patient  = cfg.getPatient();
+
+  // Hauteurs de gabarit, fixes et connues à l'avance : c'est ce qui permet de
+  // décider la mise en page AVANT de dessiner.
+  const Y_APRES_ENTETE  = M + 30;   // en-tête médecin complet, page 1
+  const Y_APRES_RAPPEL  = M + 12;   // rappel compact, pages suivantes
+  const H_TITRE         = patient ? 17 : 13;
+  const RESERVE_PIED    = 16;
+  const BAS             = H - RESERVE_PIED;
+
+  const sectionRe = /^[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ\s\/\-]{5,}[:\s]*$/;
+
+  // ── Découpage en blocs indivisibles ───────────────────────────────────────
+  // Un bloc = ce qui ne doit jamais être coupé par un saut de page : une
+  // rubrique avec sa première ligne, un paragraphe, et surtout le pied de
+  // document (« Fait à… », « Signature : ») qui doit rester avec ce qui le
+  // précède. C'est la séparation de ce pied qui produisait une page 2 ne
+  // portant que l'en-tête et le mot « Signature ».
+  function construireBlocs(densite) {
+    doc.setFont('helvetica', 'normal').setFontSize(densite.font);
+    const lignes = text.split('\n');
+    const blocs = [];
+    let courant = null;
+
+    const pousser = () => { if (courant && courant.lignes.length) blocs.push(courant); courant = null; };
+
+    for (const ligne of lignes) {
+      const nu = ligne.trim();
+      if (nu === '') { pousser(); blocs.push({ type: 'blanc' }); continue; }
+
+      if (sectionRe.test(nu)) {
+        pousser();
+        courant = { type: 'bloc', lignes: [{ texte: ligne, gras: true }] };
+        continue;
+      }
+      doc.setFont('helvetica', 'normal').setFontSize(densite.font);
+      const enroule = doc.splitTextToSize(ligne, maxW).map(t => ({ texte: t, gras: false }));
+      if (courant) courant.lignes.push(...enroule);
+      else blocs.push({ type: 'bloc', lignes: enroule });
+    }
+    pousser();
+
+    // Le pied de document — signature et formule de clôture — est agrégé au
+    // bloc qui le précède : il ne doit jamais se retrouver seul sur une page.
+    const estPied = b => b.type === 'bloc' && b.lignes.some(l =>
+      /^\s*(signature|fait (à|pour)|certificat établi|le présent certificat)/i.test(l.texte));
+    for (let i = blocs.length - 1; i > 0; i--) {
+      if (!estPied(blocs[i])) continue;
+      let j = i - 1;
+      while (j > 0 && blocs[j].type === 'blanc') j--;
+      if (j <= 0 || blocs[j].type !== 'bloc') continue;
+      blocs[j].lignes.push(...blocs.slice(j + 1, i + 1).flatMap(b =>
+        b.type === 'blanc' ? [{ texte: '', gras: false }] : b.lignes));
+      blocs.splice(j + 1, i - j);
+      break;
+    }
+    return blocs;
+  }
+
+  // ── Pagination à blanc ────────────────────────────────────────────────────
+  // On place les blocs sans rien dessiner, pour connaître le nombre de pages et
+  // le remplissage de la dernière avant de choisir la densité.
+  function paginer(densite) {
+    const blocs = construireBlocs(densite);
+    const pages = [[]];
+    let y = Y_APRES_ENTETE + H_TITRE;
+
+    const hauteurBloc = b => b.type === 'blanc'
+      ? densite.lineH * densite.blanc
+      : b.lignes.length * densite.lineH;
+
+    for (const bloc of blocs) {
+      const h = hauteurBloc(bloc);
+      // Une ligne vide en tête de page ne sert à rien.
+      if (bloc.type === 'blanc' && !pages[pages.length - 1].length) continue;
+      if (y + h > BAS && pages[pages.length - 1].length) {
+        pages.push([]);
+        y = Y_APRES_RAPPEL;
+      }
+      pages[pages.length - 1].push({ bloc, y });
+      y += h;
+    }
+    return { pages, densite, finDerniere: y };
+  }
+
+  // ── Choix de la densité ───────────────────────────────────────────────────
+  // On resserre progressivement l'interligne tant que la dernière page reste
+  // presque vide. Le resserrement s'arrête à une valeur encore confortable :
+  // mieux vaut deux pages honnêtes qu'un document illisible.
+  const DENSITES = [
+    { lineH: 5.2, blanc: 0.5,  font: 10.5 },
+    { lineH: 5.0, blanc: 0.45, font: 10.5 },
+    { lineH: 4.8, blanc: 0.4,  font: 10.2 },
+    { lineH: 4.6, blanc: 0.35, font: 10 },
+    { lineH: 4.4, blanc: 0.3,  font: 10 },
+  ];
+  // En dessous de ce remplissage, la dernière page ne porte guère que l'en-tête :
+  // c'est ce que le lecteur prend pour un bug de mise en page.
+  const REMPLISSAGE_MINIMAL = 60;
+
+  let plan = paginer(DENSITES[0]);
+  if (plan.pages.length > 1) {
+    for (const densite of DENSITES.slice(1)) {
+      const creuse = plan.finDerniere - Y_APRES_RAPPEL < REMPLISSAGE_MINIMAL;
+      if (!creuse) break;
+      const essai = paginer(densite);
+      // On ne garde le resserrement que s'il gagne une page ou remplit mieux.
+      if (essai.pages.length < plan.pages.length ||
+          essai.finDerniere - Y_APRES_RAPPEL >= REMPLISSAGE_MINIMAL) { plan = essai; break; }
+      plan = essai;
+    }
+  }
+
+  // ── Dessin ────────────────────────────────────────────────────────────────
+  function enTeteComplet() {
     doc.setFont('helvetica', 'bold').setFontSize(12).setTextColor(20, 30, 45);
     doc.text('Dr ' + ((me && me.prenom) || '') + ' ' + ((me && me.nom) || ''), M, M);
 
@@ -5021,78 +5135,76 @@ function downloadPdf(cfg, key) {
     if (contact.length) { doc.text(contact.join(' · '), M, hy); hy += 4.2; }
     if (me && me.rpps) { doc.text('N° RPPS : ' + me.rpps, M, hy); }
 
-    // Date (droite)
     const dateStr = new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
     doc.setFontSize(9).setTextColor(95, 110, 125);
     doc.text(dateStr, W - M, M, { align: 'right' });
 
-    // Trait
     const sepY = M + 23;
     doc.setDrawColor(200, 215, 230).setLineWidth(0.3);
     doc.line(M, sepY, W - M, sepY);
-    return sepY + 7;
   }
 
-  function addFooter() {
+  // Sur les pages suivantes, l'adresse et le RPPS n'apportent rien : ils ont
+  // déjà été lus. Un rappel d'une ligne suffit à identifier le document, et
+  // rend une trentaine de millimètres au contenu.
+  function enTeteRappel() {
+    doc.setFont('helvetica', 'bold').setFontSize(9).setTextColor(95, 110, 125);
+    doc.text('Dr ' + ((me && me.prenom) || '') + ' ' + ((me && me.nom) || ''), M, M);
+    doc.setFont('helvetica', 'normal').setFontSize(9);
+    const droite = [docTitle.toUpperCase(), patient].filter(Boolean).join(' · ');
+    doc.text(droite, W - M, M, { align: 'right' });
+    const sepY = M + 5;
+    doc.setDrawColor(200, 215, 230).setLineWidth(0.3);
+    doc.line(M, sepY, W - M, sepY);
+  }
+
+  function blocTitre() {
+    let y = Y_APRES_ENTETE;
+    doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(10, 20, 40);
+    doc.text(docTitle.toUpperCase(), W / 2, y, { align: 'center' });
+    y += 5;
+    if (patient) {
+      doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(70, 90, 110);
+      doc.text('Patient : ' + patient, W / 2, y, { align: 'center' });
+      y += 4;
+    }
+    y += 4;
+    doc.setDrawColor(56, 189, 248).setLineWidth(0.4);
+    doc.line(M + 20, y, W - M - 20, y);
+  }
+
+  function pied(numero, total) {
     doc.setDrawColor(200, 215, 230).setLineWidth(0.2);
     doc.line(M, H - 13, W - M, H - 13);
     doc.setFont('helvetica', 'italic').setFontSize(8).setTextColor(155, 165, 175);
     doc.text('Document généré par Arkiba · www.arkiba.fr', W / 2, H - 8, { align: 'center' });
-    doc.text('Page ' + pageNum, W - M, H - 8, { align: 'right' });
+    // « Page 1 sur 2 » : sur un document médical transmis, le lecteur doit
+    // savoir s'il tient le document entier.
+    const mention = total > 1 ? 'Page ' + numero + ' sur ' + total : '';
+    if (mention) doc.text(mention, W - M, H - 8, { align: 'right' });
   }
 
-  let y = startPage();
+  const { pages, densite } = plan;
+  pages.forEach((items, index) => {
+    if (index > 0) doc.addPage();
+    if (index === 0) { enTeteComplet(); blocTitre(); } else { enTeteRappel(); }
 
-  // Titre du document centré
-  const docTitle = cfg.label || 'Document médical';
-  const patient  = cfg.getPatient();
-  doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(10, 20, 40);
-  doc.text(docTitle.toUpperCase(), W / 2, y, { align: 'center' });
-  y += 5;
-  if (patient) {
-    doc.setFont('helvetica', 'normal').setFontSize(10).setTextColor(70, 90, 110);
-    doc.text('Patient : ' + patient, W / 2, y, { align: 'center' });
-    y += 4;
-  }
-  y += 4;
-  doc.setDrawColor(56, 189, 248).setLineWidth(0.4);
-  doc.line(M + 20, y, W - M - 20, y);
-  y += 8;
-
-  // Corps — sections en MAJUSCULES rendues en gras
-  const maxW  = W - 2 * M;
-  const lineH = 5.2;
-  const footerH = 16;
-  const sectionRe = /^[A-ZÀÂÄÉÈÊËÎÏÔÙÛÜÇ\s\/\-]{5,}[:\s]*$/;
-
-  const rawLines = text.split('\n');
-  for (let i = 0; i < rawLines.length; i++) {
-    const line = rawLines[i];
-    const isSection = sectionRe.test(line.trim()) && line.trim().length > 0;
-    const isBlank   = line.trim() === '';
-
-    if (isSection) {
-      if (y + lineH * 2 > H - footerH) {
-        addFooter(); doc.addPage(); pageNum++; y = startPage();
-      }
-      doc.setFont('helvetica', 'bold').setFontSize(10.5).setTextColor(20, 30, 45);
-      doc.text(line, M, y);
-      y += lineH;
-    } else if (isBlank) {
-      y += lineH * 0.5;
-    } else {
-      doc.setFont('helvetica', 'normal').setFontSize(10.5).setTextColor(20, 30, 45);
-      const wrapped = doc.splitTextToSize(line, maxW);
-      for (const wl of wrapped) {
-        if (y + lineH > H - footerH) {
-          addFooter(); doc.addPage(); pageNum++; y = startPage();
+    for (const { bloc, y } of items) {
+      if (bloc.type === 'blanc') continue;
+      let ly = y;
+      for (const ligne of bloc.lignes) {
+        if (ligne.texte !== '') {
+          doc.setFont('helvetica', ligne.gras ? 'bold' : 'normal')
+             .setFontSize(ligne.gras ? densite.font : densite.font)
+             .setTextColor(20, 30, 45);
+          doc.text(ligne.texte, M, ly);
         }
-        doc.text(wl, M, y);
-        y += lineH;
+        ly += densite.lineH;
       }
     }
-  }
-  addFooter();
+    pied(index + 1, pages.length);
+  });
+
   doc.save(fileBaseName(cfg, key) + '.pdf');
 }
 
