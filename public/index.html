@@ -157,8 +157,8 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 }
 .nav-links a:hover { color: var(--lumen); }
 .nav-cta { display: flex; align-items: center; gap: 8px; flex: none; }
-/* Les deux boutons d'en-tête n'apparaissent qu'à partir de la tablette : sur
-   téléphone ils sont repris en bas du menu, en pleine largeur. */
+/* Le bouton d'en-tête n'apparaît qu'à partir de la tablette : sur téléphone il
+   est repris en bas du menu, en pleine largeur. */
 .nav-cta .btn { display: none; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -452,7 +452,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 .plan ul svg { margin-top: 3px; width: 14px; height: 14px; flex: none; color: var(--accent); }
 .plan .btn { position: relative; margin-top: 32px; width: 100%; }
 
-/* ── Accès anticipé ────────────────────────────────── */
+/* ── Création de compte ────────────────────────────── */
 .acces { position: relative; overflow: hidden; }
 .acces .aurora { position: absolute; inset: auto 0 -208px 0; height: 34rem; opacity: .6; pointer-events: none; }
 .acces-in { position: relative; margin: 0 auto; max-width: 768px; text-align: center; }
@@ -575,7 +575,6 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
     </nav>
     <div class="nav-cta">
       <a href="/login.html" class="btn btn-outline">Accéder à l'app</a>
-      <a href="#acces" class="btn btn-primary">Accès anticipé</a>
       <button class="nav-burger" id="nav-burger" aria-label="Ouvrir le menu" aria-expanded="false">
         <svg class="ico-menu" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         <svg class="ico-close" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -590,7 +589,6 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
       <a href="#tarifs" style="--d:130ms">Tarifs</a>
       <div class="nav-mobile-actions">
         <a href="/login.html" class="btn btn-outline">Accéder à l'app</a>
-        <a href="#acces" class="btn btn-primary">Accès anticipé</a>
       </div>
     </div>
   </div>
@@ -609,10 +607,12 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
     </svg>
 
     <div class="hero-mid">
-      <!-- Le nombre d'inscrits est une valeur figée dans la page, pas une donnée
-           du serveur. GET /api/stats donne le compte réel de la liste d'attente.
-           Voir docs/cablage-refonte.md, partie II. -->
-      <span class="badge rise"><span class="dot breathe"></span>Bêta fermée — <span id="counter-num">47</span> médecins inscrits</span>
+      <!-- L'inscription est ouverte : annoncer une « bêta fermée » au-dessus
+           d'un formulaire qui ouvre l'application immédiatement contredisait la
+           page. Le compteur d'inscrits, lui, était une valeur figée et non une
+           donnée du serveur — il a été retiré plutôt que de laisser un chiffre
+           inventé. Voir docs/cablage-refonte.md, partie II. -->
+      <span class="badge rise"><span class="dot breathe"></span>Essai gratuit 30 jours — sans carte bancaire</span>
 
       <h1 class="rise" style="animation-delay:80ms">
         <span class="text-gradient">Vous n'avez pas fait douze ans</span><br>
@@ -627,7 +627,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 
       <div class="hero-cta rise" style="animation-delay:240ms">
         <a href="#acces" class="btn btn-primary">
-          Rejoindre la bêta — gratuit
+          Créer mon compte — 30 jours gratuits
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
         <button type="button" class="btn btn-outline" id="demo-open">
@@ -883,7 +883,8 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
         <ul>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>50 documents générés</li>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Lettres de liaison</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Comptes-rendus</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Comptes-rendus &amp; résumés</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Jusqu'à 10 dossiers patients</li>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Sources cliquables</li>
         </ul>
         <a href="#acces" class="btn btn-outline">Commencer gratuitement</a>
@@ -894,9 +895,10 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
         <p class="price"><b>89</b><i>€</i></p>
         <p class="note">par mois, sans engagement</p>
         <ul>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Documents illimités</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Documents et dossiers illimités</li>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>MDPH &amp; ALD pré-remplis</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Intégration logiciel métier</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Certificats &amp; ordonnances</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Avis spécialisé sourcé</li>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Support par un médecin</li>
         </ul>
         <a href="#acces" class="btn btn-primary">Essai gratuit 30 jours</a>
@@ -912,22 +914,25 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Modèles partagés</li>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Facturation groupée</li>
         </ul>
-        <a href="#acces" class="btn btn-outline">Nous contacter</a>
+        <a href="mailto:contact@arkiba.fr?subject=Arkiba%20Groupe" class="btn btn-outline">Nous contacter</a>
       </article>
     </div>
   </div>
 </section>
 
-<!-- ═══ ACCÈS ANTICIPÉ ═══ -->
+<!-- ═══ CRÉATION DE COMPTE ═══ -->
 <section class="section acces" id="acces">
   <div class="aurora"></div>
   <div class="acces-in">
     <h2><span class="text-gradient">Reprenez vos soirées.</span></h2>
-    <p>Arkiba est en accès anticipé pour un nombre limité de médecins. Inscription gratuite, sans
-      engagement, sans démarchage — vous testez sur vos propres consultations.</p>
+    <p>Créez votre compte et commencez tout de suite : 30 jours d'essai, sans carte bancaire,
+      sans engagement, sans démarchage — vous testez sur vos propres consultations.</p>
 
-    <!-- Les cinq champs sont ceux qu'exige POST /api/waitlist : prénom, nom,
-         email, spécialité, ville. La spécialité est peuplée par
+    <!-- Ce formulaire crée un vrai compte : il poste sur POST /api/auth/register
+         puis entre directement dans l'application avec le jeton renvoyé. Il n'y
+         a plus ni liste d'attente ni validation manuelle.
+         Les champs sont donc ceux qu'exige le serveur : prénom, nom, email,
+         mot de passe, spécialité, ville. La spécialité est peuplée par
          GET /api/specialites — la liste même contre laquelle le serveur valide.
          Une copie en dur ici avait fini par diverger, et l'inscription refusait
          alors toutes ses propres options. -->
@@ -940,6 +945,10 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
       </label>
       <label class="field wide"><span>Email professionnel</span>
         <input name="email" type="email" required autocomplete="email" placeholder="camille.rousseau@cabinet.fr" />
+      </label>
+      <label class="field wide"><span>Mot de passe</span>
+        <input name="password" type="password" required minlength="8" autocomplete="new-password"
+               placeholder="8 caractères minimum, avec une majuscule ou un chiffre" />
       </label>
       <label class="field"><span>Spécialité</span>
         <select name="specialite" required>
@@ -954,16 +963,16 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
         <span id="form-error-text"></span>
       </div>
       <button type="submit" class="btn btn-primary" id="submit-btn">
-        Demander l'accès bêta
+        Créer mon compte
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
       </button>
-      <p class="form-legal">Données hébergées en France · Aucun démarchage · Résiliation à tout moment</p>
+      <p class="form-legal">Déjà un compte ? <a href="/login.html">Se connecter</a> · Données hébergées en France · Aucun démarchage · Résiliation à tout moment</p>
     </form>
 
     <div class="form-done glass-night" id="form-success" role="status">
       <span class="ok"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg></span>
-      <p class="t">Inscription confirmée, <strong id="success-name"></strong>.</p>
-      <p class="s">Vous recevrez un email dès l'activation de votre accès. Votre place est réservée.</p>
+      <p class="t">Compte créé, <strong id="success-name"></strong>.</p>
+      <p class="s">Ouverture de votre espace…</p>
     </div>
   </div>
 </section>
@@ -984,7 +993,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
           <li><a href="#capacites">Capacités</a></li>
           <li><a href="#methode">Méthode</a></li>
           <li><a href="#tarifs">Tarifs</a></li>
-          <li><a href="#acces">Accès anticipé</a></li>
+          <li><a href="#acces">Créer un compte</a></li>
         </ul>
       </div>
       <div>
@@ -1249,7 +1258,12 @@ function toggleMic(btn) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  LISTE D'ATTENTE
+//  CRÉATION DE COMPTE
+//
+//  Le formulaire crée le compte et entre directement dans l'application : plus
+//  de liste d'attente, plus de page « votre place est réservée », plus de
+//  validation manuelle. Le jeton renvoyé par /api/auth/register est rangé sous
+//  la même clé que celle lue par app.html et login.html.
 // ═══════════════════════════════════════════════════════════════════════
 const form = document.getElementById('waitlist-form');
 const btn = document.getElementById('submit-btn');
@@ -1292,22 +1306,29 @@ form.addEventListener('submit', async (e) => {
 
   btn.disabled = true;
   const libelle = btn.innerHTML;
-  btn.textContent = 'Envoi en cours…';
+  btn.textContent = 'Création du compte…';
 
   const data = Object.fromEntries(new FormData(form));
+  // Le serveur attend une liste de spécialités ; le menu de cette page n'en
+  // propose qu'une, on l'enveloppe plutôt que de laisser le serveur deviner.
+  const payload = { ...data, specialites: data.specialite ? [data.specialite] : [] };
 
   try {
-    const res = await fetch('/api/waitlist', {
+    const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
     const json = await res.json();
 
     if (res.ok) {
+      // Même clé que login.html et app.html : le compte est connecté d'emblée,
+      // sans repasser par l'écran de connexion.
+      localStorage.setItem('praxi_token', json.token);
       form.style.display = 'none';
       successEl.classList.add('show');
       successName.textContent = data.prenom;
+      location.href = '/app.html';
     } else {
       throw new Error(json.error || 'Erreur serveur');
     }

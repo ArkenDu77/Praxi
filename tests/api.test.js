@@ -19,6 +19,23 @@ const app = require('../server');
 let authToken;
 let testUserId;
 
+// Les modules MDPH, ALD, certificat et ordonnance font partie d'Arkiba Pro : un
+// compte en essai s'y voit répondre 402 avant même que la validation des champs
+// ne s'exécute. Ces suites testent cette validation, pas l'abonnement — on place
+// donc le compte sur un plan payant, comme le ferait le webhook Stripe.
+// Le contrôle d'accès lui-même est couvert par tests/abonnement.test.js.
+function passerEnPro(token) {
+  const { email } = require('jsonwebtoken').decode(token);
+  const fichier = require('path').join(process.env.DATA_DIR, 'users.json');
+  const fs = require('fs');
+  const db = JSON.parse(fs.readFileSync(fichier, 'utf8'));
+  const u = db.users.find(x => x.email === email);
+  if (!u) throw new Error('compte de test introuvable : ' + email);
+  u.plan = 'pro';
+  u.planStatus = 'active';
+  fs.writeFileSync(fichier, JSON.stringify(db, null, 2));
+}
+
 // ─── AUTH ROUTES ───────────────────────────────────────────────────────────
 
 describe('POST /api/auth/register', () => {
@@ -314,6 +331,8 @@ describe('POST /api/generate/liaison', () => {
 });
 
 describe('POST /api/generate/mdph', () => {
+  beforeAll(() => passerEnPro(authToken));
+
   test('refuse sans auth', async () => {
     await request(app).post('/api/generate/mdph').send({ diagnostic: 'test' }).expect(401);
   });
@@ -329,6 +348,8 @@ describe('POST /api/generate/mdph', () => {
 });
 
 describe('POST /api/generate/ald', () => {
+  beforeAll(() => passerEnPro(authToken));
+
   test('refuse sans auth', async () => {
     await request(app).post('/api/generate/ald').send({ affection: 'test' }).expect(401);
   });
@@ -344,6 +365,8 @@ describe('POST /api/generate/ald', () => {
 });
 
 describe('POST /api/generate/certificat', () => {
+  beforeAll(() => passerEnPro(authToken));
+
   test('refuse sans auth', async () => {
     await request(app).post('/api/generate/certificat').send({ type: 'test' }).expect(401);
   });
@@ -359,6 +382,8 @@ describe('POST /api/generate/certificat', () => {
 });
 
 describe('POST /api/generate/ordonnance', () => {
+  beforeAll(() => passerEnPro(authToken));
+
   test('refuse sans authentification', async () => {
     await request(app)
       .post('/api/generate/ordonnance')

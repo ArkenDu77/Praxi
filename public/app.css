@@ -3586,3 +3586,79 @@ html:not([data-theme="dark"]) .clinical-block h3 { color: var(--accent); }
   .final-row { grid-template-columns: minmax(0, 1fr); }
   .final-row input, .final-row strong { text-align: left; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   ABONNEMENT — verrous de menu et écran de formule
+
+   Le cadenas est un indicateur, pas une protection : le droit d'accès est
+   tranché par le serveur (lib/plans.js), qui répond 402 même si l'entrée de
+   menu a été déverrouillée à la main dans le navigateur.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.side-link.locked { opacity: .55; }
+.side-link.locked:hover { opacity: .8; }
+
+.side-lock {
+  margin-left: auto;
+  display: inline-flex;
+  color: var(--gold-text);
+}
+.side-lock svg { width: 13px; height: 13px; }
+
+.side-plan {
+  margin-left: auto;
+  padding: 2px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .02em;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.side-plan[data-plan="illimite"],
+.side-plan[data-plan="pro"],
+.side-plan[data-plan="groupe"] {
+  border-color: var(--gold);
+  color: var(--gold-text);
+}
+.side-plan[data-plan="free"] { border-color: var(--danger); color: var(--danger); }
+
+.alert-plan {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid var(--gold);
+  border-radius: 10px;
+  background: var(--gold-soft);
+  color: var(--gold-text);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+.alert-plan[hidden] { display: none; }
+
+.abo-etat { display: flex; flex-direction: column; gap: 2px; }
+
+.abo-ligne {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.abo-ligne:last-child { border-bottom: 0; }
+.abo-cle { font-size: 13px; color: var(--text-muted); }
+.abo-valeur { font-family: var(--mono); font-size: 13px; color: var(--text); text-align: right; }
+
+.abo-liste { margin: 12px 0 18px; padding-left: 18px; color: var(--text-muted); font-size: 13.5px; line-height: 1.9; }
+
+.abo-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.abo-actions .btn[hidden] { display: none; }
+
+.abo-legal { margin-top: 14px; font-size: 11.5px; line-height: 1.6; color: var(--text-dim); }
+
+@media (max-width: 720px) {
+  .abo-ligne { flex-direction: column; gap: 2px; }
+  .abo-valeur { text-align: left; }
+  .abo-actions .btn { width: 100%; }
+}

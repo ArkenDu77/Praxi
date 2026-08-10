@@ -59,6 +59,15 @@ const { getSpecialite, listSpecialites } = require('./lib/specialites');
 // ── DOSSIERS PATIENTS (fiches + timeline de documents) ──
 const dossiers = require('./lib/dossiers');
 
+// ── PLANS D'ABONNEMENT ──
+// Le contrôle d'accès aux fonctionnalités est appliqué ici, côté serveur, avant
+// tout appel au modèle : l'interface ne fait que refléter l'état du compte.
+const plans = require('./lib/plans');
+
+// ── FACTURATION (Stripe) ──
+const facturation = require('./lib/facturation');
+const WEBHOOK_STRIPE_PATH = '/api/stripe/webhook';
+
 // ── RÉFÉRENTIELS DOCUMENTAIRES PAR SPÉCIALITÉ ──
 // Fournit au prompt la structure attendue et les repères chiffrés de la
 // spécialité, plutôt que de laisser le modèle les reconstituer de mémoire.
@@ -182,14 +191,55 @@ const USERS_PATH = path.join(DATA_DIR, 'users.json');
 
 function readUsers()      { return readJsonFile(USERS_PATH, { users: [], nextId: 1 }); }
 function writeUsers(data) { writeJsonFile(USERS_PATH, data); }
+// Lit un compte et le met à niveau au passage : les comptes créés avant
+// l'introduction des plans n'ont ni `plan`, ni date de fin d'essai, ni compteur.
+// La normalisation resynchronise aussi le drapeau `illimite` avec la whitelist
+// d'emails — c'est ce qui fait que l'accès total se décide sur l'email en base,
+// et non sur un secret écrit dans le code.
 function getUserById(id) {
-  return readUsers().users.find(u => u.id === id) || null;
+  const db  = readUsers();
+  const idx = db.users.findIndex(u => u.id === id);
+  if (idx === -1) return null;
+  if (plans.normaliserCompte(db.users[idx])) writeUsers(db);
+  return db.users[idx];
 }
+
+/**
+ * Applique une modification à un compte de façon indivisible : relecture,
+ * modification, écriture, sans `await` entre les trois. Deux requêtes
+ * simultanées ne peuvent donc pas repartir de la même version du fichier et
+ * s'écraser l'une l'autre. Renvoie le compte à jour, ou null s'il a disparu.
+ */
+function majUser(id, modifier) {
+  const db  = readUsers();
+  const idx = db.users.findIndex(u => u.id === id);
+  if (idx === -1) return null;
+  const normalise = plans.normaliserCompte(db.users[idx]);
+  // `modifier` renvoie false quand il n'a rien changé (plan sans plafond, par
+  // exemple) : inutile de réécrire le fichier à chaque génération.
+  const resultat = modifier(db.users[idx]);
+  if (resultat !== false || normalise) writeUsers(db);
+  return db.users[idx];
+}
+
+/** Décompte un document du plafond d'essai. Sans effet pour les plans illimités. */
+function consommerQuota(userId) {
+  majUser(userId, u => plans.consommerDocument(u));
+}
+
 // Renvoie l'utilisateur sans les champs sensibles (pour réponses API)
 function publicUser(u) {
   if (!u) return null;
-  const { passwordHash, emailVerificationCode, emailVerificationExpiry, resetToken, resetTokenExpiry, ...rest } = u;
-  return rest;
+  const {
+    passwordHash, emailVerificationCode, emailVerificationExpiry,
+    resetToken, resetTokenExpiry,
+    // Identifiants Stripe : internes à la facturation, aucun écran n'en a
+    // besoin, et les exposer donnerait à un front compromis de quoi agir sur
+    // l'abonnement.
+    stripe: _stripe,
+    ...rest
+  } = u;
+  return { ...rest, abonnement: plans.etatAbonnement(u) };
 }
 
 // ── TOKEN DE RÉINITIALISATION SANS ÉTAT ──
@@ -300,7 +350,14 @@ app.use((req, res, next) => {
 // 4 photos) : 20 Mo est une marge, pas une cible.
 const jsonStandard = express.json({ limit: '2mb' });
 const jsonAvecPhotos = express.json({ limit: '20mb' });
+// Le webhook Stripe est la seule route qui a besoin du corps BRUT : la
+// signature est calculée sur les octets envoyés, et un corps parsé puis
+// re-sérialisé ne redonne pas la même empreinte. Sans cette exception, aucun
+// événement ne passerait la vérification — donc aucun abonnement ne serait
+// jamais enregistré.
+const rawStripe = express.raw({ type: '*/*', limit: '1mb' });
 app.use((req, res, next) => {
+  if (req.path === WEBHOOK_STRIPE_PATH) return rawStripe(req, res, next);
   const parser = req.path.startsWith('/api/avis-specialise') ? jsonAvecPhotos : jsonStandard;
   parser(req, res, next);
 });
@@ -746,6 +803,43 @@ function authenticateJWT(req, res, next) {
   }
 }
 
+/**
+ * Garde d'accès à une fonctionnalité. À placer APRÈS authenticateJWT.
+ *
+ * C'est le seul point de décision : le verrou est ici, pas dans l'interface.
+ * Un compte gratuit qui appellerait la route directement (curl, console du
+ * navigateur, interface modifiée) reçoit le même 402 que s'il avait cliqué sur
+ * un bouton verrouillé.
+ *
+ * Pour les fonctionnalités qui consomment du modèle, le compteur n'est
+ * incrémenté qu'une fois la réponse acceptée : un appel qui échoue (erreur IA,
+ * validation) ne doit pas manger un document du plafond d'essai.
+ */
+function exigerFonctionnalite(feature) {
+  return (req, res, next) => {
+    const verdict = plans.verifierAcces(req.user, feature);
+    if (!verdict.ok) {
+      return res.status(402).json({
+        error: verdict.message,
+        code: verdict.code,
+        plan: verdict.plan,
+        feature,
+        limite: verdict.limite,
+      });
+    }
+
+    if (plans.CONSOMME_QUOTA.has(feature)) {
+      const envoyer = res.json.bind(res);
+      let compte = false;
+      res.json = (corps) => {
+        if (!compte && res.statusCode < 400) { compte = true; consommerQuota(req.user.id); }
+        return envoyer(corps);
+      };
+    }
+    next();
+  };
+}
+
 function signToken(user) {
   return jwt.sign(
     { id: user.id, email: user.email, prenom: user.prenom, specialite: user.specialite || '' },
@@ -794,14 +888,23 @@ app.post('/api/auth/register', async (req, res) => {
     return res.status(409).json({ error: 'Un compte existe déjà avec cet email.' });
   }
 
+  const maintenant = Date.now();
   const user = {
     id: db.nextId++,
     prenom, nom, email, passwordHash,
     specialite, specialites, ville, rpps,
     adresse: '', telephone: '', emailPro: email,
     status: 'verified',
+    // Abonnement : tout compte démarre sur l'essai de 30 jours. `illimite` est
+    // dérivé de la whitelist d'emails par normaliserCompte() juste en dessous —
+    // on ne l'écrit pas à la main pour qu'il n'existe qu'une seule règle.
+    plan: 'trial',
+    planStatus: 'trialing',
+    trialEndsAt: new Date(maintenant + plans.DUREE_ESSAI_JOURS * 86_400_000).toISOString(),
+    usage: { documents: 0, depuis: new Date(maintenant).toISOString() },
     createdAt: new Date().toISOString()
   };
+  plans.normaliserCompte(user, maintenant);
   db.users.push(user);
   writeUsers(db);
 
@@ -829,8 +932,13 @@ app.post('/api/auth/login', async (req, res) => {
   const ok = user && await bcrypt.compare(password, user.passwordHash);
   if (!ok) return res.status(401).json({ error: 'Email ou mot de passe incorrect.' });
 
-  const token = signToken(user);
-  res.json({ token, user: publicUser(user) });
+  // Relecture par getUserById : elle met le compte à niveau (plan, essai,
+  // compteur) et resynchronise le drapeau `illimite` avec la whitelist. Écrire
+  // à partir du `db` lu avant le bcrypt écraserait les modifications faites
+  // entre-temps par une autre requête.
+  const compte = getUserById(user.id) || user;
+  const token = signToken(compte);
+  res.json({ token, user: publicUser(compte) });
 });
 
 // GET /api/auth/me
@@ -1803,14 +1911,14 @@ function documentSafety(document, source, user) {
   return { checked: true, unsupportedNumbers, requiresReview: unsupportedNumbers.length > 0 };
 }
 
-app.post('/api/clinical/analyze', authenticateJWT, (req, res) => {
+app.post('/api/clinical/analyze', authenticateJWT, exigerFonctionnalite('clinical.analyze'), (req, res) => {
   const source = plainClinicalText(req.body);
   if (!source) return res.status(400).json({ error: 'Ajoutez des informations cliniques à analyser.' });
   res.json({ analysis: clinicalAnalysis(req.body) });
 });
 
 // POST /api/generate/liaison — lettre de liaison vers un spécialiste
-app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
+app.post('/api/generate/liaison', authenticateJWT, exigerFonctionnalite('generate.liaison'), async (req, res) => {
   const patient     = txt(req.body.patient, 500);
   const age         = s(req.body.age, 40);
   const motif       = txt(req.body.motif, 1000);
@@ -1898,7 +2006,7 @@ app.post('/api/generate/liaison', authenticateJWT, async (req, res) => {
 });
 
 // POST /api/generate/compte-rendu — compte-rendu de consultation structuré
-app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
+app.post('/api/generate/compte-rendu', authenticateJWT, exigerFonctionnalite('generate.compte-rendu'), async (req, res) => {
   const patient    = txt(req.body.patient, 500);
   const date       = s(req.body.date, 40);
   const notes      = txt(req.body.notes);
@@ -2006,7 +2114,7 @@ app.post('/api/generate/compte-rendu', authenticateJWT, async (req, res) => {
 });
 
 // POST /api/generate/resume — analyse / résumé d'un document
-app.post('/api/generate/resume', authenticateJWT, async (req, res) => {
+app.post('/api/generate/resume', authenticateJWT, exigerFonctionnalite('generate.resume'), async (req, res) => {
   const document   = txt(req.body.text);
   const complement = txt(req.body.complement, 2000);
 
@@ -2107,7 +2215,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
 
 
 // POST /api/generate/mdph
-app.post('/api/generate/mdph', authenticateJWT, async (req, res) => {
+app.post('/api/generate/mdph', authenticateJWT, exigerFonctionnalite('generate.mdph'), async (req, res) => {
   const patient    = txt(req.body.patient, 500);
   const diagnostic = txt(req.body.diagnostic, 2000);
   const notes      = txt(req.body.notes);
@@ -2147,7 +2255,7 @@ app.post('/api/generate/mdph', authenticateJWT, async (req, res) => {
 });
 
 // POST /api/generate/ald
-app.post('/api/generate/ald', authenticateJWT, async (req, res) => {
+app.post('/api/generate/ald', authenticateJWT, exigerFonctionnalite('generate.ald'), async (req, res) => {
   const patient    = txt(req.body.patient, 500);
   const affection  = txt(req.body.affection, 500);
   const notes      = txt(req.body.notes);
@@ -2191,7 +2299,7 @@ app.post('/api/generate/ald', authenticateJWT, async (req, res) => {
 });
 
 // POST /api/generate/certificat
-app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
+app.post('/api/generate/certificat', authenticateJWT, exigerFonctionnalite('generate.certificat'), async (req, res) => {
   const patient    = txt(req.body.patient, 500);
   const type       = txt(req.body.type, 200);
   const notes      = txt(req.body.notes);
@@ -2247,7 +2355,7 @@ app.post('/api/generate/certificat', authenticateJWT, async (req, res) => {
   } catch (err) { aiError(res, err); }
 });
 // POST /api/generate/ordonnance — ordonnance médicale structurée (standard ou bizone ALD)
-app.post('/api/generate/ordonnance', authenticateJWT, async (req, res) => {
+app.post('/api/generate/ordonnance', authenticateJWT, exigerFonctionnalite('generate.ordonnance'), async (req, res) => {
   const patient     = txt(req.body.patient, 500);
   const ddn         = s(req.body.ddn, 20);
   const medicaments = txt(req.body.medicaments);
@@ -2499,7 +2607,7 @@ app.get('/api/avis-specialise/specialites', authenticateJWT, (_req, res) => {
 });
 
 // POST /api/avis-specialise — cas clinique + photos → avis argumenté et sourcé.
-app.post('/api/avis-specialise', authenticateJWT, async (req, res) => {
+app.post('/api/avis-specialise', authenticateJWT, exigerFonctionnalite('avis-specialise'), async (req, res) => {
   const specialite = getSpecialite(req.body.specialite);
   if (!specialite) {
     return res.status(400).json({ error: 'Spécialité non disponible.' });
@@ -2623,7 +2731,7 @@ app.post('/api/avis-specialise', authenticateJWT, async (req, res) => {
 //
 // Modèle plus léger que l'avis lui-même : le raisonnement diagnostique est déjà
 // fait, il ne reste qu'à condenser.
-app.post('/api/avis-specialise/resume', authenticateJWT, async (req, res) => {
+app.post('/api/avis-specialise/resume', authenticateJWT, exigerFonctionnalite('avis-specialise'), async (req, res) => {
   const avis = txt(req.body.avis, 20000);
   if (!avis || avis.length < 200) {
     return res.status(400).json({ error: 'Aucun avis à résumer.' });
@@ -2724,7 +2832,15 @@ app.get('/api/patients', authenticateJWT, (req, res) => {
 });
 
 // POST /api/patients — création d'une fiche
-app.post('/api/patients', authenticateJWT, (req, res) => {
+app.post('/api/patients', authenticateJWT, exigerFonctionnalite('patients.write'), (req, res) => {
+  // Le plafond de dossiers de l'essai se contrôle sur le nombre réellement
+  // enregistré, pas sur un compteur tenu à part : supprimer un dossier doit
+  // rendre la place correspondante.
+  const dejaCrees = dossiers.listPatients(req.user.id).length;
+  const quota = plans.verifierQuotaPatients(req.user, dejaCrees);
+  if (!quota.ok) {
+    return res.status(402).json({ error: quota.message, code: quota.code, limite: quota.limite });
+  }
   const result = dossiers.createPatient(req.user.id, req.body || {});
   if (result.error) return res.status(400).json({ error: result.error });
   res.status(201).json(result);
@@ -2738,7 +2854,7 @@ app.get('/api/patients/:id', authenticateJWT, (req, res) => {
 });
 
 // PATCH /api/patients/:id — mise à jour partielle de la fiche
-app.patch('/api/patients/:id', authenticateJWT, (req, res) => {
+app.patch('/api/patients/:id', authenticateJWT, exigerFonctionnalite('patients.write'), (req, res) => {
   const result = dossiers.updatePatient(req.user.id, s(req.params.id, 40), req.body || {});
   if (result.error) {
     return res.status(result.error === 'Patient introuvable.' ? 404 : 400).json({ error: result.error });
@@ -2779,7 +2895,7 @@ app.get('/api/documents', authenticateJWT, (req, res) => {
 });
 
 // POST /api/documents — enregistre un document généré dans la timeline
-app.post('/api/documents', authenticateJWT, (req, res) => {
+app.post('/api/documents', authenticateJWT, exigerFonctionnalite('documents.write'), (req, res) => {
   const result = dossiers.createDocument(req.user.id, req.body || {});
   if (result.error) return res.status(400).json({ error: result.error });
   res.status(201).json(result);
@@ -2801,7 +2917,7 @@ app.delete('/api/documents/:id', authenticateJWT, (req, res) => {
 
 // POST /api/dossiers/import — reprise des données localStorage héritées.
 // Idempotent : un second import ne duplique ni les fiches ni les documents.
-app.post('/api/dossiers/import', authenticateJWT, (req, res) => {
+app.post('/api/dossiers/import', authenticateJWT, exigerFonctionnalite('patients.write'), (req, res) => {
   const result = dossiers.importerDepuisLocal(req.user.id, {
     patients:  Array.isArray(req.body.patients)  ? req.body.patients  : [],
     documents: Array.isArray(req.body.documents) ? req.body.documents : [],
@@ -2818,6 +2934,202 @@ app.get('/api/referentiels', authenticateJWT, (_req, res) => {
 app.get('/api/referentiels/mien', authenticateJWT, (req, res) => {
   const ref = getReferentiel((req.user && req.user.specialite) || '');
   res.json({ referentiel: referentielPublic(ref, null) });
+});
+
+// ── ABONNEMENT / FACTURATION (Stripe) ────────────────────────────────────────
+//
+// Rien n'est décidé ici : le droit d'accès vient de lib/plans.js, l'état de
+// l'abonnement vient de Stripe via les webhooks. Ces routes ne font que relier
+// les deux.
+
+/** Plans effectivement achetables : ceux dont le tarif Stripe est configuré. */
+function plansAchetables() {
+  const prix = facturation.prixParPlan();
+  return Object.keys(prix).filter(p => prix[p]);
+}
+
+/**
+ * Retrouve le compte visé par un événement Stripe.
+ * Trois pistes, de la plus fiable à la plus faible : l'identifiant client déjà
+ * enregistré, l'identifiant Arkiba placé en métadonnée à la création de la
+ * session, puis l'email. L'email seul ne suffirait pas — un client peut le
+ * changer dans le portail — mais il rattrape le cas où le webhook arrive avant
+ * que l'identifiant client ait été écrit sur le compte.
+ */
+function trouverCompteStripe(users, cible) {
+  if (cible.customerId) {
+    const parClient = users.findIndex(u => u.stripe && u.stripe.customerId === cible.customerId);
+    if (parClient !== -1) return parClient;
+  }
+  if (cible.arkibaUserId) {
+    const parId = users.findIndex(u => u.id === cible.arkibaUserId);
+    if (parId !== -1) return parId;
+  }
+  if (cible.email) {
+    const email = String(cible.email).trim().toLowerCase();
+    const parEmail = users.findIndex(u => u.email === email);
+    if (parEmail !== -1) return parEmail;
+  }
+  return -1;
+}
+
+/** Applique au compte l'état d'abonnement dicté par Stripe. */
+function appliquerAbonnement({ cible, maj }) {
+  const db  = readUsers();
+  const idx = trouverCompteStripe(db.users, cible);
+  if (idx === -1) {
+    console.warn('[stripe] aucun compte pour', cible.customerId || cible.arkibaUserId || maskEmail(cible.email));
+    return false;
+  }
+
+  const u = db.users[idx];
+  plans.normaliserCompte(u);
+
+  u.stripe = { ...(u.stripe || {}) };
+  for (const champ of ['customerId', 'subscriptionId', 'priceId', 'currentPeriodEnd', 'cancelAtPeriodEnd']) {
+    if (maj[champ] !== undefined && maj[champ] !== null) u.stripe[champ] = maj[champ];
+  }
+  if (cible.customerId && !u.stripe.customerId) u.stripe.customerId = cible.customerId;
+
+  if (maj.plan)       u.plan       = maj.plan;
+  if (maj.planStatus) u.planStatus = maj.planStatus;
+
+  // Un abonnement encaissé met fin à l'essai : le compte ne doit pas retomber
+  // sur un plafond de 50 documents à l'expiration de la date d'essai.
+  if (u.plan === 'pro' || u.plan === 'groupe') {
+    u.abonneDepuis = u.abonneDepuis || new Date().toISOString();
+  }
+
+  db.users[idx] = u;
+  writeUsers(db);
+  console.log(`[stripe] compte #${u.id} → plan ${u.plan} (${u.planStatus})`);
+  return true;
+}
+
+// GET /api/billing/state — état d'abonnement du compte connecté
+app.get('/api/billing/state', authenticateJWT, (req, res) => {
+  res.json({
+    abonnement: plans.etatAbonnement(req.user),
+    facturation: {
+      active: facturation.stripeActif(),
+      plansDisponibles: plansAchetables(),
+    },
+  });
+});
+
+// POST /api/billing/checkout — ouvre une session de paiement Stripe
+app.post('/api/billing/checkout', authenticateJWT, async (req, res) => {
+  // La whitelist est écartée AVANT tout appel à Stripe : ces comptes ne doivent
+  // jamais donner lieu à une création de client ni de session de paiement.
+  if (plans.estIllimite(req.user)) {
+    return res.status(400).json({
+      error: 'Ce compte dispose déjà d\'un accès illimité — aucun paiement n\'est requis.',
+      code: 'compte_illimite',
+    });
+  }
+  if (!facturation.stripeActif()) {
+    return res.status(503).json({ error: 'Le paiement en ligne n\'est pas encore activé.', code: 'stripe_inactif' });
+  }
+  if (!rateLimit(clientIp(req), 20, 'billing')) {
+    return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
+  }
+
+  const plan = s(req.body && req.body.plan, 20) || 'pro';
+  if (!plansAchetables().includes(plan)) {
+    return res.status(400).json({ error: 'Plan inconnu ou tarif non configuré.', code: 'plan_inconnu' });
+  }
+  // Déjà abonné : passer par une seconde session créerait un second
+  // abonnement facturé en parallèle. Le changement de formule se fait dans le
+  // portail client, qui sait proratiser.
+  if (plans.estPayant(req.user)) {
+    return res.status(409).json({
+      error: 'Vous avez déjà un abonnement actif. Gérez-le depuis le portail client.',
+      code: 'deja_abonne',
+    });
+  }
+
+  try {
+    const customerId = await facturation.assurerClient(req.user);
+    majUser(req.user.id, u => { u.stripe = { ...(u.stripe || {}), customerId }; });
+
+    const session = await facturation.creerSessionCheckout({
+      user: req.user,
+      plan,
+      customerId,
+      successUrl: `${APP_URL}/app.html?abonnement=succes&session={CHECKOUT_SESSION_ID}`,
+      cancelUrl:  `${APP_URL}/app.html?abonnement=annule`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe] checkout :', err.message);
+    const message = err.code === 'price_missing'
+      ? 'Tarif non configuré pour ce plan.'
+      : 'Impossible d\'ouvrir le paiement. Réessayez dans un instant.';
+    res.status(502).json({ error: message });
+  }
+});
+
+// POST /api/billing/portal — portail client (moyen de paiement, factures, résiliation)
+app.post('/api/billing/portal', authenticateJWT, async (req, res) => {
+  if (plans.estIllimite(req.user)) {
+    return res.status(400).json({
+      error: 'Ce compte dispose d\'un accès illimité — il n\'a pas d\'abonnement à gérer.',
+      code: 'compte_illimite',
+    });
+  }
+  if (!facturation.stripeActif()) {
+    return res.status(503).json({ error: 'Le paiement en ligne n\'est pas encore activé.', code: 'stripe_inactif' });
+  }
+  const customerId = req.user.stripe && req.user.stripe.customerId;
+  if (!customerId) {
+    return res.status(404).json({ error: 'Aucun abonnement à gérer pour ce compte.', code: 'pas_de_client' });
+  }
+
+  try {
+    const session = await facturation.creerSessionPortail({
+      customerId,
+      returnUrl: `${APP_URL}/app.html`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('[stripe] portail :', err.message);
+    res.status(502).json({ error: 'Impossible d\'ouvrir le portail de facturation.' });
+  }
+});
+
+// POST /api/stripe/webhook — notifications d'abonnement
+//
+// Route publique par nécessité : Stripe l'appelle sans jeton. C'est la
+// signature qui l'authentifie, vérifiée sur le corps brut. Un événement dont la
+// signature ne passe pas est rejeté sans être lu — sinon, n'importe qui
+// pourrait s'offrir un abonnement en postant un faux `subscription.updated`.
+app.post(WEBHOOK_STRIPE_PATH, async (req, res) => {
+  if (!facturation.stripeActif()) {
+    return res.status(503).json({ error: 'Facturation inactive.' });
+  }
+
+  let evenement;
+  try {
+    evenement = facturation.verifierEvenement(req.body, req.headers['stripe-signature']);
+  } catch (err) {
+    console.warn('[stripe] webhook refusé :', err.message);
+    return res.status(400).json({ error: 'Signature invalide.' });
+  }
+
+  // Une erreur de traitement doit rendre un 5xx : Stripe rejoue l'événement, et
+  // un abonnement encaissé finit par être enregistré même si l'application
+  // était momentanément indisponible. En revanche, un événement qui ne
+  // correspond à aucun compte n'est pas une erreur — il est journalisé et
+  // acquitté, sinon Stripe le rejouerait pendant des jours pour rien.
+  try {
+    const instruction = await facturation.interpreterEvenement(evenement);
+    if (instruction) appliquerAbonnement(instruction);
+  } catch (err) {
+    console.error(`[stripe] ${evenement.type} :`, err.message);
+    return res.status(500).json({ error: 'Traitement impossible, à rejouer.' });
+  }
+
+  res.json({ received: true, type: evenement.type });
 });
 
 // GET /health — sonde de l'hébergeur (Railway healthcheck).
@@ -2839,6 +3151,11 @@ app.get('/health', (_req, res) => {
       chemin: DATA_DIR,
       inscriptible: stockageInscriptible,
       persistant: Boolean(process.env.DATA_DIR),
+    },
+    facturation: {
+      active: facturation.stripeActif(),
+      webhook: Boolean((process.env.STRIPE_WEBHOOK_SECRET || '').trim()),
+      plans: plansAchetables(),
     },
   });
 });
