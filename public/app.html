@@ -6,47 +6,94 @@
 <title>Arkiba — Application</title>
 <script>
 // Applique le thème mémorisé avant le premier rendu pour éviter tout flash.
-try { if (localStorage.getItem('praxi_theme') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (_) {}
+// La « nuit clinique » est désormais le thème par défaut, dans la continuité de
+// la vitrine : seul un choix explicite de thème clair fait sortir de la nuit.
+try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElement.dataset.theme = 'dark'; } catch (_) { document.documentElement.dataset.theme = 'dark'; }
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Work+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Thème clair (défaut) : lisibilité maximale pour l'usage clinique ── */
+/* ── Thème clair : « clinical editorial » — papier chaud, encre forêt, ambre
+      pour les signaux sourcés. Palette fournie par la refonte, comme la nuit
+      clinique ci-dessous : aucune des deux n'est improvisée ici. ── */
 :root {
-  --bg:        #F2F6FA;
-  --bg-card:   #FFFFFF;
-  --bg-card2:  #F8FAFD;
-  --bg-hover:  #EDF3F9;
-  --border:    #E2E9F1;
-  --border2:   #CDD9E5;
-  --text:      #16232F;
-  --text-muted:#54687C;
-  /* Gris tertiaire (placeholders, mentions d'aide) : 4,7:1 sur fond blanc.
-     Le gris clair habituel des maquettes tombe à 2,6:1 et devient illisible
-     sur une tablette en cabinet, éclairage ambiant compris. */
-  --text-dim:  #64778A;
-  --accent:    #0284C7;
-  --accent2:   #0369A1;
-  --accent-contrast: #FFFFFF;
-  --accent-dim: rgba(2,132,199,0.08);
-  --accent-glow: rgba(2,132,199,0.22);
-  --accent-border: rgba(2,132,199,0.30);
-  --highlight: #075985;
-  --danger:    #DC2626;
-  --danger-dim: rgba(220,38,38,0.08);
-  --danger-glow: rgba(220,38,38,0.30);
-  --success:   #15803D;
-  --success-dim: rgba(21,128,61,0.10);
-  --warning:   #B45309;
-  --warning-dim: rgba(180,83,9,0.10);
-  --shadow-sm: 0 1px 2px rgba(22,35,47,.06);
-  --shadow-md: 0 8px 24px rgba(22,35,47,.10);
-  --shadow-lg: 0 22px 48px rgba(22,35,47,.18);
-  --overlay:   rgba(22,35,47,.45);
+  --bg: #f9f6ee;
+  --bg:        oklch(0.972 0.011 90);
+  --bg-card: #fefcf8;
+  --bg-card:   oklch(0.992 0.006 90);
+  --bg-card2: #f0ede3;
+  --bg-card2:  oklch(0.945 0.014 92);
+  --bg-hover: #f0ede4;
+  --bg-hover:  oklch(0.945 0.012 92);
+  --border: #d6d9cf;
+  --border:    oklch(0.88 0.014 120);
+  --border2: #c2c6ba;
+  --border2:   oklch(0.82 0.016 120);
+  --text: #12241c;
+  --text:      oklch(0.24 0.028 165);
+  --text-muted: #495a52;
+  --text-muted:oklch(0.45 0.024 165);
+  /* Gris tertiaire (placeholders, mentions d'aide) : le gris clair habituel des
+     maquettes tombe sous 3:1 et devient illisible sur une tablette en cabinet,
+     éclairage ambiant compris. Celui-ci reste au-dessus de 4,5:1. */
+  --text-dim: #576860;
+  --text-dim:  oklch(0.5 0.024 165);
+  --accent: #164131;
+  --accent:    oklch(0.34 0.056 166);
+  --accent2: #0a3123;
+  --accent2:   oklch(0.28 0.05 166);
+  --accent-contrast: #fbf8f1;
+  --accent-contrast: oklch(0.98 0.01 90);
+  --accent-dim: rgba(22,65,49,0.08);
+  --accent-dim: color-mix(in oklab, var(--accent) 8%, transparent);
+  --accent-glow: rgba(22,65,49,0.22);
+  --accent-glow: color-mix(in oklab, var(--accent) 22%, transparent);
+  --accent-border: rgba(22,65,49,0.3);
+  --accent-border: color-mix(in oklab, var(--accent) 30%, transparent);
+  --highlight: #103628;
+  --highlight: oklch(0.3 0.05 166);
+  --danger: #c22630;
+  --danger:    oklch(0.53 0.19 24);
+  --danger-dim: rgba(194,38,48,0.08);
+  --danger-dim: color-mix(in oklab, var(--danger) 8%, transparent);
+  --danger-glow: rgba(194,38,48,0.3);
+  --danger-glow: color-mix(in oklab, var(--danger) 30%, transparent);
+  --success: #056641;
+  --success:   oklch(0.45 0.1 160);
+  --success-dim: rgba(5,102,65,0.1);
+  --success-dim: color-mix(in oklab, var(--success) 10%, transparent);
+  /* L'ambre « source » de la refonte : il signale ce qui est sourcé et vérifié.
+     Deux valeurs, même teinte : l'ambre de la maquette pour les aplats et les
+     bordures, une version assombrie dès qu'il porte du texte. Sur le papier
+     chaud, l'ambre de la maquette tombe à 3,65:1 — sous le seuil pour du petit
+     texte, or c'est justement la couleur des pastilles de provenance, l'endroit
+     où le médecin vérifie d'où vient une affirmation. En thème sombre l'ambre
+     est à 10,9:1 et sert tel quel. */
+  --warning: #b77610;
+  --warning:   oklch(0.62 0.13 70);
+  --warning-texte: #a46400;
+  --warning-texte: oklch(0.56 0.13 70);
+  --warning-dim: rgba(183,118,16,0.12);
+  --warning-dim: color-mix(in oklab, var(--warning) 12%, transparent);
+  --shadow-sm: 0 1px 2px rgba(45,62,55,0.05);
+  --shadow-sm: 0 1px 2px oklch(0.25 0.03 160 / 0.05);
+  --shadow-md: 0 8px 24px -12px rgba(45,62,55,0.18);
+  --shadow-md: 0 8px 24px -12px oklch(0.25 0.03 160 / 0.18);
+  --shadow-lg: 0 18px 40px -18px rgba(45,62,55,0.28);
+  --shadow-lg: 0 18px 40px -18px oklch(0.25 0.03 160 / 0.28);
+  --overlay: rgba(18,36,28,0.45);
+  --overlay:   oklch(0.24 0.028 165 / .45);
   --sidebar-w: 264px;
+
+  /* Rayons et flou de la refonte — repris tels quels par les composants. */
+  --r-sm: 6px; --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px;
+  --glass-blur: blur(14px) saturate(130%);
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-sans: 'Work Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   /* ─── CONTRAT DE MOUVEMENT ────────────────────────────────────────────
      Arkiba est un outil clinique : le mouvement sert à expliquer un
@@ -74,20 +121,48 @@ try { if (localStorage.getItem('praxi_theme') === 'dark') document.documentEleme
   --dur-reveal: 320ms;  /* révélation d'une section ou d'un écran */
 }
 
-/* ── Thème sombre (optionnel, activable depuis la barre latérale) ── */
+/* ── Thème « nuit clinique » (défaut) : la palette de la vitrine, appliquée
+      à l'application. Encre nocturne, lumière glaciaire, or de confiance. ── */
 html[data-theme="dark"] {
-  --bg:        #080C10;
-  --bg-card:   #0D1520;
-  --bg-card2:  #0A1018;
-  --bg-hover:  #0F1B2A;
-  --border:    #1A2535;
-  --border2:   #243040;
-  --text:      #EDF2F7;
-  --text-muted:#6B8299;
-  --text-dim:  #3D5166;
-  --accent:    #38BDF8;
-  --accent2:   #0EA5E9;
-  --accent-contrast: #050A10;
+  --night: #070d14;
+  --night:      oklch(0.155 0.018 254);
+  --night-2: #0f161f;
+  --night-2:    oklch(0.198 0.021 253);
+  --night-3: #161f29;
+  --night-3:    oklch(0.235 0.024 252);
+  --night-line: #28313c;
+  --night-line: oklch(0.31 0.024 252);
+  --night-line-2: #3c4957;
+  --night-line-2: oklch(0.4 0.028 250);
+  --lumen: #f0f4f9;
+  --lumen:      oklch(0.965 0.008 250);
+  --lumen-soft: #aeb9c5;
+  --lumen-soft: oklch(0.78 0.021 250);
+  --lumen-dim: #76828e;
+  --lumen-dim:  oklch(0.6 0.024 250);
+  --sky: #35cef1;
+  --sky:        oklch(0.79 0.13 217);
+  --sky-ice: #a8ebfb;
+  --sky-ice:    oklch(0.9 0.07 215);
+  --gold: #ebc070;
+  --gold:       oklch(0.83 0.11 82);
+
+  --bg:        var(--night);
+  --bg-card:   var(--night-2);
+  --bg-card2: #0b121a;
+  --bg-card2:  oklch(0.178 0.02 253);
+  --bg-hover:  var(--night-3);
+  --border:    var(--night-line);
+  --border2:   var(--night-line-2);
+  --text:      var(--lumen);
+  --text-muted:var(--lumen-soft);
+  /* Le gris tertiaire du thème sombre précédent (#3D5166) tombait à 2,2:1 sur
+     le fond : placeholders et mentions d'aide y étaient illisibles. La lumière
+     glaciaire de la refonte les ramène au-dessus de 4,5:1. */
+  --text-dim:  var(--lumen-dim);
+  --accent:    var(--sky);
+  --accent2:   var(--sky-ice);
+  --accent-contrast: var(--night);
   /* Ces trois variables se référençaient elles-mêmes (`--accent-dim: var(--accent-dim)`).
      Une propriété personnalisée qui se cite elle-même est invalide au calcul :
      elle prend la valeur « invalide garantie », et toute déclaration qui
@@ -96,32 +171,53 @@ html[data-theme="dark"] {
      pastille d'avatar, état sélectionné des onglets de vue. Le plus coûteux :
      `.input:focus { box-shadow: 0 0 0 3px var(--accent-dim) }` disparaissait,
      et le champ actif ne se distinguait plus que par 1 px de bordure. */
-  --accent-dim: rgba(56,189,248,0.11);
-  --accent-glow: rgba(56,189,248,0.28);
-  --accent-border: rgba(56,189,248,0.34);
-  --highlight: #BAE6FD;
-  --danger:    #F87171;
-  --danger-dim: rgba(248,113,113,0.10);
-  --danger-glow: rgba(248,113,113,0.35);
-  --success:   #4ADE80;
-  --success-dim: rgba(74,222,128,0.10);
-  --warning:   #F0C060;
-  --warning-dim: rgba(240,192,96,0.10);
+  --accent-dim: rgba(53,206,241,0.12);
+  --accent-dim: color-mix(in oklab, var(--sky) 12%, transparent);
+  --accent-glow: rgba(53,206,241,0.28);
+  --accent-glow: color-mix(in oklab, var(--sky) 28%, transparent);
+  --accent-border: rgba(53,206,241,0.4);
+  --accent-border: color-mix(in oklab, var(--sky) 40%, transparent);
+  --highlight: var(--sky-ice);
+  --danger: #ff6468;
+  --danger:    oklch(0.704 0.191 22);
+  --danger-dim: rgba(255,100,104,0.12);
+  --danger-dim: color-mix(in oklab, var(--danger) 12%, transparent);
+  --danger-glow: rgba(255,100,104,0.35);
+  --danger-glow: color-mix(in oklab, var(--danger) 35%, transparent);
+  --success: #00d491;
+  --success:   oklch(0.765 0.177 163);
+  --success-dim: rgba(0,212,145,0.14);
+  --success-dim: color-mix(in oklab, var(--success) 14%, transparent);
+  /* L'or de la refonte : réservé à ce qui est sourcé et vérifiable.
+     Sur la nuit il atteint 10,9:1 : aplat et texte partagent la même valeur. */
+  --warning:   var(--gold);
+  --warning-texte: var(--gold);
+  --warning-dim: rgba(235,192,112,0.12);
+  --warning-dim: color-mix(in oklab, var(--gold) 12%, transparent);
   --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / .35);
   --shadow-md: 0 8px 24px rgba(0,0,0,.45);
+  --shadow-md: 0 8px 24px oklch(0 0 0 / .45);
   --shadow-lg: 0 22px 48px rgba(0,0,0,.5);
-  --overlay:   rgba(4,7,11,.72);
+  --shadow-lg: 0 22px 48px oklch(0 0 0 / .5);
+  --overlay: rgba(7,13,20,0.8);
+  --overlay:   color-mix(in oklab, var(--night) 80%, transparent);
 }
+
+/* Les contrôles natifs (sélecteur de date, menus déroulants, ascenseurs) sont
+   dessinés par le navigateur : sans cette déclaration, ils restent clairs au
+   milieu de la nuit clinique — le champ Date du compte-rendu ressortait blanc. */
+:root { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   min-height: 100vh;
   transition: background-color .25s ease, color .25s ease;
 }
@@ -131,6 +227,33 @@ body::before {
   background:
     radial-gradient(900px 500px at 78% -8%, var(--accent-dim), transparent 70%),
     radial-gradient(700px 420px at 8% 102%, var(--accent-dim), transparent 70%);
+}
+/* Nuit clinique : l'aurore et la trame de la vitrine, en fond d'application.
+   Les deux couches sont purement décoratives (z-index négatif, pointer-events
+   none) et n'entrent jamais dans le flux ni dans le contraste du texte. */
+html[data-theme="dark"] body::before {
+  background:
+    radial-gradient(ellipse 60% 45% at 50% -5%, color-mix(in oklab, var(--sky) 16%, transparent), transparent 70%),
+    radial-gradient(ellipse 45% 40% at 8% 25%, color-mix(in oklab, var(--gold) 7%, transparent), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 92% 32%, color-mix(in oklab, var(--sky) 10%, transparent), transparent 70%);
+}
+html[data-theme="dark"] body::after {
+  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background-image:
+    linear-gradient(to right, color-mix(in oklab, var(--sky) 7%, transparent) 0 1px, transparent 1px 100%),
+    linear-gradient(to bottom, color-mix(in oklab, var(--sky) 7%, transparent) 0 1px, transparent 1px 100%);
+  background-size: 72px 72px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
+}
+
+/* ─── Typographie éditoriale ───
+   Les titres passent au serif de la vitrine ; les libellés de champ et les
+   méta-informations à la mono espacée en capitales. */
+h1, h2, h3, .page-title, .modal h2, .dossier-nom, .result-title {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: -0.015em;
 }
 
 /* Barres de défilement discrètes, accordées au thème */
@@ -173,9 +296,17 @@ a, button, input, select, textarea, summary, [role="button"],
   overflow-y: auto;
   transition: background-color .25s ease;
 }
+html[data-theme="dark"] .sidebar {
+  background: rgba(15,22,31,0.72);
+  background: color-mix(in oklab, var(--night-2) 72%, transparent);
+  border-right: 1px solid rgba(40,49,60,0.8);
+  border-right: 1px solid color-mix(in oklab, var(--night-line) 80%, transparent);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+}
 .side-logo {
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 24px; letter-spacing: -.02em; color: var(--text);
+  font-family: var(--font-display);
+  font-size: 25px; letter-spacing: -.02em; color: var(--text);
   text-decoration: none; padding: 4px 8px; margin-bottom: 18px;
 }
 .side-logo span { color: var(--accent); }
@@ -198,14 +329,17 @@ a, button, input, select, textarea, summary, [role="button"],
 .side-uspec { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .side-section {
-  font-size: 10.5px; font-weight: 500; letter-spacing: .12em;
+  font-family: var(--font-mono);
+  font-size: 10px; font-weight: 600; letter-spacing: .16em;
   text-transform: uppercase; color: var(--text-dim);
-  padding: 0 10px; margin: 14px 0 8px;
+  padding: 0 10px; margin: 18px 0 8px;
 }
+/* Cible tactile : 44 px de haut, l'application se pilote au doigt sur tablette. */
 .side-link {
   position: relative;
   display: flex; align-items: center; gap: 11px;
-  padding: 9px 11px; border-radius: 8px;
+  min-height: 44px;
+  padding: 9px 11px; border-radius: var(--r-md);
   font-size: 13.5px; color: var(--text-muted); text-decoration: none;
   cursor: pointer; transition: background .18s, color .18s; border: 1px solid transparent;
   font-family: inherit; background: none; width: 100%; text-align: left;
@@ -238,9 +372,9 @@ a, button, input, select, textarea, summary, [role="button"],
 }
 
 .page-title {
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 33px; letter-spacing: -.025em; margin-bottom: 6px;
-  color: var(--text); line-height: 1.15;
+  font-family: var(--font-display);
+  font-size: 36px; letter-spacing: -.02em; margin-bottom: 6px;
+  color: var(--text); line-height: 1.12;
 }
 .page-sub {
   font-size: 14.5px; color: var(--text-muted); font-weight: 400;
@@ -260,23 +394,32 @@ a, button, input, select, textarea, summary, [role="button"],
 .field-row .field { flex: 1; }
 .label {
   display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-  font-size: 12px; font-weight: 600;
-  letter-spacing: .045em; text-transform: uppercase;
-  color: var(--text-muted); margin-bottom: 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text-dim); margin-bottom: 9px;
 }
-.label-opt { font-size: 11.5px; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; text-align: right; }
+.label-opt { font-family: var(--font-sans); font-size: 11.5px; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; text-align: right; }
+/* 46 px de haut : au-dessus du minimum tactile, y compris pour un champ posé
+   seul sur une ligne. */
 .input, .textarea, .select {
   width: 100%; background: var(--bg-card);
-  border: 1px solid var(--border2); border-radius: 9px;
-  padding: 11px 14px; font-size: 14px; color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--r-lg);
+  min-height: 46px;
+  padding: 12px 15px; font-size: 15px; color: var(--text);
   outline: none; font-family: inherit;
-  box-shadow: var(--shadow-sm);
   transition: border-color .18s, box-shadow .18s, background .18s;
 }
+html[data-theme="dark"] .input,
+html[data-theme="dark"] .textarea,
+html[data-theme="dark"] .select {
+  background: rgba(7,13,20,0.6);
+  background: color-mix(in oklab, var(--night) 60%, transparent);
+}
 .input::placeholder, .textarea::placeholder { color: var(--text-dim); }
-.input:hover:not(:focus), .textarea:hover:not(:focus), .select:hover:not(:focus) { border-color: var(--text-dim); }
+.input:hover:not(:focus), .textarea:hover:not(:focus), .select:hover:not(:focus) { border-color: var(--accent-border); }
 .input:focus, .textarea:focus, .select:focus {
-  border-color: var(--accent);
+  border-color: var(--accent-border);
   box-shadow: 0 0 0 3px var(--accent-dim);
   outline: none;
 }
@@ -364,27 +507,31 @@ a, button, input, select, textarea, summary, [role="button"],
 
 /* champ avec micro */
 .with-mic { position: relative; }
-.with-mic .textarea { padding-right: 50px; }
+.with-mic .textarea { padding-right: 62px; }
+/* 44 px : le bouton de dictée est le contrôle le plus sollicité au doigt de
+   toute l'application. Il était à 34 px, sous le seuil tactile. */
 .mic-btn {
-  position: absolute; top: 10px; right: 10px;
-  width: 34px; height: 34px; border-radius: 50%;
-  background: var(--bg-card2); border: 1px solid var(--border2);
-  color: var(--text-muted); cursor: pointer;
+  position: absolute; top: 9px; right: 9px;
+  width: 44px; height: 44px; border-radius: var(--r-lg);
+  background: var(--bg-card2); border: 1px solid var(--border);
+  color: var(--text-dim); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease,
               transform var(--dur-press) var(--ease-out);
   font-family: inherit;
 }
 .mic-btn:active:not(:disabled) { transform: scale(.94); }
-.mic-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+.mic-btn:hover:not(:disabled) { border-color: var(--accent-border); color: var(--accent); }
 .mic-btn:disabled { opacity: .45; cursor: not-allowed; }
+/* Dictée en cours : la respiration glaciaire de la refonte plutôt qu'un rouge
+   d'alerte — la dictée n'est pas une erreur. */
 .mic-btn.listening {
-  background: var(--danger); border-color: var(--danger); color: var(--accent-contrast);
-  animation: pulseMic 1.2s ease infinite;
+  background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent2);
+  animation: pulseMic 2.4s ease-in-out infinite;
 }
 @keyframes pulseMic {
-  0%, 100% { box-shadow: 0 0 0 0 var(--danger-glow); }
-  50%      { box-shadow: 0 0 0 8px transparent; }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: .55; }
 }
 
 /* dropzone */
@@ -468,27 +615,39 @@ a, button, input, select, textarea, summary, [role="button"],
 
 /* ─── BOUTONS ─── */
 .actions { margin-top: 22px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+/* 44 px de haut minimum sur tous les boutons : c'est la cible tactile d'une
+   tablette tenue à une main entre deux consultations. */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  border-radius: 9px; padding: 11px 22px;
-  font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: -.005em;
+  border-radius: var(--r-lg); padding: 11px 22px;
+  min-height: 44px;
+  font-size: 14px; font-weight: 500; cursor: pointer; letter-spacing: -.005em;
   font-family: inherit; border: 1px solid transparent;
   transition: opacity .2s, transform .12s, box-shadow .2s, background .2s, border-color .2s, color .2s, filter .2s;
 }
 .btn:active:not(:disabled) { transform: translateY(1px); }
-.btn-primary { background: var(--accent); color: var(--accent-contrast); box-shadow: var(--shadow-sm); }
-.btn-primary:hover { background: var(--accent2); box-shadow: 0 6px 22px var(--accent-glow); }
-.btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
-.btn-ghost { background: var(--bg-card); border-color: var(--border2); color: var(--text-muted); }
-.btn-ghost:hover { border-color: var(--text-muted); color: var(--text); }
+/* Action principale : le clair sur la nuit, et un halo glaciaire au survol. */
+.btn-primary { background: var(--text); color: var(--bg); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 50px -20px var(--accent); }
+.btn-primary:active:not(:disabled) { transform: translateY(0); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; transform: none; }
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
+.btn-ghost:hover { border-color: var(--accent-border); color: var(--text); }
 .btn-ghost svg { width: 14px; height: 14px; }
 /* Bouton de clôture : action franche, toujours identique partout */
 .btn-success {
-  background: var(--success); color: #fff; box-shadow: var(--shadow-sm);
+  background: var(--success-dim); border-color: var(--success);
+  color: var(--success);
 }
-.btn-success:hover { filter: brightness(1.08); box-shadow: 0 6px 22px var(--success-dim); }
+.btn-success:hover { background: rgba(0,212,145,0.25); background: color-mix(in oklab, var(--success) 25%, transparent); }
 .btn-success:disabled { opacity: .5; cursor: not-allowed; }
-.btn-success .spinner { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
+.btn-success .spinner { border-color: var(--success-dim); border-top-color: var(--success); }
+/* En thème clair, le vert forêt reste plein : le fond papier ne porte pas les
+   aplats translucides de la nuit. */
+:root:not([data-theme="dark"]) .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
+:root:not([data-theme="dark"]) .btn-success:hover { filter: brightness(1.08); }
+:root:not([data-theme="dark"]) .btn-success .spinner { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
+:root:not([data-theme="dark"]) .btn-primary { background: var(--accent); color: var(--accent-contrast); box-shadow: var(--shadow-sm); }
 
 .spinner {
   width: 14px; height: 14px; border-radius: 50%;
@@ -524,19 +683,27 @@ a, button, input, select, textarea, summary, [role="button"],
    import, catégories secondaires) reste fermé jusqu'à ce qu'on le demande.
    <details> natif : pas de JS à écrire, ouverture au clavier gratuite. */
 .disclosure { margin-bottom: 20px; }
+/* En-tête de section repliable : 56 px de haut, l'icône dans un carré teinté,
+   le libellé en mono capitales — le motif de la refonte. */
 .disclosure-summary {
-  display: flex; align-items: center; gap: 9px;
-  padding: 11px 14px; border-radius: 10px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  font-size: 13px; font-weight: 600; color: var(--text-muted);
-  cursor: pointer; user-select: none; list-style: none;
-  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; gap: 12px;
+  min-height: 56px;
+  padding: 10px 16px; border-radius: var(--r-xl);
+  background: var(--bg-card2); border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--text); cursor: pointer; user-select: none; list-style: none;
   transition: border-color .18s, color .18s, background .18s, border-radius .18s;
 }
+html[data-theme="dark"] .disclosure-summary { background: rgba(7,13,20,0.4); background: color-mix(in oklab, var(--night) 40%, transparent); }
 .disclosure-summary::-webkit-details-marker { display: none; }
 .disclosure-summary::marker { content: ''; }
 .disclosure-summary:hover { border-color: var(--accent-border); color: var(--text); background: var(--bg-hover); }
-.disclosure-summary svg.disclosure-icon { width: 15px; height: 15px; flex-shrink: 0; color: var(--accent); }
+.disclosure-summary svg.disclosure-icon {
+  width: 36px; height: 36px; flex-shrink: 0; padding: 9px;
+  border-radius: var(--r-md); color: var(--accent);
+  border: 1px solid var(--accent-border); background: var(--accent-dim);
+}
 .disclosure-chevron {
   width: 15px; height: 15px; flex-shrink: 0; margin-left: auto; color: var(--text-dim);
   transition: transform .22s cubic-bezier(.2,.7,.2,1);
@@ -665,18 +832,22 @@ html[data-theme="dark"] .result-body {
 .complete-box.show { display: block; }
 .complete-title { font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-bottom: 12px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+/* Chips cochables — 44 px de haut : ce sont les prescriptions de fin de
+   consultation, cochées au doigt. */
 .chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  border: 1px solid var(--border2); background: var(--bg-card);
-  color: var(--text-muted); border-radius: 999px; padding: 7px 14px;
-  font-size: 12.5px; font-family: inherit; cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 44px;
+  border: 1px solid var(--border); background: transparent;
+  color: var(--text-muted); border-radius: var(--r-lg); padding: 7px 16px;
+  font-size: 13px; font-family: inherit; cursor: pointer;
+  text-align: left;
   transition: border-color .18s, color .18s, background .18s, transform .12s;
 }
-.chip:hover { border-color: var(--accent); color: var(--text); }
+html[data-theme="dark"] .chip { background: rgba(7,13,20,0.5); background: color-mix(in oklab, var(--night) 50%, transparent); }
+.chip:hover { border-color: var(--accent-border); color: var(--text); }
 .chip:active { transform: translateY(1px); }
 .chip.on {
-  background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600;
+  background: var(--accent-dim); border-color: var(--accent-border); color: var(--text); font-weight: 500;
 }
 /* Coche discrète : l'état sélectionné ne repose pas uniquement sur la couleur */
 .chip.on::before {
@@ -739,14 +910,25 @@ html[data-theme="dark"] .result-body {
 .hist-del:hover { color: var(--danger); background: var(--danger-dim); }
 
 /* ─── PROFIL ─── */
+/* Panneau de verre : le motif de la vitrine, décliné dans l'application. */
 .card {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 28px 30px; margin-bottom: 22px;
+  border-radius: var(--r-2xl); padding: 28px 30px; margin-bottom: 22px;
   box-shadow: var(--shadow-sm);
+}
+html[data-theme="dark"] .card {
+  background: rgba(15,22,31,0.72);
+  background: color-mix(in oklab, var(--night-2) 72%, transparent);
+  border-color: rgba(40,49,60,0.8);
+  border-color: color-mix(in oklab, var(--night-line) 80%, transparent);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: none;
 }
 .card-title {
   display: flex; align-items: center; gap: 9px;
-  font-size: 12.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  font-family: var(--font-mono);
+  font-size: 10.5px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
   color: var(--accent); margin-bottom: 18px;
 }
 .card-title::before {
@@ -766,15 +948,24 @@ html[data-theme="dark"] .result-body {
 }
 .modal-bg.show { display: flex; }
 .modal {
-  background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 16px; padding: 32px; max-width: 460px; width: 100%;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--r-2xl); padding: 32px; max-width: 480px; width: 100%;
   box-shadow: var(--shadow-lg);
   animation: rise .25s cubic-bezier(.2,.7,.2,1) both;
 }
+html[data-theme="dark"] .modal {
+  background: rgba(15,22,31,0.92);
+  background: color-mix(in oklab, var(--night-2) 92%, transparent);
+  border-color: rgba(40,49,60,0.8);
+  border-color: color-mix(in oklab, var(--night-line) 80%, transparent);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: 0 40px 120px -40px var(--accent);
+}
 @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .modal h2 {
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 24px; letter-spacing: -.02em; margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 26px; letter-spacing: -.02em; margin-bottom: 8px;
 }
 .modal p.modal-desc { font-size: 13.5px; color: var(--text-muted); margin-bottom: 22px; font-weight: 300; }
 .modal-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
@@ -782,7 +973,7 @@ html[data-theme="dark"] .result-body {
 .doctolib-flag {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--warning-dim); border: 1px solid var(--warning);
-  color: var(--warning); border-radius: 20px;
+  color: var(--warning-texte); border-radius: 20px;
   padding: 4px 12px; font-size: 11px; font-weight: 500; margin-bottom: 14px;
 }
 .doctolib-loading {
@@ -834,7 +1025,7 @@ html[data-theme="dark"] .result-body {
   flex-shrink: 0; margin-top: 5px; animation: pulseMic 1.2s ease infinite;
 }
 .mic-status.error {
-  background: var(--warning-dim); border: 1px solid var(--warning); color: var(--warning);
+  background: var(--warning-dim); border: 1px solid var(--warning); color: var(--warning-texte);
 }
 .mic-status .mic-status-body { flex: 1; }
 .mic-status .mic-status-hint { display: block; color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
@@ -864,8 +1055,8 @@ html[data-theme="dark"] .result-body {
 }
 .dossier-ident { flex: 1; min-width: 200px; }
 .dossier-nom {
-  font-family: 'DM Serif Display', Georgia, serif;
-  font-size: 25px; line-height: 1.15; letter-spacing: -.02em; color: var(--text);
+  font-family: var(--font-display);
+  font-size: 28px; line-height: 1.15; letter-spacing: -.02em; color: var(--text);
 }
 .dossier-meta {
   display: flex; gap: 14px; flex-wrap: wrap;
@@ -926,7 +1117,8 @@ html[data-theme="dark"] .result-body {
 .tl-event {
   display: flex; align-items: flex-start; gap: 12px;
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 11px; padding: 13px 15px; margin-bottom: 8px;
+  border-radius: var(--r-xl); padding: 14px 16px; margin-bottom: 8px;
+  min-height: 56px;
   cursor: pointer; text-align: left; width: 100%; font-family: inherit;
   /* Entrée : opacité + décalage minime. L'arrivée d'un document dans le fil
      doit se remarquer sans faire sauter la page. */
@@ -1002,12 +1194,22 @@ html[data-theme="dark"] .result-body {
    décorative — une étape cochée correspond à un travail fait. */
 .gen-work {
   background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 13px; padding: 18px 20px; margin-bottom: 18px;
+  border-radius: var(--r-2xl); padding: 20px 22px; margin-bottom: 18px;
   box-shadow: var(--shadow-sm);
+}
+html[data-theme="dark"] .gen-work {
+  background: rgba(15,22,31,0.72);
+  background: color-mix(in oklab, var(--night-2) 72%, transparent);
+  border-color: rgba(40,49,60,0.8);
+  border-color: color-mix(in oklab, var(--night-line) 80%, transparent);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: none;
 }
 .gen-work-head {
   display: flex; align-items: center; gap: 10px;
-  font-size: 13.5px; font-weight: 600; color: var(--text); margin-bottom: 14px;
+  font-family: var(--font-display); font-weight: 400;
+  font-size: 18px; color: var(--text); margin-bottom: 16px;
 }
 
 .ai-stage {
@@ -1037,7 +1239,7 @@ html[data-theme="dark"] .result-body {
 }
 .ai-stage[data-state="done"] .ai-stage-dot::after {
   content: ''; position: absolute; left: 3.5px; top: 1px;
-  width: 4px; height: 8px; border: solid #fff;
+  width: 4px; height: 8px; border: solid var(--bg);
   border-width: 0 2px 2px 0; transform: rotate(45deg);
 }
 
@@ -1099,20 +1301,28 @@ html[data-theme="dark"] .result-body {
 /* Provenance : sur quoi cette génération s'est appuyée. Un médecin qui
    relit doit pouvoir remonter à la source d'une affirmation, sinon il
    relit tout. */
+/* Provenance et sources : l'or de la refonte est réservé à ce qui est sourcé
+   et vérifiable — c'est ce qui distingue une affirmation rattachée à une
+   recommandation d'une phrase simplement générée. */
 .prov {
   display: flex; align-items: flex-start; gap: 9px; flex-wrap: wrap;
-  margin-bottom: 14px; padding: 11px 14px; border-radius: 10px;
-  background: var(--accent-dim); border: 1px solid var(--accent-border);
+  margin-bottom: 14px; padding: 12px 15px; border-radius: var(--r-lg);
+  border: 1px solid rgba(235,192,112,0.25);
+  background: var(--warning-dim); border: 1px solid color-mix(in oklab, var(--warning) 25%, transparent);
   font-size: 13px; color: var(--text-muted); line-height: 1.55;
 }
 .prov strong { color: var(--text); font-weight: 600; }
 .prov-chip {
   display: inline-flex; align-items: center; gap: 5px;
-  background: var(--bg-card); border: 1px solid var(--accent-border);
-  color: var(--accent); border-radius: 6px; padding: 2px 8px;
-  font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit;
+  min-height: 44px;
+  border: 1px solid rgba(235,192,112,0.25);
+  background: transparent; border: 1px solid color-mix(in oklab, var(--warning) 25%, transparent);
+  color: var(--warning-texte); border-radius: 999px; padding: 2px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 500; letter-spacing: .04em; cursor: pointer;
   transition: background-color var(--dur-fast) ease, transform var(--dur-press) var(--ease-out);
 }
+.prov-chip:hover { background: var(--warning-dim); }
 .prov-chip:active { transform: scale(.96); }
 
 /* Ce que le référentiel de la spécialité attendait et que les notes ne
@@ -1123,7 +1333,7 @@ html[data-theme="dark"] .result-body {
   background: var(--warning-dim); border: 1px solid var(--warning);
 }
 .ref-gaps-t {
-  font-size: 12.5px; font-weight: 600; color: var(--warning);
+  font-size: 12.5px; font-weight: 600; color: var(--warning-texte);
   display: flex; align-items: center; gap: 7px; margin-bottom: 7px;
 }
 .ref-gaps ul { margin: 0; padding-left: 18px; }
@@ -1273,7 +1483,8 @@ html[data-theme="dark"] .result-body {
 /* ─── BASCULE DE THÈME ─── */
 .theme-toggle {
   display: flex; align-items: center; gap: 11px;
-  padding: 9px 11px; border-radius: 8px; width: 100%;
+  padding: 9px 11px; border-radius: var(--r-md); width: 100%;
+  min-height: 44px;
   font-size: 13.5px; color: var(--text-muted);
   border: 1px solid transparent; background: none; cursor: pointer;
   font-family: inherit; text-align: left; transition: background .2s, color .2s;
@@ -1364,7 +1575,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   flex:none;position:relative;border:1px solid var(--border2);
   background:var(--bg-card);color:var(--text);
   border-radius:10px;min-width:78px;min-height:44px;padding:0 8px;
-  font:600 12px Inter,sans-serif;cursor:pointer;
+  font:600 12px var(--font-sans);cursor:pointer;
   display:inline-flex;align-items:center;justify-content:space-between;gap:6px;
   transition:border-color var(--dur-fast) ease,background-color var(--dur-fast) ease,
              color var(--dur-fast) ease,transform var(--dur-press) var(--ease-out);
@@ -1386,15 +1597,15 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 .suggestion-toggle::before,.suggestion-toggle::after{font-size:12px}
 .suggestion-body{flex:1;min-width:0;padding-top:10px}.suggestion-body .suggestion-text{display:block;font-weight:500;line-height:1.45;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:var(--accent-dim);color:var(--accent)}
-.confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}.confidence-line:last-child{border:0}.confidence-plus{color:var(--success)}.confidence-minus{color:var(--warning)}.confidence-optional{color:var(--text-dim)}
-.quick-answer{display:flex;gap:8px;margin-top:10px}.quick-answer input{flex:1;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px 10px;font:13px Inter,sans-serif}.quick-progress{font-size:11px;color:var(--text-dim);margin-bottom:5px}
+.confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}.confidence-line:last-child{border:0}.confidence-plus{color:var(--success)}.confidence-minus{color:var(--warning-texte)}.confidence-optional{color:var(--text-dim)}
+.quick-answer{display:flex;gap:8px;margin-top:10px}.quick-answer input{flex:1;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px 10px;font:13px var(--font-sans)}.quick-progress{font-size:11px;color:var(--text-dim);margin-bottom:5px}
 .clinical-deduction{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}.clinical-deduction:last-child{border:0}.clinical-deduction.selected{background:var(--accent-dim);border-radius:8px;padding-left:6px;padding-right:6px}
 .deduction-hit{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-top:2px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .deduction-hit input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer;flex:none}
-.clinical-deduction textarea{width:100%;min-height:48px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:10px 8px;font:13px/1.45 Inter,sans-serif;touch-action:manipulation}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:var(--accent-dim);border-color:var(--accent-border)}
-.mini-apply{margin-left:7px;border:1px solid var(--accent-border);background:var(--accent-dim);color:var(--accent);border-radius:6px;padding:4px 8px;font:600 10px Inter,sans-serif;cursor:pointer}
+.clinical-deduction textarea{width:100%;min-height:48px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:10px 8px;font:13px/1.45 var(--font-sans);touch-action:manipulation}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:var(--accent-dim);border-color:var(--accent-border)}
+.mini-apply{margin-left:7px;border:1px solid var(--accent-border);background:var(--accent-dim);color:var(--accent);border-radius:6px;padding:4px 8px;font:600 10px var(--font-sans);cursor:pointer}
 .final-check{display:grid;gap:12px}.final-row{display:flex;justify-content:space-between;gap:20px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px}.final-row span:first-child{color:var(--text-muted)}
-.final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px Inter,sans-serif}.final-row input:focus{outline:none;border-color:var(--accent)}
+.final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px var(--font-sans)}.final-row input:focus{outline:none;border-color:var(--accent)}
 .clinical-foot{flex:none;display:flex;align-items:center;justify-content:stretch;gap:10px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg-card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.35);position:relative;z-index:2}
 .clinical-foot .btn{flex:1;justify-content:center;min-height:48px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 /* Le cadre était vert et titré en vert quel que soit son contenu : il annonçait
@@ -1406,13 +1617,13 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   background:var(--success-dim);border:1px solid var(--success)}
 .praxi-verification.attention{background:var(--warning-dim);border-color:var(--warning)}
 .praxi-verification strong{display:block;font-size:12.5px;color:var(--success);margin-bottom:7px}
-.praxi-verification.attention strong{color:var(--warning)}
+.praxi-verification.attention strong{color:var(--warning-texte)}
 .praxi-verification div{font-size:12px;color:var(--text-muted);line-height:1.75}
 .praxi-verification .pv-ligne{display:flex;gap:7px;align-items:baseline}
 .praxi-verification .pv-marque{flex-shrink:0;font-weight:700}
 .praxi-verification .pv-ok{color:var(--success)}
-.praxi-verification .pv-attention{color:var(--warning)}
-.safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:var(--warning-dim);border:1px solid var(--warning);color:var(--warning)}
+.praxi-verification .pv-attention{color:var(--warning-texte)}
+.safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:var(--warning-dim);border:1px solid var(--warning);color:var(--warning-texte)}
 @media(min-width:701px){
   .clinical-modal{padding:20px;align-items:center}
   .clinical-dialog{width:min(880px,100%);height:auto;max-height:min(92dvh,900px);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg)}
@@ -1621,7 +1832,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   font-size: 13.5px; font-weight: 650; margin-bottom: 8px;
 }
 .cv-action-t { color: var(--danger); }
-.cv-manque-t { color: var(--warning); }
+.cv-manque-t { color: var(--warning-texte); }
 .cv-action-l { margin: 0; padding-left: 20px; }
 .cv-action-l li { font-size: 13.5px; line-height: 1.6; color: var(--text); margin-bottom: 3px; }
 .cv-action-h { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
@@ -2948,7 +3159,11 @@ function applyTheme(t) {
   document.getElementById('theme-icon-sun').style.display  = t === 'dark' ? '' : 'none';
   document.getElementById('theme-label').textContent = t === 'dark' ? 'Mode clair' : 'Mode sombre';
 }
-applyTheme(localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light');
+// La nuit clinique est le thème par défaut, dans la continuité de la vitrine :
+// seul un choix explicite de thème clair en fait sortir. Cette ligne doit rester
+// accordée au script de pré-rendu en tête de page, sinon l'application démarre
+// dans un thème puis bascule dans l'autre sous les yeux du médecin.
+applyTheme(localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark');
 document.getElementById('theme-toggle').addEventListener('click', () =>
   applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
 
@@ -5264,7 +5479,16 @@ function renderUsageStats() {
   ).join('');
 }
 
+// Plafond de l'historique — les « 50 derniers documents » annoncés par l'écran.
+// La constante était référencée par consultDoCloture() sans avoir jamais été
+// déclarée : « Enregistrer et fermer le dossier » levait une ReferenceError à
+// chaque clôture, avant d'archiver quoi que ce soit et avant de réinitialiser
+// le formulaire. La modale restait ouverte, et la consultation était perdue.
+const HIST_MAX = 50;
+
 function persistHistory(list) { historyCache = list; updateHistoryCount(); }
+// Pendant du précédent pour les fiches patients, lui aussi appelé sans exister.
+function persistPatients(list) { patientsCache = list; }
 
 function updateHistoryCount() {
   const n = historyCache.length;
@@ -6181,6 +6405,36 @@ function consultDoCloture() {
   }
   while (list.length > HIST_MAX) list.pop();
   persistHistory(list);
+
+  // Archivage serveur des pièces produites.
+  //
+  // persistHistory() ne fait que mettre à jour le cache en mémoire : sans cet
+  // appel, la consultation clôturée disparaissait au premier rechargement, alors
+  // que l'écran Historique annonce l'inverse (« ou clôturez une consultation »)
+  // et que le bouton « Enregistrer » d'une génération, lui, écrit bien côté
+  // serveur. Le rattachement au dossier rend la pièce consultable depuis la
+  // fiche patient et réutilisable comme contexte plus tard.
+  //
+  // Volontairement non bloquant : le médecin passe au patient suivant même si
+  // le réseau du cabinet a lâché. La pièce reste dans l'historique en mémoire,
+  // et un échec se dit dans un toast plutôt que d'immobiliser la consultation.
+  const aArchiver = [];
+  if (contenu) aArchiver.push({ type: 'cr', typeLabel: 'Compte-rendu de consultation', contenu });
+  if (rxText)  aArchiver.push({ type: 'ordonnance', typeLabel: 'Ordonnance — examens & soins', contenu: rxText });
+  if (aArchiver.length) {
+    Promise.all(aArchiver.map(piece => api('/api/documents', {
+      method: 'POST',
+      body: JSON.stringify({
+        patientId:  patientLie ? patientLie.id : null,
+        patientNom: (patientLie && patientLie.nom) || name,
+        type:       piece.type,
+        typeLabel:  piece.typeLabel,
+        contenu:    piece.contenu,
+      }),
+    })))
+      .then(() => refreshHistory())
+      .catch(err => toast('Consultation clôturée, mais l\'archivage a échoué : ' + err.message));
+  }
 
   // Met à jour la fiche patient (création si nécessaire, sans écraser l'existant)
   if (val('ct-patient')) {
