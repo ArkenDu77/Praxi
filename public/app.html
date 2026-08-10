@@ -13,1881 +13,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-/* ── Thème clair : « clinical editorial » — papier chaud, encre forêt, ambre
-      pour les signaux sourcés. Palette fournie par la refonte, comme la nuit
-      clinique ci-dessous : aucune des deux n'est improvisée ici. ── */
-:root {
-  --bg: #f9f6ee;
-  --bg:        oklch(0.972 0.011 90);
-  --bg-card: #fefcf8;
-  --bg-card:   oklch(0.992 0.006 90);
-  --bg-card2: #f0ede3;
-  --bg-card2:  oklch(0.945 0.014 92);
-  --bg-hover: #f0ede4;
-  --bg-hover:  oklch(0.945 0.012 92);
-  --border: #d6d9cf;
-  --border:    oklch(0.88 0.014 120);
-  --border2: #c2c6ba;
-  --border2:   oklch(0.82 0.016 120);
-  --text: #12241c;
-  --text:      oklch(0.24 0.028 165);
-  --text-muted: #495a52;
-  --text-muted:oklch(0.45 0.024 165);
-  /* Gris tertiaire (placeholders, mentions d'aide) : le gris clair habituel des
-     maquettes tombe sous 3:1 et devient illisible sur une tablette en cabinet,
-     éclairage ambiant compris. Celui-ci reste au-dessus de 4,5:1. */
-  --text-dim: #576860;
-  --text-dim:  oklch(0.5 0.024 165);
-  --accent: #164131;
-  --accent:    oklch(0.34 0.056 166);
-  --accent2: #0a3123;
-  --accent2:   oklch(0.28 0.05 166);
-  --accent-contrast: #fbf8f1;
-  --accent-contrast: oklch(0.98 0.01 90);
-  --accent-dim: rgba(22,65,49,0.08);
-  --accent-dim: color-mix(in oklab, var(--accent) 8%, transparent);
-  --accent-glow: rgba(22,65,49,0.22);
-  --accent-glow: color-mix(in oklab, var(--accent) 22%, transparent);
-  --accent-border: rgba(22,65,49,0.3);
-  --accent-border: color-mix(in oklab, var(--accent) 30%, transparent);
-  --highlight: #103628;
-  --highlight: oklch(0.3 0.05 166);
-  --danger: #c22630;
-  --danger:    oklch(0.53 0.19 24);
-  --danger-dim: rgba(194,38,48,0.08);
-  --danger-dim: color-mix(in oklab, var(--danger) 8%, transparent);
-  --danger-glow: rgba(194,38,48,0.3);
-  --danger-glow: color-mix(in oklab, var(--danger) 30%, transparent);
-  --success: #056641;
-  --success:   oklch(0.45 0.1 160);
-  --success-dim: rgba(5,102,65,0.1);
-  --success-dim: color-mix(in oklab, var(--success) 10%, transparent);
-  /* L'ambre « source » de la refonte : il signale ce qui est sourcé et vérifié.
-     Deux valeurs, même teinte : l'ambre de la maquette pour les aplats et les
-     bordures, une version assombrie dès qu'il porte du texte. Sur le papier
-     chaud, l'ambre de la maquette tombe à 3,65:1 — sous le seuil pour du petit
-     texte, or c'est justement la couleur des pastilles de provenance, l'endroit
-     où le médecin vérifie d'où vient une affirmation. En thème sombre l'ambre
-     est à 10,9:1 et sert tel quel. */
-  --warning: #b77610;
-  --warning:   oklch(0.62 0.13 70);
-  --warning-texte: #a46400;
-  --warning-texte: oklch(0.56 0.13 70);
-  --warning-dim: rgba(183,118,16,0.12);
-  --warning-dim: color-mix(in oklab, var(--warning) 12%, transparent);
-  --shadow-sm: 0 1px 2px rgba(45,62,55,0.05);
-  --shadow-sm: 0 1px 2px oklch(0.25 0.03 160 / 0.05);
-  --shadow-md: 0 8px 24px -12px rgba(45,62,55,0.18);
-  --shadow-md: 0 8px 24px -12px oklch(0.25 0.03 160 / 0.18);
-  --shadow-lg: 0 18px 40px -18px rgba(45,62,55,0.28);
-  --shadow-lg: 0 18px 40px -18px oklch(0.25 0.03 160 / 0.28);
-  --overlay: rgba(18,36,28,0.45);
-  --overlay:   oklch(0.24 0.028 165 / .45);
-  --sidebar-w: 264px;
-
-  /* Rayons et flou de la refonte — repris tels quels par les composants. */
-  --r-sm: 6px; --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px;
-  --glass-blur: blur(14px) saturate(130%);
-  --font-display: 'DM Serif Display', Georgia, serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-
-  /* ─── CONTRAT DE MOUVEMENT ────────────────────────────────────────────
-     Arkiba est un outil clinique : le mouvement sert à expliquer un
-     changement d'état, jamais à décorer. Trois règles tiennent tout :
-
-     1. Une animation doit répondre à « pourquoi ça bouge ? ». Retour de
-        frappe, apparition d'un élément, révélation d'une hiérarchie —
-        sinon on ne l'anime pas. Ce qu'un médecin voit cent fois par jour
-        (changement d'écran, raccourci clavier) ne s'anime pas.
-     2. Les courbes natives du CSS sont trop molles. On utilise des courbes
-        franches, et jamais ease-in sur une entrée : ease-in retarde
-        l'instant précis que l'œil regarde, et fait paraître lent.
-     3. transform et opacity uniquement — le reste repasse par le layout
-        et fait tomber des images.
-
-     Durées : 140-220 ms pour ce qui est fréquent, au-delà seulement pour
-     une révélation de page. La sortie est toujours plus rapide que
-     l'entrée : le système répond vite, l'utilisateur décide lentement. */
-  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
-  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
-
-  --dur-press:  140ms;  /* retour de frappe : bouton, coche */
-  --dur-fast:   180ms;  /* survol, changement d'état local */
-  --dur-enter:  220ms;  /* apparition d'un élément dans le flux */
-  --dur-reveal: 320ms;  /* révélation d'une section ou d'un écran */
-}
-
-/* ── Thème « nuit clinique » (défaut) : la palette de la vitrine, appliquée
-      à l'application. Encre nocturne, lumière glaciaire, or de confiance. ── */
-html[data-theme="dark"] {
-  --night: #070d14;
-  --night:      oklch(0.155 0.018 254);
-  --night-2: #0f161f;
-  --night-2:    oklch(0.198 0.021 253);
-  --night-3: #161f29;
-  --night-3:    oklch(0.235 0.024 252);
-  --night-line: #28313c;
-  --night-line: oklch(0.31 0.024 252);
-  --night-line-2: #3c4957;
-  --night-line-2: oklch(0.4 0.028 250);
-  --lumen: #f0f4f9;
-  --lumen:      oklch(0.965 0.008 250);
-  --lumen-soft: #aeb9c5;
-  --lumen-soft: oklch(0.78 0.021 250);
-  --lumen-dim: #76828e;
-  --lumen-dim:  oklch(0.6 0.024 250);
-  --sky: #35cef1;
-  --sky:        oklch(0.79 0.13 217);
-  --sky-ice: #a8ebfb;
-  --sky-ice:    oklch(0.9 0.07 215);
-  --gold: #ebc070;
-  --gold:       oklch(0.83 0.11 82);
-
-  --bg:        var(--night);
-  --bg-card:   var(--night-2);
-  --bg-card2: #0b121a;
-  --bg-card2:  oklch(0.178 0.02 253);
-  --bg-hover:  var(--night-3);
-  --border:    var(--night-line);
-  --border2:   var(--night-line-2);
-  --text:      var(--lumen);
-  --text-muted:var(--lumen-soft);
-  /* Le gris tertiaire du thème sombre précédent (#3D5166) tombait à 2,2:1 sur
-     le fond : placeholders et mentions d'aide y étaient illisibles. La lumière
-     glaciaire de la refonte les ramène au-dessus de 4,5:1. */
-  --text-dim:  var(--lumen-dim);
-  --accent:    var(--sky);
-  --accent2:   var(--sky-ice);
-  --accent-contrast: var(--night);
-  /* Ces trois variables se référençaient elles-mêmes (`--accent-dim: var(--accent-dim)`).
-     Une propriété personnalisée qui se cite elle-même est invalide au calcul :
-     elle prend la valeur « invalide garantie », et toute déclaration qui
-     l'utilise tombe. En thème sombre, les 45 usages de ces jetons étaient donc
-     sans effet — halo de focus des champs, fond de l'élément de menu actif,
-     pastille d'avatar, état sélectionné des onglets de vue. Le plus coûteux :
-     `.input:focus { box-shadow: 0 0 0 3px var(--accent-dim) }` disparaissait,
-     et le champ actif ne se distinguait plus que par 1 px de bordure. */
-  --accent-dim: rgba(53,206,241,0.12);
-  --accent-dim: color-mix(in oklab, var(--sky) 12%, transparent);
-  --accent-glow: rgba(53,206,241,0.28);
-  --accent-glow: color-mix(in oklab, var(--sky) 28%, transparent);
-  --accent-border: rgba(53,206,241,0.4);
-  --accent-border: color-mix(in oklab, var(--sky) 40%, transparent);
-  --highlight: var(--sky-ice);
-  --danger: #ff6468;
-  --danger:    oklch(0.704 0.191 22);
-  --danger-dim: rgba(255,100,104,0.12);
-  --danger-dim: color-mix(in oklab, var(--danger) 12%, transparent);
-  --danger-glow: rgba(255,100,104,0.35);
-  --danger-glow: color-mix(in oklab, var(--danger) 35%, transparent);
-  --success: #00d491;
-  --success:   oklch(0.765 0.177 163);
-  --success-dim: rgba(0,212,145,0.14);
-  --success-dim: color-mix(in oklab, var(--success) 14%, transparent);
-  /* L'or de la refonte : réservé à ce qui est sourcé et vérifiable.
-     Sur la nuit il atteint 10,9:1 : aplat et texte partagent la même valeur. */
-  --warning:   var(--gold);
-  --warning-texte: var(--gold);
-  --warning-dim: rgba(235,192,112,0.12);
-  --warning-dim: color-mix(in oklab, var(--gold) 12%, transparent);
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
-  --shadow-sm: 0 1px 2px oklch(0 0 0 / .35);
-  --shadow-md: 0 8px 24px rgba(0,0,0,.45);
-  --shadow-md: 0 8px 24px oklch(0 0 0 / .45);
-  --shadow-lg: 0 22px 48px rgba(0,0,0,.5);
-  --shadow-lg: 0 22px 48px oklch(0 0 0 / .5);
-  --overlay: rgba(7,13,20,0.8);
-  --overlay:   color-mix(in oklab, var(--night) 80%, transparent);
-}
-
-/* Les contrôles natifs (sélecteur de date, menus déroulants, ascenseurs) sont
-   dessinés par le navigateur : sans cette déclaration, ils restent clairs au
-   milieu de la nuit clinique — le champ Date du compte-rendu ressortait blanc. */
-:root { color-scheme: light; }
-html[data-theme="dark"] { color-scheme: dark; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-sans);
-  font-size: 15px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  min-height: 100vh;
-  transition: background-color .25s ease, color .25s ease;
-}
-/* Halo très discret : donne de la profondeur sans nuire au contraste du texte */
-body::before {
-  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background:
-    radial-gradient(900px 500px at 78% -8%, var(--accent-dim), transparent 70%),
-    radial-gradient(700px 420px at 8% 102%, var(--accent-dim), transparent 70%);
-}
-/* Nuit clinique : l'aurore et la trame de la vitrine, en fond d'application.
-   Les deux couches sont purement décoratives (z-index négatif, pointer-events
-   none) et n'entrent jamais dans le flux ni dans le contraste du texte. */
-html[data-theme="dark"] body::before {
-  background:
-    radial-gradient(ellipse 60% 45% at 50% -5%, color-mix(in oklab, var(--sky) 16%, transparent), transparent 70%),
-    radial-gradient(ellipse 45% 40% at 8% 25%, color-mix(in oklab, var(--gold) 7%, transparent), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 92% 32%, color-mix(in oklab, var(--sky) 10%, transparent), transparent 70%);
-}
-html[data-theme="dark"] body::after {
-  content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-  background-image:
-    linear-gradient(to right, color-mix(in oklab, var(--sky) 7%, transparent) 0 1px, transparent 1px 100%),
-    linear-gradient(to bottom, color-mix(in oklab, var(--sky) 7%, transparent) 0 1px, transparent 1px 100%);
-  background-size: 72px 72px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
-}
-
-/* ─── Typographie éditoriale ───
-   Les titres passent au serif de la vitrine ; les libellés de champ et les
-   méta-informations à la mono espacée en capitales. */
-h1, h2, h3, .page-title, .modal h2, .dossier-nom, .result-title {
-  font-family: var(--font-display);
-  font-weight: 400;
-  letter-spacing: -0.015em;
-}
-
-/* Barres de défilement discrètes, accordées au thème */
-* { scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
-*::-webkit-scrollbar { width: 10px; height: 10px; }
-*::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 8px; border: 3px solid transparent; background-clip: content-box; }
-*::-webkit-scrollbar-thumb:hover { background: var(--text-dim); background-clip: content-box; }
-*::-webkit-scrollbar-track { background: transparent; }
-
-::selection { background: var(--accent); color: var(--accent-contrast); }
-
-/* Focus clavier homogène sur toute l'application */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
-
-/* ─── TACTILE : supprime le double-tap-to-zoom du navigateur ───
-   Un double-tap accidentel sur un bouton ou un champ déclenchait le zoom
-   natif du navigateur — gênant sur tablette en consultation. "manipulation"
-   autorise explicitement le défilement (pan) et le pincement (pinch-zoom) :
-   seuls les gestes non standard comme le double-tap sont coupés, le
-   pinch-to-zoom d'accessibilité reste pleinement actif (le viewport meta
-   n'impose par ailleurs aucun user-scalable=no ni maximum-scale). */
-a, button, input, select, textarea, summary, [role="button"],
-.btn, .chip, .side-link, .side-user, .theme-toggle, .menu-toggle,
-.mic-btn, .tool-btn, .vue-btn, .quick-tpl-btn, .file-remove, .hist-del, .hist-item,
-.step, .ms-trigger, .ms-opt, .ms-chip-x,
-.suggestion-toggle, .suggestion-text, .deduction-hit, .mini-apply,
-.dropzone, .doctolib-flag, .disclosure-summary {
-  touch-action: manipulation;
-}
-
-/* ─── SIDEBAR ─── */
-.sidebar {
-  position: fixed; top: 0; left: 0; bottom: 0;
-  width: var(--sidebar-w);
-  background: var(--bg-card);
-  border-right: 1px solid var(--border);
-  box-shadow: var(--shadow-sm);
-  display: flex; flex-direction: column;
-  padding: 22px 18px; z-index: 50;
-  overflow-y: auto;
-  transition: background-color .25s ease;
-}
-html[data-theme="dark"] .sidebar {
-  background: rgba(15,22,31,0.72);
-  background: color-mix(in oklab, var(--night-2) 72%, transparent);
-  border-right: 1px solid rgba(40,49,60,0.8);
-  border-right: 1px solid color-mix(in oklab, var(--night-line) 80%, transparent);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-}
-.side-logo {
-  font-family: var(--font-display);
-  font-size: 25px; letter-spacing: -.02em; color: var(--text);
-  text-decoration: none; padding: 4px 8px; margin-bottom: 18px;
-}
-.side-logo span { color: var(--accent); }
-
-.side-user {
-  display: flex; align-items: center; gap: 11px;
-  padding: 10px 10px; border-radius: 9px;
-  background: var(--bg-card2); border: 1px solid var(--border);
-  margin-bottom: 22px; cursor: pointer; transition: border-color .2s, background .2s;
-}
-.side-user:hover { border-color: var(--accent-border); background: var(--bg-hover); }
-.side-avatar {
-  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
-  background: var(--accent-dim); border: 1px solid var(--accent-border);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 600; color: var(--accent);
-}
-.side-uinfo { flex: 1; min-width: 0; }
-.side-uname { font-size: 13.5px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.side-uspec { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-.side-section {
-  font-family: var(--font-mono);
-  font-size: 10px; font-weight: 600; letter-spacing: .16em;
-  text-transform: uppercase; color: var(--text-dim);
-  padding: 0 10px; margin: 18px 0 8px;
-}
-/* Cible tactile : 44 px de haut, l'application se pilote au doigt sur tablette. */
-.side-link {
-  position: relative;
-  display: flex; align-items: center; gap: 11px;
-  min-height: 44px;
-  padding: 9px 11px; border-radius: var(--r-md);
-  font-size: 13.5px; color: var(--text-muted); text-decoration: none;
-  cursor: pointer; transition: background .18s, color .18s; border: 1px solid transparent;
-  font-family: inherit; background: none; width: 100%; text-align: left;
-}
-.side-link svg { width: 16px; height: 16px; flex-shrink: 0; }
-.side-link:hover { background: var(--bg-hover); color: var(--text); }
-.side-link.active {
-  background: var(--accent-dim); color: var(--accent); font-weight: 600;
-  border-color: var(--accent-glow);
-}
-/* Repère latéral : l'écran courant reste identifiable d'un coup d'œil */
-.side-link.active::before {
-  content: ''; position: absolute; left: -18px; top: 50%; transform: translateY(-50%);
-  width: 3px; height: 20px; border-radius: 0 3px 3px 0; background: var(--accent);
-}
-
-.side-spacer { flex: 1; }
-.side-logout {
-  margin-top: 16px; color: var(--text-muted);
-  border-top: 1px solid var(--border); padding-top: 14px;
-}
-.side-logout:hover { color: var(--danger); background: var(--danger-dim); }
-
-/* ─── MAIN ─── */
-.main {
-  margin-left: var(--sidebar-w);
-  min-height: 100vh;
-  padding: 38px 48px 100px;
-  max-width: 1100px;
-}
-
-.page-title {
-  font-family: var(--font-display);
-  font-size: 36px; letter-spacing: -.02em; margin-bottom: 6px;
-  color: var(--text); line-height: 1.12;
-}
-.page-sub {
-  font-size: 14.5px; color: var(--text-muted); font-weight: 400;
-  margin-bottom: 30px; max-width: 74ch;
-}
-.view { display: none; }
-/* Un médecin change d'écran des dizaines de fois par jour : à cette fréquence,
-   un glissement de 350 ms se paie en lenteur perçue à chaque navigation. On
-   garde un fondu court, sans déplacement — assez pour que l'œil comprenne que
-   le contenu a changé, trop bref pour se mettre en travers. */
-.view.active { display: block; animation: fade var(--dur-press) var(--ease-out); }
-@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
-/* ─── FORM ─── */
-.field { margin-bottom: 18px; }
-.field-row { display: flex; gap: 14px; }
-.field-row .field { flex: 1; }
-.label {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-  font-family: var(--font-mono);
-  font-size: 10.5px; font-weight: 600;
-  letter-spacing: .14em; text-transform: uppercase;
-  color: var(--text-dim); margin-bottom: 9px;
-}
-.label-opt { font-family: var(--font-sans); font-size: 11.5px; color: var(--text-dim); text-transform: none; letter-spacing: 0; font-weight: 400; text-align: right; }
-/* 46 px de haut : au-dessus du minimum tactile, y compris pour un champ posé
-   seul sur une ligne. */
-.input, .textarea, .select {
-  width: 100%; background: var(--bg-card);
-  border: 1px solid var(--border); border-radius: var(--r-lg);
-  min-height: 46px;
-  padding: 12px 15px; font-size: 15px; color: var(--text);
-  outline: none; font-family: inherit;
-  transition: border-color .18s, box-shadow .18s, background .18s;
-}
-html[data-theme="dark"] .input,
-html[data-theme="dark"] .textarea,
-html[data-theme="dark"] .select {
-  background: rgba(7,13,20,0.6);
-  background: color-mix(in oklab, var(--night) 60%, transparent);
-}
-.input::placeholder, .textarea::placeholder { color: var(--text-dim); }
-.input:hover:not(:focus), .textarea:hover:not(:focus), .select:hover:not(:focus) { border-color: var(--accent-border); }
-.input:focus, .textarea:focus, .select:focus {
-  border-color: var(--accent-border);
-  box-shadow: 0 0 0 3px var(--accent-dim);
-  outline: none;
-}
-.textarea { resize: vertical; min-height: 160px; line-height: 1.6; }
-/* C'est la phrase qui répond à « où partent les données de mes patients ? »,
-   la question qui décide de l'achat. Elle était composée comme une mention
-   légale de bas de page : 11,5 px dans le gris le plus pâle de la palette. */
-.anon-hint {
-  font-size: 12.5px; color: var(--text-muted);
-  margin-top: 9px; display: flex; align-items: flex-start; gap: 6px;
-  line-height: 1.5; user-select: none; pointer-events: none;
-}
-.anon-hint svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; color: var(--success); }
-.select {
-  -webkit-appearance: none; appearance: none; cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%236B8299' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px;
-}
-
-/* ── Sélecteur multi-spécialités (menu déroulant animé) ── */
-.ms { position: relative; }
-.ms-trigger {
-  width: 100%; display: flex; align-items: center; gap: 10px;
-  background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 8px; padding: 9px 14px; min-height: 44px;
-  font-family: inherit; font-size: 14px; color: var(--text);
-  cursor: pointer; transition: border-color .2s, box-shadow .2s;
-}
-.ms-trigger:hover { border-color: var(--border); }
-.ms.open .ms-trigger,
-.ms-trigger:focus-visible {
-  border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); outline: none;
-}
-.ms-value { flex: 1; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-width: 0; }
-.ms-placeholder { color: var(--text-dim); }
-.ms-chip {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--accent-dim); border: 1px solid var(--accent-border);
-  color: var(--accent); border-radius: 999px;
-  padding: 3px 5px 3px 11px; font-size: 12.5px; line-height: 1.4;
-  animation: chip-in .2s cubic-bezier(.2,.7,.2,1) both;
-}
-@keyframes chip-in { from { opacity: 0; transform: scale(.8); } to { opacity: 1; transform: none; } }
-.ms-chip-x {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 16px; height: 16px; border-radius: 50%; border: none;
-  background: var(--accent-glow); color: var(--accent);
-  font-size: 13px; line-height: 1; cursor: pointer; padding: 0; font-family: inherit;
-  transition: background .15s, transform .15s;
-}
-.ms-chip-x:hover { background: var(--accent); color: var(--accent-contrast); transform: scale(1.12); }
-.ms-caret { flex: none; color: var(--text-muted); transition: transform .28s cubic-bezier(.2,.7,.2,1); }
-.ms.open .ms-caret { transform: rotate(180deg); color: var(--accent); }
-.ms-panel {
-  position: absolute; z-index: 40; top: calc(100% + 7px); left: 0; right: 0;
-  background: var(--bg-card2); border: 1px solid var(--border2);
-  border-radius: 11px; padding: 6px; max-height: 290px; overflow-y: auto;
-  box-shadow: var(--shadow-lg);
-  opacity: 0; transform: translateY(-10px) scale(.985); transform-origin: top center;
-  visibility: hidden; pointer-events: none;
-  transition: opacity .22s ease, transform .22s cubic-bezier(.2,.7,.2,1), visibility .22s;
-}
-.ms.open .ms-panel { opacity: 1; transform: none; visibility: visible; pointer-events: auto; }
-.ms-opt {
-  display: flex; align-items: center; gap: 11px;
-  padding: 10px 11px; border-radius: 7px; cursor: pointer;
-  font-size: 13.5px; color: var(--text); user-select: none;
-  text-transform: none; letter-spacing: 0; font-weight: 400; margin: 0;
-  transition: background .15s;
-}
-.ms-opt:hover { background: var(--accent-dim); }
-.ms-opt input { position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none; }
-.ms-check {
-  flex: none; width: 19px; height: 19px; border-radius: 6px;
-  border: 1.5px solid var(--border2); background: var(--bg-card);
-  display: flex; align-items: center; justify-content: center;
-  transition: background .18s, border-color .18s;
-}
-.ms-check svg { width: 11px; height: 11px; stroke: var(--accent-contrast); opacity: 0; transform: scale(.4); transition: opacity .18s, transform .18s cubic-bezier(.2,.7,.2,1); }
-.ms-opt input:checked + .ms-check { background: var(--accent); border-color: var(--accent); }
-.ms-opt input:checked + .ms-check svg { opacity: 1; transform: none; }
-.ms-opt input:focus-visible + .ms-check { box-shadow: 0 0 0 3px var(--accent-glow); }
-.ms-panel::-webkit-scrollbar { width: 8px; }
-.ms-panel::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 8px; }
-
-/* champ avec micro */
-.with-mic { position: relative; }
-.with-mic .textarea { padding-right: 62px; }
-/* 44 px : le bouton de dictée est le contrôle le plus sollicité au doigt de
-   toute l'application. Il était à 34 px, sous le seuil tactile. */
-.mic-btn {
-  position: absolute; top: 9px; right: 9px;
-  width: 44px; height: 44px; border-radius: var(--r-lg);
-  background: var(--bg-card2); border: 1px solid var(--border);
-  color: var(--text-dim); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease,
-              transform var(--dur-press) var(--ease-out);
-  font-family: inherit;
-}
-.mic-btn:active:not(:disabled) { transform: scale(.94); }
-.mic-btn:hover:not(:disabled) { border-color: var(--accent-border); color: var(--accent); }
-.mic-btn:disabled { opacity: .45; cursor: not-allowed; }
-/* Dictée en cours : la respiration glaciaire de la refonte plutôt qu'un rouge
-   d'alerte — la dictée n'est pas une erreur. */
-.mic-btn.listening {
-  background: var(--accent-dim); border-color: var(--accent-border); color: var(--accent2);
-  animation: pulseMic 2.4s ease-in-out infinite;
-}
-@keyframes pulseMic {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: .55; }
-}
-
-/* dropzone */
-.dropzone {
-  border: 1.5px dashed var(--border2); border-radius: 10px;
-  padding: 36px 24px; text-align: center; cursor: pointer;
-  transition: border-color .2s, background .2s; background: var(--bg-card2);
-}
-.dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--accent-dim); }
-.dropzone svg { color: var(--text-muted); margin-bottom: 12px; }
-.dropzone-title { font-size: 14px; color: var(--text); margin-bottom: 4px; }
-.dropzone-hint { font-size: 12px; color: var(--text-dim); }
-.file-info {
-  display: none; margin-top: 14px; padding: 11px 16px;
-  background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px;
-  font-size: 13px; color: var(--text-muted);
-  align-items: center; justify-content: space-between;
-}
-.file-info.show { display: flex; }
-.file-info b { color: var(--text); font-weight: 500; }
-.file-remove {
-  background: none; border: none; color: var(--text-dim); cursor: pointer;
-  font-size: 20px; line-height: 1; padding: 0 4px;
-}
-.file-remove:hover { color: var(--danger); }
-
-/* ── Avis spécialisé : galerie de photos et références ── */
-.photo-grid { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
-.photo-thumb {
-  position: relative; width: 92px; height: 92px; border-radius: 8px;
-  overflow: hidden; border: 1px solid var(--border); background: var(--bg-card);
-}
-.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.photo-thumb .file-remove {
-  position: absolute; top: 2px; right: 4px; color: #fff;
-  text-shadow: 0 1px 3px rgba(0,0,0,.7);
-}
-.photo-thumb .photo-size {
-  position: absolute; bottom: 0; left: 0; right: 0; padding: 2px 5px;
-  font-size: 10px; color: #fff; background: rgba(0,0,0,.55);
-}
-.rag-badge {
-  display: inline-flex; align-items: center; gap: 6px; margin-left: auto;
-  font-size: 11px; color: var(--text-dim);
-}
-.references {
-  margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border);
-  font-size: 12.5px; color: var(--text-muted);
-}
-.references h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em;
-  color: var(--text-dim); margin: 0 0 10px; font-weight: 600; }
-.references ol { margin: 0; padding-left: 20px; }
-.references li { margin-bottom: 7px; line-height: 1.5; }
-.references a { color: var(--accent); text-decoration: none; }
-.references a:hover { text-decoration: underline; }
-.references .ref-source { color: var(--text-dim); }
-/* Bascule résumé / détail complet */
-.vue-switch {
-  display: none; gap: 6px; margin: 0 0 14px;
-  padding: 4px; background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 9px; width: fit-content;
-}
-.result.show .vue-switch { display: flex; }
-.vue-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 13px; border: none; border-radius: 6px;
-  background: transparent; color: var(--text-muted);
-  font-size: 12.5px; font-family: inherit; cursor: pointer;
-  transition: background .15s, color .15s;
-}
-.vue-btn svg { width: 14px; height: 14px; }
-.vue-btn:hover:not(.active) { color: var(--text); }
-.vue-btn.active { background: var(--accent-dim); color: var(--accent); }
-.vue-btn:disabled { opacity: .55; cursor: default; }
-
-.avis-disclaimer {
-  margin-top: 14px; padding: 11px 14px; border-radius: 8px;
-  background: var(--accent-dim); border: 1px solid var(--border);
-  font-size: 12.5px; color: var(--text-muted); line-height: 1.55;
-}
-
-/* ─── BOUTONS ─── */
-.actions { margin-top: 22px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-/* 44 px de haut minimum sur tous les boutons : c'est la cible tactile d'une
-   tablette tenue à une main entre deux consultations. */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  border-radius: var(--r-lg); padding: 11px 22px;
-  min-height: 44px;
-  font-size: 14px; font-weight: 600; cursor: pointer; letter-spacing: -.005em;
-  font-family: inherit; border: 1px solid transparent;
-  transition: opacity .2s, transform .12s, box-shadow .2s, background .2s, border-color .2s, color .2s, filter .2s;
-}
-.btn:active:not(:disabled) { transform: translateY(1px); }
-/* Action principale : le clair sur la nuit, et un halo glaciaire au survol. */
-.btn-primary { background: var(--text); color: var(--bg); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 50px -20px var(--accent); }
-.btn-primary:active:not(:disabled) { transform: translateY(0); }
-.btn-primary:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; transform: none; }
-.btn-ghost { background: transparent; border-color: var(--border); color: var(--text-muted); }
-.btn-ghost:hover { border-color: var(--accent-border); color: var(--text); }
-.btn-ghost svg { width: 14px; height: 14px; }
-/* Bouton de clôture : action franche, toujours identique partout */
-.btn-success {
-  background: var(--success-dim); border-color: var(--success);
-  color: var(--success);
-}
-.btn-success:hover { background: rgba(0,212,145,0.25); background: color-mix(in oklab, var(--success) 25%, transparent); }
-.btn-success:disabled { opacity: .5; cursor: not-allowed; }
-.btn-success .spinner { border-color: var(--success-dim); border-top-color: var(--success); }
-/* En thème clair, le vert forêt reste plein : le fond papier ne porte pas les
-   aplats translucides de la nuit. */
-:root:not([data-theme="dark"]) .btn-success { background: var(--success); border-color: var(--success); color: #fff; }
-:root:not([data-theme="dark"]) .btn-success:hover { filter: brightness(1.08); }
-:root:not([data-theme="dark"]) .btn-success .spinner { border-color: rgba(255,255,255,.35); border-top-color: #fff; }
-:root:not([data-theme="dark"]) .btn-primary { background: var(--accent); color: var(--accent-contrast); box-shadow: var(--shadow-sm); }
-
-.spinner {
-  width: 14px; height: 14px; border-radius: 50%;
-  border: 2px solid var(--accent-glow); border-top-color: var(--accent-contrast);
-  animation: spin .7s linear infinite;
-}
-.spinner.dark { border: 2px solid var(--accent-glow); border-top-color: var(--accent); }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-/* ─── MODÈLES RAPIDES (quick templates) ─── */
-.quick-tpl-bar {
-  margin-bottom: 20px; padding: 12px 14px;
-  background: var(--bg-card2); border: 1px solid var(--border);
-  border-radius: 10px;
-}
-.quick-tpl-label {
-  font-size: 10.5px; font-weight: 500; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--text-dim);
-  display: block; margin-bottom: 10px;
-}
-.quick-tpl-row { display: flex; flex-wrap: wrap; gap: 8px; }
-.quick-tpl-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 999px; padding: 5px 13px;
-  font-size: 12px; color: var(--text-muted); cursor: pointer;
-  font-family: inherit; transition: border-color .2s, color .2s, background .2s;
-}
-.quick-tpl-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-
-/* ─── DIVULGATION PROGRESSIVE (blocs repliables) ───
-   L'écran doit montrer d'abord le champ principal ; tout le reste (modèles,
-   import, catégories secondaires) reste fermé jusqu'à ce qu'on le demande.
-   <details> natif : pas de JS à écrire, ouverture au clavier gratuite. */
-.disclosure { margin-bottom: 20px; }
-/* En-tête de section repliable : 56 px de haut, l'icône dans un carré teinté,
-   le libellé en mono capitales — le motif de la refonte. */
-.disclosure-summary {
-  display: flex; align-items: center; gap: 12px;
-  min-height: 56px;
-  padding: 10px 16px; border-radius: var(--r-xl);
-  background: var(--bg-card2); border: 1px solid var(--border);
-  font-family: var(--font-mono);
-  font-size: 11px; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--text); cursor: pointer; user-select: none; list-style: none;
-  transition: border-color .18s, color .18s, background .18s, border-radius .18s;
-}
-html[data-theme="dark"] .disclosure-summary { background: rgba(7,13,20,0.4); background: color-mix(in oklab, var(--night) 40%, transparent); }
-.disclosure-summary::-webkit-details-marker { display: none; }
-.disclosure-summary::marker { content: ''; }
-.disclosure-summary:hover { border-color: var(--accent-border); color: var(--text); background: var(--bg-hover); }
-.disclosure-summary svg.disclosure-icon {
-  width: 36px; height: 36px; flex-shrink: 0; padding: 9px;
-  border-radius: var(--r-md); color: var(--accent);
-  border: 1px solid var(--accent-border); background: var(--accent-dim);
-}
-.disclosure-chevron {
-  width: 15px; height: 15px; flex-shrink: 0; margin-left: auto; color: var(--text-dim);
-  transition: transform .22s cubic-bezier(.2,.7,.2,1);
-}
-.disclosure[open] > .disclosure-summary .disclosure-chevron { transform: rotate(180deg); }
-.disclosure[open] > .disclosure-summary {
-  border-radius: 10px 10px 0 0; border-bottom-color: transparent;
-}
-.disclosure-body {
-  padding: 16px; border: 1px solid var(--border); border-top: none;
-  border-radius: 0 0 10px 10px; background: var(--bg-card2);
-  animation: fade .2s ease;
-}
-.disclosure-body > *:first-child { margin-top: 0; }
-.disclosure-body > *:last-child { margin-bottom: 0; }
-/* Compteur discret : reste lisible quand la section est repliée après sélection */
-.disclosure-count {
-  display: none; align-items: center; justify-content: center;
-  min-width: 19px; height: 19px; padding: 0 5px; margin-left: auto;
-  border-radius: 999px; background: var(--accent); color: var(--accent-contrast);
-  font-size: 11px; font-weight: 700;
-}
-.disclosure-count.show { display: inline-flex; }
-.disclosure[open] .disclosure-count { margin-left: 0; }
-.disclosure[open] .disclosure-chevron { margin-left: 8px; }
-
-/* ─── ALERTS ─── */
-.alert {
-  display: none; margin-top: 18px; padding: 12px 16px;
-  border-radius: 9px; font-size: 13.5px; line-height: 1.5;
-  border-left-width: 3px;
-}
-.alert.show { display: block; animation: fade .25s ease; }
-.alert-error { background: var(--danger-dim); border: 1px solid var(--danger-glow); border-left: 3px solid var(--danger); color: var(--danger); }
-.alert-info  { background: var(--accent-dim); border: 1px solid var(--accent-glow); border-left: 3px solid var(--accent); color: var(--highlight); }
-
-/* ─── RESULT ─── */
-.result { display: none; margin-top: 34px; }
-.result.show { display: block; animation: fade .3s ease; }
-.result-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 12px; gap: 14px; flex-wrap: wrap;
-}
-/* Le titre du document produit était le plus petit texte de l'écran (11 px),
-   plus petit que les boutons d'export posés à côté de lui. Il nomme pourtant
-   l'objet le plus important de la page. */
-.result-title {
-  font-size: 13px; font-weight: 600; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--accent);
-}
-.result-tools { display: flex; gap: 8px; flex-wrap: wrap; }
-.tool-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 8px; padding: 6px 12px;
-  font-size: 12.5px; font-weight: 500; color: var(--text-muted);
-  cursor: pointer; font-family: inherit; box-shadow: var(--shadow-sm);
-  /* transform en dernier et sur sa propre durée : le retour de frappe doit
-     être plus rapide que le changement de couleur, sinon le bouton paraît
-     répondre après coup. */
-  transition: border-color var(--dur-fast) ease, color var(--dur-fast) ease,
-              background-color var(--dur-fast) ease,
-              transform var(--dur-press) var(--ease-out);
-}
-.tool-btn svg { width: 13px; height: 13px; }
-@media (hover: hover) and (pointer: fine) {
-  .tool-btn:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
-}
-/* Le geste est confirmé par la pression elle-même, avant même le résultat. */
-.tool-btn:active { transform: scale(.96); }
-/* Retour d'action : l'état réussi arrive franchement puis se retire seul.
-   Pas d'animation d'entrée — le bouton est déjà là, seule sa couleur change. */
-.tool-btn.copied, .tool-btn.saved { border-color: var(--success); color: var(--success); }
-.edit-hint {
-  display: none; align-items: center; gap: 5px;
-  font-size: 12px; color: var(--text-dim); margin-bottom: 6px;
-}
-.result.show .edit-hint { display: flex; }
-.edit-hint svg { width: 12px; height: 12px; }
-/* Le document généré est ce que le médecin relit, corrige, signe et envoie à un
-   confrère. Il était rendu en JetBrains Mono : une lettre de liaison affichée
-   en chasse fixe ne se lit pas comme un courrier médical, elle se lit comme une
-   sortie de terminal — et c'est l'écran sur lequel se joue la crédibilité de
-   l'outil. On revient à la fonte de lecture du reste de l'application, à une
-   taille de lecture confortable et sur une longueur de ligne bornée. */
-.result-body {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  /* Ombre un peu plus portée que sur les cartes de l'application : le document
-     se pose sur la page au lieu d'être une zone parmi d'autres. */
-  box-shadow: 0 1px 2px rgba(22,35,47,.05), 0 8px 28px rgba(22,35,47,.07);
-  border-radius: 12px; padding: 40px 44px;
-  font-family: inherit;
-  font-size: 15.5px; line-height: 1.75; color: var(--text);
-  white-space: pre-wrap; word-wrap: break-word;
-  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
-}
-html[data-theme="dark"] .result-body {
-  box-shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 28px rgba(0,0,0,.35);
-}
-
-/* Édition en place : l'affordance apparaît au survol du document, pas en
-   permanence — un liseré bleu posé en continu sur un document qu'on relit
-   fatigue et suggère un champ de formulaire. */
-@media (hover: hover) and (pointer: fine) {
-  .result-body[contenteditable="true"]:hover { border-color: var(--border2); }
-}
-
-@media (max-width: 720px) {
-  .result-body { padding: 24px 20px; }
-}
-.result-body[contenteditable="true"] { cursor: text; }
-.result-body[contenteditable="true"]:focus {
-  outline: none;
-  border: 1px solid var(--accent-border);
-  box-shadow: 0 0 0 3px var(--accent-dim);
-}
-
-/* ─── Chips de complétion ─── */
-.complete-box {
-  display: none; margin-top: 18px;
-  background: var(--bg-card); border: 1px solid var(--border2);
-  border-radius: 10px; padding: 16px 18px;
-  animation: fade .3s ease;
-}
-.complete-box.show { display: block; }
-.complete-title { font-size: 12.5px; font-weight: 500; color: var(--text-muted); margin-bottom: 12px; }
-.chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-/* Chips cochables — 44 px de haut : ce sont les prescriptions de fin de
-   consultation, cochées au doigt. */
-.chip {
-  display: inline-flex; align-items: center; gap: 8px;
-  min-height: 44px;
-  border: 1px solid var(--border); background: transparent;
-  color: var(--text-muted); border-radius: var(--r-lg); padding: 7px 16px;
-  font-size: 13px; font-family: inherit; cursor: pointer;
-  text-align: left;
-  transition: border-color .18s, color .18s, background .18s, transform .12s;
-}
-html[data-theme="dark"] .chip { background: rgba(7,13,20,0.5); background: color-mix(in oklab, var(--night) 50%, transparent); }
-.chip:hover { border-color: var(--accent-border); color: var(--text); }
-.chip:active { transform: translateY(1px); }
-.chip.on {
-  background: var(--accent-dim); border-color: var(--accent-border); color: var(--text); font-weight: 600;
-}
-/* Coche discrète : l'état sélectionné ne repose pas uniquement sur la couleur */
-.chip.on::before {
-  content: ''; width: 12px; height: 12px; flex-shrink: 0;
-  background: currentColor;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/contain no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/contain no-repeat;
-}
-.chip-add { border-style: dashed; color: var(--text-dim); }
-.chip-add:hover { color: var(--accent); }
-.chip-input {
-  border: 1px solid var(--accent); background: var(--bg-card2);
-  color: var(--text); border-radius: 999px; padding: 7px 14px;
-  font-size: 12.5px; font-family: inherit; outline: none; min-width: 160px;
-}
-.complete-actions { margin-top: 14px; }
-.complete-update {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--accent-dim); border: 1px solid var(--accent);
-  color: var(--accent); border-radius: 8px; padding: 8px 16px;
-  font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer;
-  transition: background .2s, opacity .2s;
-}
-.complete-update:hover { background: var(--accent-glow); }
-.complete-update:disabled { opacity: .55; cursor: not-allowed; }
-
-/* ─── HISTORIQUE ─── */
-.history-list { display: flex; flex-direction: column; gap: 10px; }
-.history-empty {
-  text-align: center; padding: 60px 20px; color: var(--text-muted);
-  border: 1px dashed var(--border2); border-radius: 12px;
-}
-.history-empty svg { width: 36px; height: 36px; margin-bottom: 12px; opacity: .6; }
-.hist-item {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 10px; padding: 16px 20px;
-  display: flex; align-items: center; gap: 16px;
-  cursor: pointer; box-shadow: var(--shadow-sm);
-  transition: border-color .2s, background .2s, transform .15s, box-shadow .2s;
-}
-.hist-item:hover {
-  border-color: var(--accent-border); background: var(--bg-hover);
-  transform: translateY(-1px); box-shadow: var(--shadow-md);
-}
-.hist-icon {
-  width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
-  background: var(--accent-dim); border: 1px solid var(--accent-glow);
-  display: flex; align-items: center; justify-content: center; color: var(--accent);
-}
-.hist-icon svg { width: 17px; height: 17px; }
-.hist-body { flex: 1; min-width: 0; }
-.hist-type { font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
-.hist-patient { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.hist-date { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-.hist-del {
-  background: none; border: none; color: var(--text-dim); cursor: pointer;
-  font-size: 18px; padding: 6px 8px; border-radius: 6px;
-  font-family: inherit; transition: color .2s, background .2s;
-}
-.hist-del:hover { color: var(--danger); background: var(--danger-dim); }
-
-/* ─── PROFIL ─── */
-/* Panneau de verre : le motif de la vitrine, décliné dans l'application. */
-.card {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--r-2xl); padding: 28px 30px; margin-bottom: 22px;
-  box-shadow: var(--shadow-sm);
-}
-html[data-theme="dark"] .card {
-  background: rgba(15,22,31,0.72);
-  background: color-mix(in oklab, var(--night-2) 72%, transparent);
-  border-color: rgba(40,49,60,0.8);
-  border-color: color-mix(in oklab, var(--night-line) 80%, transparent);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: none;
-}
-.card-title {
-  display: flex; align-items: center; gap: 9px;
-  font-family: var(--font-mono);
-  font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase;
-  color: var(--accent); margin-bottom: 18px;
-}
-.card-title::before {
-  content: ''; width: 3px; height: 14px; border-radius: 2px;
-  background: var(--accent); flex-shrink: 0;
-}
-.profile-save {
-  font-size: 12px; color: var(--success); display: none; align-items: center; gap: 6px;
-}
-.profile-save.show { display: inline-flex; animation: fade .3s ease; }
-
-/* ─── MODALES ─── */
-.modal-bg {
-  position: fixed; inset: 0; z-index: 500;
-  background: var(--overlay); backdrop-filter: blur(6px);
-  display: none; align-items: center; justify-content: center; padding: 24px;
-}
-.modal-bg.show { display: flex; }
-.modal {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--r-2xl); padding: 32px; max-width: 480px; width: 100%;
-  box-shadow: var(--shadow-lg);
-  animation: rise .25s cubic-bezier(.2,.7,.2,1) both;
-}
-html[data-theme="dark"] .modal {
-  background: rgba(15,22,31,0.92);
-  background: color-mix(in oklab, var(--night-2) 92%, transparent);
-  border-color: rgba(40,49,60,0.8);
-  border-color: color-mix(in oklab, var(--night-line) 80%, transparent);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: 0 40px 120px -40px var(--accent);
-}
-@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-.modal h2 {
-  font-family: var(--font-display);
-  font-size: 26px; letter-spacing: -.02em; margin-bottom: 8px;
-}
-.modal p.modal-desc { font-size: 13.5px; color: var(--text-muted); margin-bottom: 22px; font-weight: 300; }
-.modal-foot { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
-
-.doctolib-flag {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--warning-dim); border: 1px solid var(--warning);
-  color: var(--warning-texte); border-radius: 20px;
-  padding: 4px 12px; font-size: 11px; font-weight: 500; margin-bottom: 14px;
-}
-.doctolib-loading {
-  padding: 30px; text-align: center; color: var(--text-muted);
-  display: flex; flex-direction: column; align-items: center; gap: 12px;
-}
-.doctolib-result {
-  background: var(--bg-card2); border: 1px solid var(--border);
-  border-radius: 9px; padding: 16px 18px; margin-top: 8px;
-}
-.doctolib-result dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; font-size: 13px; }
-.doctolib-result dt { color: var(--text-muted); }
-.doctolib-result dd { color: var(--text); }
-
-/* ─── SAUVEGARDE AUTOMATIQUE (indicateur global) ─── */
-.autosave-pill {
-  position: fixed; top: 14px; right: 18px; z-index: 80;
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 999px; padding: 6px 14px;
-  font-size: 12px; color: var(--text-dim);
-  box-shadow: var(--shadow-sm);
-  opacity: 0; transform: translateY(-6px); pointer-events: none;
-  transition: opacity .25s ease, transform .25s ease, color .2s;
-}
-.autosave-pill.visible { opacity: 1; transform: none; }
-.autosave-pill.saving { color: var(--text-muted); }
-.autosave-pill.saved  { color: var(--success); }
-.autosave-pill svg { width: 13px; height: 13px; flex-shrink: 0; }
-.autosave-pill .autosave-spin {
-  width: 11px; height: 11px; border-radius: 50%;
-  border: 2px solid var(--border2); border-top-color: var(--accent);
-  animation: spin .7s linear infinite;
-}
-
-/* ─── DICTÉE VOCALE : statut visible sous le champ ─── */
-.mic-status {
-  display: none; align-items: flex-start; gap: 8px;
-  margin-top: 8px; padding: 9px 12px; border-radius: 8px;
-  font-size: 12.5px; line-height: 1.5;
-}
-.mic-status.show { display: flex; animation: fade .2s ease; }
-.mic-status svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
-.mic-status.listening {
-  background: var(--danger-dim); border: 1px solid var(--danger-glow); color: var(--danger);
-}
-.mic-status.listening .mic-dot {
-  width: 8px; height: 8px; border-radius: 50%; background: var(--danger);
-  flex-shrink: 0; margin-top: 5px; animation: pulseMic 1.2s ease infinite;
-}
-.mic-status.error {
-  background: var(--warning-dim); border: 1px solid var(--warning); color: var(--warning-texte);
-}
-.mic-status .mic-status-body { flex: 1; }
-.mic-status .mic-status-hint { display: block; color: var(--text-muted); font-size: 11.5px; margin-top: 2px; }
-
-/* La barre de progression indéterminée (.ai-progress) a été retirée avec le
-   passage aux étapes réelles : une barre qui glisse en boucle simule une
-   progression que le code ne connaissait pas. Voir .gen-work plus bas. */
-
-/* ═══════════════════════════════════════════════════════════════════════
-   DOSSIER PATIENT — timeline unifiée
-   ═══════════════════════════════════════════════════════════════════════ */
-
-/* En-tête du dossier : identité, âge, et ce qui engage la sécurité.
-   Les allergies sont la seule information qui mérite d'interrompre la
-   lecture — elles sortent donc du gris et prennent un fond propre. */
-.dossier-head {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 14px; padding: 20px 22px; margin-bottom: 22px;
-  box-shadow: var(--shadow-sm);
-}
-.dossier-top { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-.dossier-avatar {
-  width: 46px; height: 46px; border-radius: 50%; flex: none;
-  background: var(--accent-dim); color: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 17px; font-weight: 600; letter-spacing: -.02em;
-}
-.dossier-ident { flex: 1; min-width: 200px; }
-.dossier-nom {
-  font-family: var(--font-display);
-  font-size: 28px; line-height: 1.15; letter-spacing: -.02em; color: var(--text);
-}
-.dossier-meta {
-  display: flex; gap: 14px; flex-wrap: wrap;
-  font-size: 13px; color: var(--text-muted); margin-top: 3px;
-}
-.dossier-meta span { display: inline-flex; align-items: center; gap: 5px; }
-.dossier-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-.dossier-alerte {
-  display: flex; align-items: flex-start; gap: 9px;
-  margin-top: 15px; padding: 10px 13px; border-radius: 9px;
-  background: var(--danger-dim); border: 1px solid var(--danger);
-  font-size: 13.5px; color: var(--danger); font-weight: 500; line-height: 1.5;
-}
-.dossier-alerte svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
-
-/* Antécédents et traitements : information de fond, tenue à sa place.
-   Deux colonnes qui retombent en une seule sous 640 px. */
-.dossier-fond {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px; margin-top: 14px;
-}
-.dossier-bloc {
-  background: var(--bg-card2); border: 1px solid var(--border);
-  border-radius: 9px; padding: 10px 13px;
-}
-.dossier-bloc-t {
-  font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--text-dim); margin-bottom: 4px;
-}
-.dossier-bloc-v { font-size: 13.5px; color: var(--text); line-height: 1.5; }
-
-/* ── Le fil chronologique ──
-   Une ligne verticale continue porte les événements. C'est elle qui dit
-   « c'est le même patient dans la durée » — sans elle, on retombe sur une
-   liste de documents sans épaisseur temporelle. */
-.timeline { position: relative; padding-left: 26px; }
-.timeline::before {
-  content: ''; position: absolute; left: 6px; top: 6px; bottom: 6px;
-  width: 2px; background: var(--border); border-radius: 2px;
-}
-.tl-jour { margin-bottom: 22px; }
-.tl-date {
-  position: relative; font-size: 12px; font-weight: 600;
-  letter-spacing: .04em; text-transform: uppercase;
-  color: var(--text-dim); margin-bottom: 10px;
-}
-.tl-date::before {
-  content: ''; position: absolute; left: -26px; top: 4px;
-  width: 14px; height: 14px; border-radius: 50%;
-  background: var(--bg); border: 2px solid var(--border2);
-}
-.tl-jour:first-child .tl-date::before {
-  border-color: var(--accent); background: var(--accent);
-  box-shadow: 0 0 0 4px var(--accent-dim);
-}
-
-.tl-event {
-  display: flex; align-items: flex-start; gap: 12px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--r-xl); padding: 14px 16px; margin-bottom: 8px;
-  min-height: 56px;
-  cursor: pointer; text-align: left; width: 100%; font-family: inherit;
-  /* Entrée : opacité + décalage minime. L'arrivée d'un document dans le fil
-     doit se remarquer sans faire sauter la page. */
-  transition: border-color var(--dur-fast) ease,
-              box-shadow var(--dur-fast) ease,
-              transform var(--dur-press) var(--ease-out);
-}
-/* Le survol ne s'applique qu'aux vrais pointeurs : sur tablette, un tap
-   déclenche :hover et laisse la carte allumée après le doigt. */
-@media (hover: hover) and (pointer: fine) {
-  .tl-event:hover { border-color: var(--accent-border); box-shadow: var(--shadow-md); }
-}
-.tl-event:active { transform: scale(.99); }
-.tl-ico {
-  width: 32px; height: 32px; border-radius: 8px; flex: none;
-  background: var(--accent-dim); color: var(--accent);
-  display: flex; align-items: center; justify-content: center;
-}
-.tl-ico svg { width: 16px; height: 16px; }
-.tl-body { flex: 1; min-width: 0; }
-.tl-type { font-size: 14px; font-weight: 600; color: var(--text); }
-.tl-extrait {
-  font-size: 13px; color: var(--text-muted); margin-top: 3px; line-height: 1.55;
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.tl-heure { font-size: 11.5px; color: var(--text-dim); flex: none; margin-top: 2px; }
-
-/* Arrivée du fil : décalage de 40 ms entre les cartes. Assez pour que la
-   liste se construise plutôt que d'apparaître d'un bloc, assez court pour ne
-   pas retarder la lecture de la première ligne. */
-.tl-event { animation: tl-in var(--dur-enter) var(--ease-out) backwards; }
-@keyframes tl-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-.tl-event:nth-child(1) { animation-delay: 0ms; }
-.tl-event:nth-child(2) { animation-delay: 40ms; }
-.tl-event:nth-child(3) { animation-delay: 80ms; }
-.tl-event:nth-child(4) { animation-delay: 120ms; }
-.tl-event:nth-child(n+5) { animation-delay: 160ms; }
-
-/* ─── Liste des patients : le fichier, pas le formulaire ─── */
-.pt-card {
-  display: flex; align-items: center; gap: 14px; width: 100%;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 12px; padding: 14px 16px; margin-bottom: 8px;
-  cursor: pointer; text-align: left; font-family: inherit;
-  transition: border-color var(--dur-fast) ease,
-              box-shadow var(--dur-fast) ease,
-              transform var(--dur-press) var(--ease-out);
-}
-@media (hover: hover) and (pointer: fine) {
-  .pt-card:hover { border-color: var(--accent-border); box-shadow: var(--shadow-md); }
-}
-.pt-card:active { transform: scale(.995); }
-.pt-nom { font-size: 15px; font-weight: 600; color: var(--text); }
-.pt-sub { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
-.pt-count {
-  font-size: 12px; color: var(--text-dim); flex: none;
-  display: flex; align-items: center; gap: 5px;
-}
-.pt-allergie {
-  font-size: 11px; font-weight: 600; color: var(--danger);
-  background: var(--danger-dim); border-radius: 5px; padding: 2px 7px;
-  display: inline-block; margin-top: 4px;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════
-   GÉNÉRATION — rendre l'attente lisible
-   ═══════════════════════════════════════════════════════════════════════
-   Un spinner dit « attends » sans dire pourquoi. Pendant les quelques
-   secondes d'une génération, le médecin doit voir ce qui se passe : les
-   étapes réellement franchies, et la forme du document qui se prépare.
-   Les étapes sont pilotées par le code appelant, pas par une minuterie
-   décorative — une étape cochée correspond à un travail fait. */
-.gen-work {
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--r-2xl); padding: 20px 22px; margin-bottom: 18px;
-  box-shadow: var(--shadow-sm);
-}
-html[data-theme="dark"] .gen-work {
-  background: rgba(15,22,31,0.72);
-  background: color-mix(in oklab, var(--night-2) 72%, transparent);
-  border-color: rgba(40,49,60,0.8);
-  border-color: color-mix(in oklab, var(--night-line) 80%, transparent);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: none;
-}
-.gen-work-head {
-  display: flex; align-items: center; gap: 10px;
-  font-family: var(--font-display); font-weight: 400;
-  font-size: 18px; color: var(--text); margin-bottom: 16px;
-}
-
-.ai-stage {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 13.5px; color: var(--text-dim);
-  padding: 5px 0;
-  transition: color var(--dur-fast) ease;
-}
-.ai-stage-dot {
-  width: 16px; height: 16px; border-radius: 50%; flex: none;
-  border: 2px solid var(--border2); position: relative;
-  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
-}
-.ai-stage[data-state="active"] { color: var(--text); font-weight: 600; }
-.ai-stage[data-state="active"] .ai-stage-dot {
-  border-color: var(--accent);
-  /* Anneau pulsé : la seule boucle de l'écran, réservée à l'étape en cours. */
-  animation: stage-pulse 1.1s var(--ease-in-out) infinite;
-}
-@keyframes stage-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--accent-glow); }
-  50%      { box-shadow: 0 0 0 5px transparent; }
-}
-.ai-stage[data-state="done"] { color: var(--text-muted); }
-.ai-stage[data-state="done"] .ai-stage-dot {
-  border-color: var(--success); background: var(--success);
-}
-.ai-stage[data-state="done"] .ai-stage-dot::after {
-  content: ''; position: absolute; left: 3.5px; top: 1px;
-  width: 4px; height: 8px; border: solid var(--bg);
-  border-width: 0 2px 2px 0; transform: rotate(45deg);
-}
-
-/* Silhouette du document à venir. Elle reprend la structure réelle du
-   compte-rendu (titre de rubrique court, puis lignes de prose) : l'attente
-   montre la forme de ce qui arrive au lieu d'un rectangle générique. */
-.gen-skeleton { margin-top: 16px; padding-top: 15px; border-top: 1px solid var(--border); }
-.sk-line {
-  height: 9px; border-radius: 5px; margin-bottom: 9px;
-  background: linear-gradient(90deg, var(--bg-hover) 25%, var(--border) 37%, var(--bg-hover) 63%);
-  background-size: 400% 100%;
-  animation: sk-shimmer 1.4s linear infinite;
-}
-.sk-line.title { width: 34%; height: 11px; margin-bottom: 12px; background-color: var(--accent-dim); }
-.sk-line.short { width: 62%; margin-bottom: 18px; }
-@keyframes sk-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
-
-/* ═══════════════════════════════════════════════════════════════════════
-   COMPTE-RENDU — l'écran qu'un médecin montre à un confrère
-   ═══════════════════════════════════════════════════════════════════════ */
-
-/* Le document rendu section par section : chaque titre en majuscules du
-   texte généré devient une vraie rubrique. Sans ça, le compte-rendu est un
-   bloc de texte que l'œil doit découper lui-même à chaque relecture. */
-/* ─── Le document lui-même ───
-   C'est l'écran qu'un médecin montre à un confrère : il doit se lire comme un
-   document, pas comme une sortie d'outil. Trois décisions portent tout :
-
-   1. La séparation des rubriques passe par le RYTHME, pas par un filet. Un
-      soulignement à chaque titre découpe la page en tranches ; l'espace fait
-      le même travail sans ajouter de trait à regarder.
-   2. La hiérarchie repose sur trois niveaux nets — en-tête discret, titre de
-      rubrique, corps — plutôt que sur des variations de gris.
-   3. La mesure est bornée à ~72 caractères et la colonne est centrée : au-delà,
-      l'œil perd la ligne suivante ; alignée à gauche dans une page large, elle
-      laissait un vide qui déséquilibrait l'écran. */
-.cr-doc { max-width: 72ch; margin: 0 auto; }
-
-.cr-entete {
-  font-size: 13px; line-height: 1.6; color: var(--text-muted);
-  white-space: pre-wrap;
-  padding-bottom: 18px; margin-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-/* Pas de filet : c'est l'espace au-dessus du titre qui ouvre la rubrique. */
-.cr-section + .cr-section { margin-top: 26px; }
-
-.cr-section-t {
-  font-size: 12.5px; font-weight: 650; letter-spacing: .06em;
-  text-transform: uppercase; color: var(--accent);
-  margin-bottom: 8px;
-}
-.cr-section-c {
-  font-size: 15.5px; line-height: 1.75; color: var(--text);
-  white-space: pre-wrap; hyphens: auto;
-}
-
-/* Provenance : sur quoi cette génération s'est appuyée. Un médecin qui
-   relit doit pouvoir remonter à la source d'une affirmation, sinon il
-   relit tout. */
-/* Provenance et sources : l'or de la refonte est réservé à ce qui est sourcé
-   et vérifiable — c'est ce qui distingue une affirmation rattachée à une
-   recommandation d'une phrase simplement générée. */
-.prov {
-  display: flex; align-items: flex-start; gap: 9px; flex-wrap: wrap;
-  margin-bottom: 14px; padding: 12px 15px; border-radius: var(--r-lg);
-  border: 1px solid rgba(235,192,112,0.25);
-  background: var(--warning-dim); border: 1px solid color-mix(in oklab, var(--warning) 25%, transparent);
-  font-size: 13px; color: var(--text-muted); line-height: 1.55;
-}
-.prov strong { color: var(--text); font-weight: 600; }
-.prov-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  min-height: 44px;
-  border: 1px solid rgba(235,192,112,0.25);
-  background: transparent; border: 1px solid color-mix(in oklab, var(--warning) 25%, transparent);
-  color: var(--warning-texte); border-radius: 999px; padding: 2px 12px;
-  font-family: var(--font-mono);
-  font-size: 11px; font-weight: 500; letter-spacing: .04em; cursor: pointer;
-  transition: background-color var(--dur-fast) ease, transform var(--dur-press) var(--ease-out);
-}
-.prov-chip:hover { background: var(--warning-dim); }
-.prov-chip:active { transform: scale(.96); }
-
-/* Ce que le référentiel de la spécialité attendait et que les notes ne
-   contiennent pas. Affiché au médecin, jamais écrit dans le document :
-   un compte-rendu signé n'a pas à porter la liste de ses propres trous. */
-.ref-gaps {
-  margin-top: 14px; padding: 13px 15px; border-radius: 10px;
-  background: var(--warning-dim); border: 1px solid var(--warning);
-}
-.ref-gaps-t {
-  font-size: 12.5px; font-weight: 600; color: var(--warning-texte);
-  display: flex; align-items: center; gap: 7px; margin-bottom: 7px;
-}
-.ref-gaps ul { margin: 0; padding-left: 18px; }
-.ref-gaps li { font-size: 13px; color: var(--text-muted); line-height: 1.65; }
-.ref-src {
-  font-size: 11.5px; color: var(--text-dim); margin-top: 9px;
-  padding-top: 8px; border-top: 1px solid var(--border);
-}
-.ref-src a { color: var(--accent); text-decoration: none; }
-.ref-src a:hover { text-decoration: underline; }
-
-/* Divulgation progressive : les repères de la spécialité sont utiles à la
-   relecture, mais n'ont pas à occuper l'écran en permanence. */
-/* Dépliant propre à cette refonte. Préfixé px- : une classe .disclosure
-   existe déjà dans l'application, avec son propre chevron en SVG — réutiliser
-   le nom faisait apparaître deux chevrons sur « Utiliser un modèle ». */
-.px-disclosure { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card2); margin-top: 12px; }
-.px-disclosure > summary {
-  list-style: none; cursor: pointer; padding: 11px 14px;
-  font-size: 13px; font-weight: 600; color: var(--text-muted);
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  transition: color var(--dur-fast) ease;
-}
-.px-disclosure > summary::-webkit-details-marker { display: none; }
-.px-disclosure > summary::after {
-  content: ''; width: 7px; height: 7px; flex: none;
-  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
-  transform: rotate(45deg) translateY(-2px);
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-.px-disclosure[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
-.px-disclosure-body { padding: 0 14px 13px; font-size: 13px; color: var(--text-muted); line-height: 1.65; }
-.repere-row { display: flex; gap: 10px; padding: 5px 0; border-top: 1px solid var(--border); }
-.repere-row:first-child { border-top: 0; }
-.repere-n { font-weight: 600; color: var(--text); flex: none; min-width: 130px; }
-
-/* ─── Sélecteur de patient en tête de formulaire ───
-   Rattacher le document à un dossier est l'action qui donne accès à tout le
-   reste (contexte, timeline). Elle se voit avant les champs. */
-.patient-pick {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 11px; padding: 12px 15px; margin-bottom: 18px;
-  transition: border-color var(--dur-fast) ease, background-color var(--dur-fast) ease;
-}
-.patient-pick[data-lie="1"] { border-color: var(--accent-border); background: var(--accent-dim); }
-.patient-pick-l {
-  font-size: 11px; font-weight: 600; letter-spacing: .07em;
-  text-transform: uppercase; color: var(--text-dim); flex: none;
-}
-.patient-pick .select { flex: 1; min-width: 190px; width: auto; }
-.ctx-note { font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
-.ctx-note b { color: var(--accent); font-weight: 600; }
-
-@media (max-width: 640px) {
-  .dossier-top { gap: 12px; }
-  .dossier-nom { font-size: 21px; }
-  .timeline { padding-left: 20px; }
-  .tl-date::before { left: -20px; }
-}
-
-/* ─── CONSULTATION : parcours en 3 temps ───
-   Le titre H1 + sous-titre n'apparaissent qu'à l'étape 1 (Ouverture) : sur
-   les étapes 2 et 3, le stepper indique déjà où on en est, et son propre
-   contexte patient (fusionné ci-dessous) donne l'identité — répéter un
-   titre générique au-dessus serait la même information sous une troisième
-   forme. */
-.consult-intro.step-hidden { display: none; }
-
-.stepper {
-  display: flex; flex-direction: column; gap: 0;
-  margin-bottom: 24px; background: var(--bg-card);
-  border: 1px solid var(--border); border-radius: 14px;
-  box-shadow: var(--shadow-sm);
-}
-.stepper-steps { display: flex; align-items: center; justify-content: center; padding: 10px 12px; }
-/* Contexte patient fusionné dans l'en-tête du stepper : remplace les deux
-   bandeaux dupliqués qui existaient sur les étapes 2 et 3. */
-.stepper-patient {
-  display: none; align-items: center; gap: 8px;
-  padding: 10px 16px; margin-top: -1px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-hover);
-  border-radius: 0 0 14px 14px;
-  font-size: 12.5px; color: var(--text-muted);
-}
-.stepper-patient.show { display: flex; }
-.stepper-patient svg { width: 14px; height: 14px; color: var(--accent); flex-shrink: 0; }
-.stepper-patient b { color: var(--text); font-weight: 600; }
-.step {
-  flex: 1; display: flex; align-items: center; gap: 11px;
-  padding: 8px 12px; border-radius: 10px; cursor: pointer;
-  border: none; background: none; font-family: inherit; text-align: left;
-  transition: background .18s;
-}
-.step:hover { background: var(--bg-hover); }
-.step-num {
-  width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px; font-weight: 700;
-  background: var(--bg-card2); border: 1.5px solid var(--border2); color: var(--text-dim);
-  transition: background .2s, border-color .2s, color .2s, box-shadow .2s;
-}
-.step.active .step-num {
-  background: var(--accent); border-color: var(--accent); color: var(--accent-contrast);
-  box-shadow: 0 0 0 4px var(--accent-dim);
-}
-/* Étape franchie : pastille verte cochée, la progression se lit sans lire */
-.step.done .step-num {
-  background: var(--success); border-color: var(--success); color: transparent;
-  position: relative;
-}
-.step.done .step-num::after {
-  content: ''; position: absolute; inset: 0;
-  background: #fff;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/14px no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4 4L19 7'/%3E%3C/svg%3E") center/14px no-repeat;
-}
-.step-info { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.step-label {
-  display: block; font-size: 13.5px; font-weight: 600; line-height: 1.3;
-  color: var(--text-dim); white-space: nowrap;
-}
-.step.active .step-label { color: var(--text); }
-.step.done .step-label { color: var(--text-muted); }
-.step-sub {
-  display: block; font-size: 11px; line-height: 1.3; color: var(--text-dim);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-.step-sep { width: 26px; height: 1.5px; background: var(--border2); flex-shrink: 0; }
-
-.consult-pane { display: none; }
-.consult-pane.active { display: block; animation: fade .3s ease; }
-.consult-nav {
-  margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--border);
-  display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-}
-/* ─── PRESCRIPTIONS (clôture) — accordéon, une seule catégorie à la fois
-   suffit à l'œil : Biologie, Imagerie et Soins restent repliées jusqu'à ce
-   qu'on les ouvre, pour ne pas faire défiler l'imagerie et les soins devant
-   quelqu'un qui ne veut prescrire qu'une biologie. ─── */
-.rx-disclosure { margin-bottom: 10px; }
-.rx-disclosure .disclosure-summary { text-transform: uppercase; letter-spacing: .04em; font-size: 12px; }
-.rx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.rx-free { margin-top: 10px; }
-
-/* ─── BASCULE DE THÈME ─── */
-.theme-toggle {
-  display: flex; align-items: center; gap: 11px;
-  padding: 9px 11px; border-radius: var(--r-md); width: 100%;
-  min-height: 44px;
-  font-size: 13.5px; color: var(--text-muted);
-  border: 1px solid transparent; background: none; cursor: pointer;
-  font-family: inherit; text-align: left; transition: background .2s, color .2s;
-}
-.theme-toggle:hover { background: var(--bg-hover); color: var(--text); }
-.theme-toggle svg { width: 16px; height: 16px; flex-shrink: 0; }
-
-/* ─── AUTOCOMPLÉTION PATIENT ─── */
-.ac-box {
-  position: absolute; z-index: 200; background: var(--bg-card);
-  border: 1px solid var(--border2); border-radius: 8px; box-shadow: var(--shadow-md);
-  max-height: 220px; overflow-y: auto; min-width: 260px; width: 100%;
-}
-.ac-item {
-  padding: 10px 14px; cursor: pointer; font-size: 13.5px; color: var(--text);
-  border-bottom: 1px solid var(--border); transition: background .12s;
-}
-.ac-item:hover { background: var(--bg-hover); }
-.ac-item small { display: block; font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.ac-item .ac-age { color: var(--text-muted); }
-
-/* ─── RESPONSIVE ─── */
-.menu-toggle {
-  display: none; position: fixed; top: 14px; left: 14px; z-index: 60;
-  width: 40px; height: 40px; border-radius: 8px;
-  background: var(--bg-card); border: 1px solid var(--border2);
-  color: var(--text); cursor: pointer; font-family: inherit;
-  align-items: center; justify-content: center;
-}
-.sidebar-overlay {
-  display: none; position: fixed; inset: 0; z-index: 40;
-  background: var(--overlay); backdrop-filter: blur(4px);
-}
-.sidebar-overlay.show { display: block; }
-
-@media (max-width: 880px) {
-  .menu-toggle { display: flex; }
-  .sidebar {
-    transform: translateX(-100%); transition: transform .3s ease;
-    width: 280px;
-  }
-  .sidebar.open { transform: translateX(0); box-shadow: 0 0 40px rgba(0,0,0,.5); }
-  .main { margin-left: 0; padding: 70px 22px 80px; }
-  .field-row { flex-direction: column; gap: 0; }
-}
-/* Mouvement réduit ≠ aucun mouvement. On supprime les déplacements et les
-   animations en boucle, qui provoquent le mal des transports ; on garde les
-   fondus et les transitions de couleur, qui portent du sens (un état qui
-   change doit rester lisible comme un changement). */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: .01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-property: opacity, background-color, border-color, color, box-shadow !important;
-    transition-duration: var(--dur-fast) !important;
-    scroll-behavior: auto !important;
-  }
-  /* Aucune translation ni mise à l'échelle ne subsiste à l'état final. */
-  .view.active, .hist-item, .tl-event, .ai-stage { transform: none !important; }
-  /* Le halo pulsé du micro devient un aplat : l'information « ça écoute »
-     passe par la couleur, plus par le mouvement. */
-  .mic-btn.listening { animation: none !important; }
-}
-.generation-settings{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-left:4px}.clinical-v2-control{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-dim)}
-.clinical-v2-control .select{width:auto;min-width:150px;padding-top:8px;padding-bottom:8px;font-size:12px}
-body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:0}
-.clinical-modal{position:fixed;inset:0;z-index:1000;display:none;background:var(--overlay);backdrop-filter:blur(6px)}
-.clinical-modal.show{display:flex;align-items:stretch;justify-content:center}
-.clinical-dialog{width:100%;height:100dvh;max-height:100dvh;display:flex;flex-direction:column;overflow:hidden;background:var(--bg-card);border:0;box-shadow:none;touch-action:auto}
-.clinical-head{flex:none;display:flex;align-items:flex-start;gap:12px;padding:14px 16px 12px;background:var(--bg-card);border-bottom:1px solid var(--border)}
-.clinical-head h2{font-size:17px;margin:0;line-height:1.25}.clinical-score{margin-left:auto;min-width:108px;padding:8px 10px;border-radius:10px;border:1px solid var(--accent);text-align:center;flex:none}
-.clinical-score small{display:block;font-size:9px;letter-spacing:.04em;text-transform:uppercase;color:var(--text-dim);line-height:1.3}
-.clinical-score strong{display:block;font-size:20px;line-height:1.15}.clinical-score em{display:block;font-style:normal;font-size:10px;color:var(--text-muted);margin-top:2px}
-.clinical-summary{margin:0 0 12px;padding:10px 12px;border-radius:8px;background:var(--accent-dim);border:1px solid var(--accent-glow);font-size:12.5px;line-height:1.55;color:var(--text-muted)}
-.clinical-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:14px 16px 18px;padding-bottom:max(18px,env(safe-area-inset-bottom))}
-.clinical-grid{display:grid;grid-template-columns:1fr;gap:12px}
-.clinical-block{padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px}
-.clinical-block.full{grid-column:1/-1}.clinical-block h3{font-size:12px;letter-spacing:.06em;text-transform:uppercase;margin:0 0 10px;color:var(--text-muted)}
-.clinical-block ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}.clinical-alert{border-color:var(--danger-glow);background:var(--danger-dim)}
-.clinical-suggestion{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
-.clinical-suggestion:last-child{border-bottom:0}
-/* Bascule Oui/Non. L'état « Non » était gris sur fond gris : il se lisait
-   comme un bouton désactivé, alors que c'est la moitié d'un choix. Les deux
-   états sont désormais également présents — seul le remplissage change — et le
-   libellé de l'état inactif reste visible en filigrane pour dire qu'on peut
-   basculer. */
-.suggestion-toggle{
-  flex:none;position:relative;border:1px solid var(--border2);
-  background:var(--bg-card);color:var(--text);
-  border-radius:10px;min-width:78px;min-height:44px;padding:0 8px;
-  font:600 12px var(--font-sans);cursor:pointer;
-  display:inline-flex;align-items:center;justify-content:space-between;gap:6px;
-  transition:border-color var(--dur-fast) ease,background-color var(--dur-fast) ease,
-             color var(--dur-fast) ease,transform var(--dur-press) var(--ease-out);
-  white-space:nowrap;touch-action:manipulation;-webkit-tap-highlight-color:transparent;
-}
-.suggestion-toggle::before{content:'Non';flex:1;text-align:center;border-radius:7px;padding:6px 0;transition:background-color var(--dur-fast) ease,color var(--dur-fast) ease}
-.suggestion-toggle::after{content:'Oui';flex:1;text-align:center;border-radius:7px;padding:6px 0;transition:background-color var(--dur-fast) ease,color var(--dur-fast) ease}
-/* Segment actif rempli, segment inactif lisible mais en retrait. */
-.suggestion-toggle::before{background:var(--bg-hover);color:var(--text)}
-.suggestion-toggle::after{background:transparent;color:var(--text-dim)}
-.suggestion-toggle.on::before{background:transparent;color:var(--text-dim)}
-.suggestion-toggle.on::after{background:var(--accent);color:var(--accent-contrast)}
-.suggestion-toggle.on{border-color:var(--accent)}
-.suggestion-toggle:active{transform:scale(.97)}
-/* Le texte du bouton est porté par ::before/::after : on masque le libellé
-   que le JS y écrit, sans toucher à ce que lisent les lecteurs d'écran
-   (aria-pressed porte déjà l'état). */
-.suggestion-toggle{font-size:0}
-.suggestion-toggle::before,.suggestion-toggle::after{font-size:12px}
-.suggestion-body{flex:1;min-width:0;padding-top:10px}.suggestion-body .suggestion-text{display:block;font-weight:500;line-height:1.45;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.clinical-rationale{display:block;color:var(--text-dim);font-size:11px;margin-top:3px}.clinical-confidence{display:inline-flex;margin-top:5px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;background:var(--accent-dim);color:var(--accent)}
-.confidence-line{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border)}.confidence-line:last-child{border:0}.confidence-plus{color:var(--success)}.confidence-minus{color:var(--warning-texte)}.confidence-optional{color:var(--text-dim)}
-.quick-answer{display:flex;gap:8px;margin-top:10px}.quick-answer input{flex:1;background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:7px;padding:9px 10px;font:13px var(--font-sans)}.quick-progress{font-size:11px;color:var(--text-dim);margin-bottom:5px}
-.clinical-deduction{display:grid;grid-template-columns:auto 1fr;align-items:start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}.clinical-deduction:last-child{border:0}.clinical-deduction.selected{background:var(--accent-dim);border-radius:8px;padding-left:6px;padding-right:6px}
-.deduction-hit{display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px;margin-top:2px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.deduction-hit input{width:22px;height:22px;margin:0;accent-color:var(--accent);cursor:pointer;flex:none}
-.clinical-deduction textarea{width:100%;min-height:48px;resize:vertical;background:transparent;color:var(--text);border:1px solid transparent;border-radius:6px;padding:10px 8px;font:13px/1.45 var(--font-sans);touch-action:manipulation}.clinical-deduction textarea:hover,.clinical-deduction textarea:focus{outline:none;background:var(--accent-dim);border-color:var(--accent-border)}
-.mini-apply{margin-left:7px;border:1px solid var(--accent-border);background:var(--accent-dim);color:var(--accent);border-radius:6px;padding:4px 8px;font:600 10px var(--font-sans);cursor:pointer}
-.final-check{display:grid;gap:12px}.final-row{display:flex;justify-content:space-between;gap:20px;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:13px}.final-row span:first-child{color:var(--text-muted)}
-.final-row input{width:min(260px,60%);background:transparent;color:var(--text);border:0;border-bottom:1px solid var(--border);padding:2px 4px;text-align:right;font:600 13px var(--font-sans)}.final-row input:focus{outline:none;border-color:var(--accent)}
-.clinical-foot{flex:none;display:flex;align-items:center;justify-content:stretch;gap:10px;padding:12px 16px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg-card);border-top:1px solid var(--border);box-shadow:0 -8px 24px rgba(0,0,0,.35);position:relative;z-index:2}
-.clinical-foot .btn{flex:1;justify-content:center;min-height:48px;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-/* Le cadre était vert et titré en vert quel que soit son contenu : il annonçait
-   « Relecture des valeurs chiffrées recommandée » et « 2 informations non
-   renseignées » dans une boîte de succès, juste sous une bannière d'alerte
-   orange qui disait la même chose. Un indicateur toujours vert n'informe de
-   rien et apprend à ne plus le lire. Le ton suit maintenant l'état réel. */
-.praxi-verification{margin:14px 0 0;padding:13px 15px;border-radius:9px;
-  background:var(--success-dim);border:1px solid var(--success)}
-.praxi-verification.attention{background:var(--warning-dim);border-color:var(--warning)}
-.praxi-verification strong{display:block;font-size:12.5px;color:var(--success);margin-bottom:7px}
-.praxi-verification.attention strong{color:var(--warning-texte)}
-.praxi-verification div{font-size:12px;color:var(--text-muted);line-height:1.75}
-.praxi-verification .pv-ligne{display:flex;gap:7px;align-items:baseline}
-.praxi-verification .pv-marque{flex-shrink:0;font-weight:700}
-.praxi-verification .pv-ok{color:var(--success)}
-.praxi-verification .pv-attention{color:var(--warning-texte)}
-.safety-banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;font-size:12px;background:var(--warning-dim);border:1px solid var(--warning);color:var(--warning-texte)}
-@media(min-width:701px){
-  .clinical-modal{padding:20px;align-items:center}
-  .clinical-dialog{width:min(880px,100%);height:auto;max-height:min(92dvh,900px);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow-lg)}
-  .clinical-grid{grid-template-columns:1fr 1fr}
-  .clinical-block.full{grid-column:1/-1}
-  .clinical-head{padding:18px 22px}.clinical-body{padding:20px 22px}
-  .clinical-foot{justify-content:flex-end}.clinical-foot .btn{flex:0 1 auto;min-width:160px}
-}
-
-/* ── Pistes spécialiste (section informative) ── */
-.specialist-insights {
-  margin-top: 14px; padding: 12px 14px; border-radius: 10px;
-  background: rgba(168,85,247,.06); border: 1px solid rgba(168,85,247,.2);
-}
-.specialist-insights-header {
-  display: flex; align-items: center; gap: 7px; font-size: 11.5px;
-  color: #a855f7; font-weight: 600; letter-spacing: .02em; text-transform: uppercase;
-  margin-bottom: 10px;
-}
-.specialist-insights-list { display: flex; flex-direction: column; gap: 6px; }
-.specialist-insight-item {
-  display: flex; align-items: flex-start; gap: 8px; font-size: 12.5px;
-  color: var(--text-muted); line-height: 1.5;
-}
-.specialist-insight-item svg { flex-shrink: 0; margin-top: 2px; color: #a855f7; }
-@media (max-width: 700px) {
-  /* ── Variables mobile ── */
-  :root { --sidebar-w: 0px; }
-
-  /* ── Overlay et toggle ── */
-  .menu-toggle {
-    display: flex; position: fixed; top: 12px; left: 12px; z-index: 200;
-    width: 40px; height: 40px; border-radius: 10px;
-    background: var(--bg-card); border: 1px solid var(--border);
-    align-items: center; justify-content: center;
-    box-shadow: 0 2px 12px rgba(0,0,0,.18); cursor: pointer;
-  }
-  .sidebar {
-    transform: translateX(-100%); transition: transform .25s cubic-bezier(.4,0,.2,1);
-    z-index: 300; width: min(80vw, 280px);
-  }
-  .sidebar.open { transform: translateX(0); box-shadow: 4px 0 40px rgba(0,0,0,.4); }
-
-  /* ── Main layout ── */
-  .main {
-    margin-left: 0; padding: 68px 16px 120px;
-    min-height: 100dvh; width: 100%; box-sizing: border-box;
-  }
-  .page-title { font-size: 22px; margin-bottom: 20px; }
-
-  /* ── Forms ── */
-  .form-section { gap: 14px; }
-  .form-row, .final-row { flex-direction: column; gap: 10px; }
-  .final-row input { width: 100%; text-align: left; }
-  input[type="text"], input[type="email"], input[type="date"], select, textarea {
-    font-size: 16px !important; /* prevents iOS auto-zoom */
-  }
-  label { font-size: 13px; }
-
-  /* ── Multi-select dropdown ── */
-  .ms-panel {
-    position: fixed !important; left: 16px !important; right: 16px !important;
-    top: auto !important; width: auto !important;
-    max-height: 55dvh; z-index: 500; border-radius: 14px;
-    box-shadow: 0 8px 40px rgba(0,0,0,.35);
-  }
-  .ms-trigger { min-height: 48px; font-size: 15px; }
-  .ms-opt { padding: 12px 14px; font-size: 14px; }
-
-  /* ── Generation settings ── */
-  .generation-settings { width: 100%; margin: 6px 0 0; flex-wrap: wrap; gap: 8px; }
-  .clinical-v2-control { flex: 1 1 140px; }
-  .clinical-v2-control select { width: 100%; }
-
-  /* ── Generate button ── */
-  .generate-btn, button.generate-btn {
-    width: 100%; min-height: 52px; font-size: 16px;
-    border-radius: 14px; margin-top: 6px;
-  }
-
-  /* ── Result area ── */
-  .result { margin-top: 24px; }
-  .result-head { flex-wrap: wrap; gap: 8px; }
-  .result-head .result-actions { flex-wrap: wrap; }
-  .result-body {
-    font-size: 14px; min-height: 180px; padding: 16px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .edit-hint { font-size: 11.5px; }
-
-  /* ── Chips ── */
-  .complete-box { padding: 12px; gap: 8px; }
-  .chip { font-size: 12.5px; padding: 7px 12px; }
-  .complete-update { width: 100%; justify-content: center; margin-top: 4px; }
-
-  /* ── Clinical shield modal ── */
-  body.clinical-modal-open { overflow: hidden; position: fixed; width: 100%; left: 0; right: 0; }
-  .clinical-modal { background: var(--overlay); }
-  .clinical-dialog {
-    width: 100%; height: 100dvh; max-height: 100dvh;
-    border-radius: 0; border: 0;
-    display: flex; flex-direction: column;
-  }
-  .clinical-head {
-    flex: none; padding: max(12px, env(safe-area-inset-top)) 14px 10px;
-    flex-wrap: wrap; gap: 8px;
-  }
-  .clinical-head h2 { font-size: 15px; flex: 1 1 160px; }
-  .clinical-score { min-width: 84px; margin-left: 0; }
-  .clinical-body {
-    flex: 1 1 auto; min-height: 0; padding: 12px 14px 24px;
-    overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
-  }
-  .clinical-foot {
-    flex: none; padding: 10px 14px max(14px, env(safe-area-inset-bottom)); gap: 8px;
-    position: sticky; bottom: 0;
-  }
-  .clinical-foot .btn {
-    flex: 1 1 0; min-width: 0; min-height: 50px; font-size: 15px;
-    border-radius: 12px; justify-content: center;
-  }
-  .clinical-grid { gap: 12px; }
-  .clinical-block { padding: 12px 14px; }
-  .clinical-block.full { grid-column: 1; }
-  .clinical-block h3 { font-size: 12px; }
-
-  /* ── Clinical suggestions & deductions ── */
-  .clinical-suggestion { gap: 10px; padding: 10px 0; align-items: flex-start; }
-  .suggestion-toggle { min-width: 56px; min-height: 44px; font-size: 13px; border-radius: 10px; }
-  .suggestion-body { padding-top: 8px; }
-  .deduction-hit { min-width: 48px; min-height: 48px; }
-  .deduction-hit input { width: 24px; height: 24px; }
-  .clinical-deduction textarea { min-height: 52px; font-size: 15px; }
-  .specialist-insights { padding: 10px 12px; }
-  .specialist-insight-item { font-size: 12px; }
-
-  /* ── Score bar ── */
-  .clinical-score-bar { gap: 8px; }
-  #clinical-score { font-size: 24px; }
-
-  /* ── Quick input ── */
-  .quick-answer { flex-direction: column; gap: 8px; }
-  .quick-answer input { font-size: 16px; min-height: 44px; }
-  .quick-answer .btn { width: 100%; min-height: 44px; justify-content: center; }
-  .mini-apply { min-height: 36px; padding: 8px 12px; }
-
-  /* ── Parcours consultation ── */
-  .stepper { padding: 8px; gap: 2px; }
-  .step { padding: 8px 4px; gap: 7px; flex: 0 1 auto; min-width: 0; }
-  .step-sub { display: none; }
-  .step-label { font-size: 12px; }
-  /* Les étapes non courantes se réduisent à leur pastille : le libellé long
-     ne doit jamais pousser la dernière étape hors de l'écran. */
-  .step:not(.active) .step-label { display: none; }
-  .step-num { width: 26px; height: 26px; font-size: 12px; }
-  .step-sep { width: 10px; }
-  .card { padding: 18px 16px; }
-  .consult-nav { flex-direction: column-reverse; align-items: stretch; }
-  .consult-nav .btn { width: 100%; justify-content: center; min-height: 50px; }
-  .autosave-pill { top: 12px; right: 12px; }
-}
-
-/* ─── ERGONOMIE TACTILE ───────────────────────────────────────────────────
-   Les aménagements tactiles de l'application étaient tous conditionnés à
-   `max-width: 700px`. Or l'appareil visé est la tablette du cabinet, autour de
-   1024 px : elle recevait donc la densité prévue pour la souris. Mesuré sur la
-   rangée d'actions du document — celle qu'on utilise à chaque génération —
-   .tool-btn faisait 29 px de haut, .vue-btn 31 px, .quick-tpl-btn 27 px, pour
-   8 px d'écart entre eux. C'est au-dessus du plancher WCAG 2.2 (24 px) et
-   nettement sous le seuil de confort des recommandations tactiles (44 px).
-
-   `pointer: coarse` interroge le périphérique et non la largeur d'écran : le
-   poste de bureau garde sa densité, la tablette gagne des cibles atteignables,
-   quelle que soit son orientation. */
-@media (pointer: coarse) {
-  .tool-btn      { min-height: 44px; padding: 10px 16px; font-size: 13.5px; }
-  .tool-btn svg  { width: 15px; height: 15px; }
-  .vue-btn       { min-height: 44px; padding: 10px 18px; font-size: 13.5px; }
-  .chip          { min-height: 44px; padding: 11px 18px; font-size: 13.5px; }
-  .quick-tpl-btn { min-height: 44px; padding: 10px 18px; font-size: 13.5px; }
-  .hist-del      { min-width: 44px; min-height: 44px; }
-  .mic-btn       { width: 44px; height: 44px; top: 8px; right: 8px; }
-  .with-mic .textarea { padding-right: 62px; }
-  .side-link     { min-height: 46px; }
-  .step          { min-height: 48px; }
-  .ms-opt        { min-height: 46px; }
-  .btn           { min-height: 48px; }
-  /* L'espacement compte autant que la taille : deux cibles de 44 px collées
-     l'une à l'autre restent une source d'erreur de saisie. */
-  .result-tools, .chip-row, .quick-tpl-row { gap: 12px; }
-}
-/* ═══════════════════════════════════════════════════════════════════════
-   PANNEAU DE VÉRIFICATION — hiérarchie de lecture
-   ═══════════════════════════════════════════════════════════════════════
-   Trois niveaux visuellement distincts : ce qui demande une décision, l'état
-   du dossier, puis le facultatif replié. */
-
-/* 1. Décision attendue — le seul bloc qui a le droit d'être coloré. */
-.cv-action, .cv-manque {
-  border-radius: 11px; padding: 14px 16px; margin-bottom: 12px;
-}
-.cv-action { background: var(--danger-dim); border: 1px solid var(--danger); }
-.cv-manque { background: var(--warning-dim); border: 1px solid var(--warning); }
-.cv-action-t, .cv-manque-t {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 13.5px; font-weight: 650; margin-bottom: 8px;
-}
-.cv-action-t { color: var(--danger); }
-.cv-manque-t { color: var(--warning-texte); }
-.cv-action-l { margin: 0; padding-left: 20px; }
-.cv-action-l li { font-size: 13.5px; line-height: 1.6; color: var(--text); margin-bottom: 3px; }
-.cv-action-h { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.5; }
-
-.cv-ok {
-  display: flex; align-items: center; gap: 8px;
-  background: var(--success-dim); border: 1px solid var(--success);
-  border-radius: 11px; padding: 12px 16px; margin-bottom: 12px;
-  font-size: 13.5px; font-weight: 600; color: var(--success);
-}
-
-/* 2. État du dossier — compact, sur une seule bande. */
-.cv-etat {
-  display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;
-  background: var(--bg-card2); border: 1px solid var(--border);
-  border-radius: 11px; padding: 14px 16px; margin-bottom: 12px;
-}
-.cv-etat-score { flex: none; text-align: center; min-width: 74px; }
-.cv-etat-score strong { display: block; font-size: 26px; line-height: 1.1; color: var(--text); letter-spacing: -.02em; }
-.cv-etat-score span { font-size: 11px; color: var(--text-dim); }
-.cv-etat-faits { flex: 1; min-width: 220px; }
-.cv-etat-faits p { font-size: 13px; color: var(--text-muted); line-height: 1.55; margin: 0 0 8px; }
-.cv-etat-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.cv-etat-chips span {
-  font-size: 12px; color: var(--text-muted);
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: 6px; padding: 3px 8px;
-}
-.cv-etat-chips .cv-vide { color: var(--text-dim); border-style: dashed; }
-
-/* 3. Facultatif — replié, compteur visible pour éviter d'ouvrir à vide. */
-.cv-fold { border: 1px solid var(--border); border-radius: 10px; background: var(--bg-card); margin-bottom: 8px; }
-.cv-fold > summary {
-  list-style: none; cursor: pointer; padding: 12px 15px;
-  display: flex; align-items: center; justify-content: space-between; gap: 10px;
-  font-size: 13.5px; font-weight: 600; color: var(--text);
-  transition: background-color var(--dur-fast) ease;
-}
-.cv-fold > summary::-webkit-details-marker { display: none; }
-@media (hover: hover) and (pointer: fine) { .cv-fold > summary:hover { background: var(--bg-hover); } }
-.cv-count {
-  flex: none; min-width: 22px; text-align: center;
-  background: var(--accent-dim); color: var(--accent);
-  border-radius: 999px; padding: 2px 8px; font-size: 12px; font-weight: 600;
-}
-.cv-fold > summary::after {
-  content: ''; width: 7px; height: 7px; flex: none; margin-left: 2px;
-  border-right: 2px solid var(--text-dim); border-bottom: 2px solid var(--text-dim);
-  transform: rotate(45deg) translateY(-2px);
-  transition: transform var(--dur-fast) var(--ease-out);
-}
-.cv-fold[open] > summary::after { transform: rotate(225deg) translateY(-2px); }
-.cv-fold-body { padding: 0 15px 14px; }
-.cv-fold-hint { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0 0 10px; }
-</style>
+<link rel="stylesheet" href="/app.css" />
 </head>
 <body>
 
@@ -1914,6 +40,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     </div>
   </div>
 
+  <nav class="side-nav">
   <div class="side-section">Consultation</div>
   <button class="side-link active" data-view="consult">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6v0a6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3M8 15v1a6 6 0 006 6v0a6 6 0 006-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
@@ -1959,7 +86,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   <div class="side-section">Mon espace</div>
   <button class="side-link" data-view="history">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3M3.05 11a9 9 0 11.5 4M3 4v5h5"/></svg>
-    Historique <span id="history-count" style="margin-left:auto;font-size:11px;color:var(--text-dim)"></span>
+    Historique <span class="side-count" id="history-count"></span>
   </button>
   <button class="side-link" data-view="patients">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
@@ -1970,7 +97,9 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     Profil
   </button>
 
-  <div class="side-spacer"></div>
+  </nav>
+
+  <div class="side-foot">
   <button class="theme-toggle" id="theme-toggle" title="Changer de thème">
     <svg id="theme-icon-moon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
     <svg id="theme-icon-sun" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" style="display:none"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -1980,6 +109,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
     Déconnexion
   </button>
+  </div>
 </aside>
 
 <!-- ─── MAIN ─── -->
@@ -2001,8 +131,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
   <!-- ── CONSULTATION : parcours guidé en 3 temps ── -->
   <section class="view active" id="view-consult">
     <div class="consult-intro" id="ct-intro">
-      <h1 class="page-title">Consultation</h1>
-      <p class="page-sub">Un parcours guidé du début à la fin : ouvrez le dossier, menez la consultation, clôturez et passez au patient suivant.</p>
+      <header class="screen-head">
+        <p class="eyebrow">Consultation</p>
+        <h1 class="page-title">Consultation</h1>
+        <p class="page-sub">Un parcours guidé du début à la fin : ouvrez le dossier, menez la consultation, clôturez et passez au patient suivant.</p>
+      </header>
     </div>
 
     <div class="stepper" id="ct-stepper">
@@ -2212,8 +345,18 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── LIAISON ── -->
   <section class="view" id="view-liaison">
-    <h1 class="page-title">Lettre de liaison</h1>
-    <p class="page-sub">Adressez un patient à un confrère spécialiste à partir de vos notes.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Rédaction</p>
+      <h1 class="page-title">Lettre de liaison</h1>
+      <p class="page-sub">Adressez un patient à un confrère spécialiste à partir de vos notes.</p>
+    </header>
+
+    <div class="ecran-outils">
+      <button class="btn btn-ghost" id="open-doctolib-l">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
+        Importer depuis Doctolib
+      </button>
+    </div>
 
     <details class="disclosure">
       <summary class="disclosure-summary">
@@ -2226,13 +369,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
           <span class="quick-tpl-label">Modèles rapides</span>
           <div class="quick-tpl-row" id="tpl-liaison-row"></div>
         </div>
-        <button class="btn btn-ghost" id="open-doctolib-l">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
-          Importer depuis Doctolib
-        </button>
       </div>
     </details>
 
+    <div class="card">
+      <div class="card-title">Éléments de la lettre<span class="panel-aside">Rédaction</span></div>
     <div class="field-row">
       <div class="field">
         <label class="label">Nom du patient</label>
@@ -2317,6 +458,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
+    </div>
+
     <div class="actions">
       <button class="btn btn-primary" data-gen="liaison">
         <span class="btn-label">Générer la lettre</span>
@@ -2337,8 +480,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── COMPTE-RENDU ── -->
   <section class="view" id="view-cr">
-    <h1 class="page-title">Compte-rendu de consultation</h1>
-    <p class="page-sub">Transformez des notes en compte-rendu structuré, sans passer par le parcours guidé. Pour une consultation complète (antécédents, prescriptions, clôture), utilisez « Nouvelle consultation ».</p>
+    <header class="screen-head">
+      <p class="eyebrow">Rédaction</p>
+      <h1 class="page-title">Compte-rendu de consultation</h1>
+      <p class="page-sub">Transformez des notes en compte-rendu structuré, sans passer par le parcours guidé. Pour une consultation complète (antécédents, prescriptions, clôture), utilisez « Nouvelle consultation ».</p>
+    </header>
 
     <details class="disclosure">
       <summary class="disclosure-summary">
@@ -2351,13 +497,18 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
           <span class="quick-tpl-label">Modèles rapides</span>
           <div class="quick-tpl-row" id="tpl-cr-row"></div>
         </div>
-        <button class="btn btn-ghost" id="open-doctolib-c">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
-          Importer depuis Doctolib
-        </button>
       </div>
     </details>
 
+    <div class="ecran-outils">
+      <button class="btn btn-ghost" id="open-doctolib-c">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5-5m0 0l5 5m-5-5v12"/></svg>
+        Importer depuis Doctolib
+      </button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Éléments du compte-rendu<span class="panel-aside">Rédaction</span></div>
     <div class="field-row">
       <div class="field">
         <label class="label">Nom du patient</label>
@@ -2391,6 +542,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
+    </div>
+
     <div class="actions">
       <button class="btn btn-primary" data-gen="cr">
         <span class="btn-label">Générer le compte-rendu</span>
@@ -2411,9 +564,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── RÉSUMÉ ── -->
   <section class="view" id="view-resume">
-    <h1 class="page-title">Résumé de document</h1>
-    <p class="page-sub">Analysez un document (.txt ou .pdf) : résumé, points clés, actions suggérées.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Rédaction</p>
+      <h1 class="page-title">Résumé de document</h1>
+      <p class="page-sub">Analysez un document (.txt ou .pdf) : résumé, points clés, actions suggérées.</p>
+    </header>
 
+    <div class="card">
+      <div class="card-title">Document source<span class="panel-aside">Analyse</span></div>
     <div class="field">
       <label class="label">Document à analyser</label>
       <div class="dropzone" id="dropzone">
@@ -2428,6 +586,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
         <span><b id="file-name"></b> <span id="file-meta"></span></span>
         <button class="file-remove" id="file-remove" title="Retirer">×</button>
       </div>
+    </div>
+
     </div>
 
     <div class="actions">
@@ -2450,9 +610,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── MDPH ── -->
   <section class="view" id="view-mdph">
-    <h1 class="page-title">Certificat médical MDPH</h1>
-    <p class="page-sub">Rédigez un certificat conforme au Cerfa 15695*01 pour une demande MDPH.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Rédaction</p>
+      <h1 class="page-title">Certificat médical MDPH</h1>
+      <p class="page-sub">Rédigez un certificat conforme au Cerfa 15695*01 pour une demande MDPH.</p>
+    </header>
 
+    <div class="card">
+      <div class="card-title">Éléments du certificat<span class="panel-aside">Cerfa 15695*01</span></div>
     <div class="field-row">
       <div class="field">
         <label class="label">Nom du patient</label>
@@ -2479,6 +644,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
+    </div>
+
     <div class="actions">
       <button class="btn btn-primary" data-gen="mdph">
         <span class="btn-label">Générer le certificat MDPH</span>
@@ -2499,9 +666,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── ALD ── -->
   <section class="view" id="view-ald">
-    <h1 class="page-title">Protocole de soins ALD</h1>
-    <p class="page-sub">Rédigez le volet médecin traitant du protocole ALD (Cerfa 11626*07) conforme aux recommandations HAS.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Rédaction</p>
+      <h1 class="page-title">Protocole de soins ALD</h1>
+      <p class="page-sub">Rédigez le volet médecin traitant du protocole ALD (Cerfa 11626*07) conforme aux recommandations HAS.</p>
+    </header>
 
+    <div class="card">
+      <div class="card-title">Éléments du protocole<span class="panel-aside">Cerfa 11626*07</span></div>
     <div class="field-row">
       <div class="field">
         <label class="label">Nom du patient</label>
@@ -2528,6 +700,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
+    </div>
+
     <div class="actions">
       <button class="btn btn-primary" data-gen="ald">
         <span class="btn-label">Générer le protocole ALD</span>
@@ -2548,9 +722,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── CERTIFICAT ── -->
   <section class="view" id="view-certificat">
-    <h1 class="page-title">Certificat médical</h1>
-    <p class="page-sub">Rédigez tout type de certificat médical conforme au Code de déontologie (art. 28 CNOM).</p>
+    <header class="screen-head">
+      <p class="eyebrow">Rédaction</p>
+      <h1 class="page-title">Certificat médical</h1>
+      <p class="page-sub">Rédigez tout type de certificat médical conforme au Code de déontologie (art. 28 CNOM).</p>
+    </header>
 
+    <div class="card">
+      <div class="card-title">Éléments du certificat<span class="panel-aside">Art. 28 CNOM</span></div>
     <!-- Types rapides -->
     <div style="margin-bottom:18px">
       <div class="label" style="margin-bottom:10px">Type de certificat</div>
@@ -2584,6 +763,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       <p class="anon-hint"><i data-lucide="lock"></i> Nom, âge, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
     </div>
 
+    </div>
+
     <div class="actions">
       <button class="btn btn-primary" data-gen="certificat">
         <span class="btn-label">Générer le certificat</span>
@@ -2604,8 +785,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── ORDONNANCE ── -->
   <section class="view" id="view-ordonnance">
-    <h1 class="page-title">Ordonnance médicale</h1>
-    <p class="page-sub">Rédigez une ordonnance structurée, conforme aux bonnes pratiques HAS/ANSM.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Rédaction</p>
+      <h1 class="page-title">Ordonnance médicale</h1>
+      <p class="page-sub">Rédigez une ordonnance structurée, conforme aux bonnes pratiques HAS/ANSM.</p>
+    </header>
 
     <details class="disclosure">
       <summary class="disclosure-summary">
@@ -2621,6 +805,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       </div>
     </details>
 
+    <div class="card">
+      <div class="card-title">Éléments de l'ordonnance<span class="panel-aside">Rédaction</span></div>
     <div class="field-row">
       <div class="field">
         <label class="label">Nom du patient</label>
@@ -2669,6 +855,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       </div>
     </div>
 
+    </div>
+
     <div class="actions">
       <button class="btn btn-primary" data-gen="ordonnance">
         <span class="btn-label">Générer l'ordonnance</span>
@@ -2690,9 +878,14 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── AVIS SPÉCIALISÉ ── -->
   <section class="view" id="view-avis">
-    <h1 class="page-title">Avis spécialisé</h1>
-    <p class="page-sub">Décrivez un cas, joignez des photos : Arkiba interroge une base de connaissances médicale indexée et vous rend un avis argumenté et sourcé.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Aide à la décision</p>
+      <h1 class="page-title">Avis spécialisé</h1>
+      <p class="page-sub">Décrivez un cas, joignez des photos : Arkiba interroge une base de connaissances médicale indexée et vous rend un avis argumenté et sourcé.</p>
+    </header>
 
+    <div class="card">
+      <div class="card-title">Le cas à soumettre<span class="panel-aside">Base indexée</span></div>
     <div class="field">
       <label class="label">
         <span>Spécialité</span>
@@ -2733,6 +926,8 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
       <div class="photo-grid" id="av-photo-grid"></div>
     </div>
 
+    </div>
+
     <div class="actions">
       <button class="btn btn-primary" id="av-submit">
         <span class="btn-label">Demander l'avis</span>
@@ -2767,8 +962,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── HISTORIQUE ── -->
   <section class="view" id="view-history">
-    <h1 class="page-title">Historique</h1>
-    <p class="page-sub">Vos 50 derniers documents générés, stockés localement sur votre appareil.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Mon espace</p>
+      <h1 class="page-title">Historique</h1>
+      <p class="page-sub">Vos 50 derniers documents générés, stockés localement sur votre appareil.</p>
+    </header>
     <div class="field" style="margin-bottom:18px">
       <div style="position:relative">
         <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);opacity:.4;pointer-events:none" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
@@ -2780,8 +978,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── PATIENTS ── -->
   <section class="view" id="view-patients">
-    <h1 class="page-title">Mes patients</h1>
-    <p class="page-sub">Ouvrez un dossier pour voir toutes ses consultations et rouvrir n'importe quel document.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Mon espace</p>
+      <h1 class="page-title">Mes patients</h1>
+      <p class="page-sub">Ouvrez un dossier pour voir toutes ses consultations et rouvrir n'importe quel document.</p>
+    </header>
 
     <div style="margin-bottom:14px">
       <div style="position:relative">
@@ -2862,8 +1063,11 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
 
   <!-- ── PROFIL ── -->
   <section class="view" id="view-profile">
-    <h1 class="page-title">Profil médecin</h1>
-    <p class="page-sub">Ces informations apparaissent en en-tête de chaque document généré.</p>
+    <header class="screen-head">
+      <p class="eyebrow">Mon espace</p>
+      <h1 class="page-title">Profil médecin</h1>
+      <p class="page-sub">Ces informations apparaissent en en-tête de chaque document généré.</p>
+    </header>
 
     <div class="card">
       <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:18px">
@@ -2926,7 +1130,7 @@ body.clinical-modal-open{overflow:hidden;position:fixed;width:100%;left:0;right:
     </div>
 
     <!-- Stats d'usage -->
-    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border)">
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--line)">
       <div class="label" style="margin-bottom:16px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim)">Statistiques d'usage</div>
       <div id="usage-stats" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px"></div>
     </div>
@@ -3337,13 +1541,18 @@ function renderQuickTemplates(viewKey) {
   const bar = document.getElementById(barId);
   const row = document.getElementById(rowId);
   if (!bar || !row) return;
+  // Un dépliant « Utiliser un modèle » qui ne contient rien est une porte qui
+  // ne mène nulle part : on le retire de l'écran quand il n'y a pas de modèle.
+  const depliant = bar.closest('details.disclosure');
+  const masquer = () => { if (depliant) depliant.style.display = 'none'; };
 
   const specKey = getSpecialtyKey();
   const bucket  = SPECIALTY_TEMPLATES[viewKey];
-  if (!bucket) return;
+  if (!bucket) { masquer(); return; }
 
   const templates = (specKey && bucket[specKey]) || bucket['Médecin généraliste'] || [];
-  if (!templates.length) return;
+  if (!templates.length) { masquer(); return; }
+  if (depliant) depliant.style.display = '';
 
   row.innerHTML = '';
   templates.forEach(tpl => {
@@ -4039,11 +2248,15 @@ function placeClinicalSettings(viewName) {
   const settings = document.getElementById('generation-settings');
   const view = document.getElementById('view-' + (viewName || 'liaison'));
   if (!settings || !view) return;
-  // L'avis spécialisé n'est pas un document à signer : ni longueur imposée, ni
-  // style rédactionnel appris. Ces réglages n'ont pas de sens ici.
-  if (viewName === 'avis') { settings.style.display = 'none'; return; }
+  // Ces réglages ne concernent que la rédaction d'un document à signer. Ils
+  // n'ont rien à faire sous « Enregistrer » du profil ou d'une fiche patient,
+  // où ils apparaissaient parce qu'on visait n'importe quel bloc .actions.
+  // L'avis spécialisé est exclu aussi : ni longueur imposée, ni style appris.
+  const AVEC_REGLAGES = ['consult', 'liaison', 'cr', 'resume', 'mdph', 'ald', 'certificat', 'ordonnance'];
+  if (!AVEC_REGLAGES.includes(viewName)) { settings.style.display = 'none'; return; }
   const action = view.querySelector('.actions');
-  if (action) { action.appendChild(settings); settings.style.display = 'flex'; }
+  // Les réglages se lisent avant d'appuyer, pas après : ils précèdent l'action.
+  if (action) { action.parentNode.insertBefore(settings, action); settings.style.display = 'flex'; }
   else settings.style.display = 'none';
 }
 placeClinicalSettings('consult');
@@ -4262,7 +2475,7 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
   const modal = ensureClinicalModal(); clinicalPending = { key, btn, label, analysis, sourcePayload };
   const score = modal.querySelector('#clinical-score'); score.textContent = analysis.confidence + '%';
   const scoreBox = score.parentElement;
-  scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--warning)' : 'var(--danger)';
+  scoreBox.style.borderColor = analysis.confidence > 85 ? 'var(--success)' : analysis.confidence >= 70 ? 'var(--gold)' : 'var(--danger)';
   document.getElementById('clinical-score-label').textContent = analysis.confidenceLabel || (analysis.confidence > 85 ? 'Prêt à générer' : analysis.confidence >= 70 ? 'Bon dossier' : 'À compléter');
   if (!clinicalQuestionProgress[key]) clinicalQuestionProgress[key] = { total: analysis.questions.length, answered: 0 };
 
@@ -4595,6 +2808,12 @@ function injectPatientPicks() {
     ['view-liaison', 'l-patient'],
     ['view-ordonnance', 'ord-patient'],
     ['view-consult', 'ct-patient'],
+    // Un certificat MDPH, un protocole ALD ou un certificat médical se
+    // rédigent aussi dans un dossier : y couper l'accès au contexte n'avait
+    // aucune raison d'être.
+    ['view-mdph', 'm-patient'],
+    ['view-ald', 'a-patient'],
+    ['view-certificat', 'cert-patient'],
   ];
   for (const [viewId] of cibles) {
     const view = document.getElementById(viewId);
@@ -4603,14 +2822,17 @@ function injectPatientPicks() {
     bloc.className = 'patient-pick';
     bloc.setAttribute('data-patient-pick', viewId);
     bloc.innerHTML =
-      '<span class="patient-pick-l">Dossier</span>' +
-      '<select class="select" data-pick-select></select>' +
-      '<span class="ctx-note" data-pick-note></span>';
+      '<div>' +
+        '<span class="patient-pick-l">Dossier</span>' +
+        '<select class="select" data-pick-select aria-label="Dossier"></select>' +
+      '</div>' +
+      '<div class="patient-pick-aide" data-pick-note></div>';
     // Le sélecteur doit être le premier élément de l'écran, juste sous le
     // sous-titre. On vise donc un enfant DIRECT de la vue : un querySelector
     // large attrapait un .field imbriqué dans le dépliant « Utiliser un
     // modèle » et enfouissait le sélecteur dans un bloc replié.
-    const sousTitre = [...view.children].find(c => c.classList.contains('page-sub'));
+    const sousTitre = [...view.children].find(c =>
+      c.classList.contains('screen-head') || c.classList.contains('consult-intro'));
     if (sousTitre) sousTitre.insertAdjacentElement('afterend', bloc);
     else view.insertBefore(bloc, view.firstElementChild);
 
@@ -5282,12 +3504,10 @@ function toast(message) {
   if (!el) {
     el = document.createElement('div');
     el.id = 'praxi-toast';
+    // L'apparence vit dans la feuille de style ; ici on ne pilote que l'état.
     el.style.cssText =
-      'position:fixed;left:50%;bottom:24px;z-index:2000;max-width:min(440px,92vw);' +
-      'background:var(--bg-card);border:1px solid var(--accent-border);border-radius:10px;' +
-      'padding:12px 16px;font-size:13.5px;color:var(--text);box-shadow:var(--shadow-lg);' +
-      'opacity:0;transform:translate(-50%,8px);' +
-      'transition:opacity var(--dur-enter) var(--ease-out),transform var(--dur-enter) var(--ease-out)';
+      'max-width:min(440px,92vw);opacity:0;transform:translate(-50%,8px);' +
+      'transition:opacity .22s cubic-bezier(.16,1,.3,1),transform .22s cubic-bezier(.16,1,.3,1)';
     document.body.appendChild(el);
   }
   el.textContent = message;
@@ -5295,7 +3515,7 @@ function toast(message) {
   clearTimeout(el._t);
   el._t = setTimeout(() => {
     // Sortie plus rapide que l'entrée : le système répond vite, il ne s'attarde pas.
-    el.style.transitionDuration = 'var(--dur-fast)';
+    el.style.transitionDuration = '.14s';
     el.style.opacity = '0';
     el.style.transform = 'translate(-50%,8px)';
     setTimeout(() => { el.style.transitionDuration = ''; }, 200);
@@ -5583,10 +3803,10 @@ function renderUsageStats() {
     ...Object.entries(typeLabels).map(([k, l]) => ({ label: l, value: counts[k] || 0, color: 'var(--text-muted)' }))
   ];
 
-  container.innerHTML = items.map(it =>
-    `<div style="background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px">
-      <div style="font-size:24px;font-weight:700;color:${it.color};line-height:1">${it.value}</div>
-      <div style="font-size:12px;color:var(--text-muted);margin-top:4px">${escapeHtml(it.label)}</div>
+  container.innerHTML = items.map((it, i) =>
+    `<div class="stat-card" style="--d:${i * 30}ms">
+      <b style="color:${it.color}">${it.value}</b>
+      <span>${escapeHtml(it.label)}</span>
     </div>`
   ).join('');
 }
@@ -6490,7 +4710,7 @@ function consultOpenCloture() {
     ['Prescriptions', rxText ? 'Ordonnance prête — sera archivée' : 'Aucune'],
   ];
   document.getElementById('cloture-summary').innerHTML = rows.map(([k, v]) =>
-    '<div style="display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--border)">' +
+    '<div style="display:flex;justify-content:space-between;gap:16px;padding:6px 0;border-bottom:1px solid var(--line)">' +
     '<span>' + escapeHtml(k) + '</span><strong style="color:var(--text);text-align:right">' + escapeHtml(v) + '</strong></div>'
   ).join('');
   modalCloture.classList.add('show');
