@@ -219,7 +219,10 @@ form.addEventListener('submit', async (e) => {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data.error || 'Inscription impossible.');
-    location.replace('/login.html?registered=1');
+    // Le compte est créé et déjà authentifié : renvoyer vers l'écran de
+    // connexion obligeait à retaper le mot de passe qu'on venait de choisir.
+    if (data.token) localStorage.setItem('praxi_token', data.token);
+    location.replace(data.token ? '/app.html' : '/login.html?registered=1');
   } catch (err) {
     showError(err.message);
     setLoading(false);

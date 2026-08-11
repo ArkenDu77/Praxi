@@ -279,10 +279,13 @@ pied de page.
 Trois endroits s'écartent délibérément de la maquette, parce que le contrat
 serveur ou la loi l'imposent :
 
-- **Le formulaire porte cinq champs, pas trois.** `POST /api/waitlist` exige
-  `prenom`, `nom`, `email`, `specialite`, `ville` et rejette tout envoi
-  incomplet. La maquette n'en proposait que trois — le formulaire aurait été
-  refusé à chaque soumission.
+- **Le formulaire porte plus de champs que la maquette.** `POST /api/auth/register`
+  exige `prenom`, `nom`, `email`, `password`, `specialite`, `ville` et rejette
+  tout envoi incomplet. La maquette n'en proposait que trois — le formulaire
+  aurait été refusé à chaque soumission.
+  *(Au lancement, ce formulaire est passé de la liste d'attente à la création de
+  compte : la route `POST /api/waitlist` a été retirée, le champ mot de passe
+  ajouté, et la soumission entre directement dans l'application.)*
 - **La spécialité vient de `GET /api/specialites`.** La maquette embarquait cinq
   libellés en dur (« Médecine générale », « Cardiologie »…) : c'est exactement
   le vocabulaire qui avait divergé de la liste serveur et faisait refuser
@@ -347,18 +350,23 @@ La transcription elle-même dépend du service de reconnaissance du navigateur e
 ne peut pas être vérifiée en machine : elle reste au test terrain, avec un vrai
 micro (voir la liste des vérifications manuelles).
 
-## 4. Formulaire de liste d'attente (`#waitlist-form`)
+## 4. Formulaire de création de compte (`#register-form`)
 
 | Contrôle | Action réelle | Statut |
 |---|---|---|
-| Prénom · Nom · Email · Ville | saisie, validés côté serveur | ✅ |
+| Prénom · Nom · Email · Mot de passe · Ville | saisie, validés côté serveur | ✅ |
 | **Spécialité** | 46 options chargées par `GET /api/specialites` — **jamais en dur** | ✅ |
 | Champ manquant | validation native du navigateur, signalée sur place | ✅ |
-| « Demander l'accès bêta » | `POST /api/waitlist` → `201` → comptée par `/api/stats` | ✅ |
+| « Créer mon compte » | `POST /api/auth/register` → `201` → jeton rangé, entrée dans `/app.html` | ✅ |
 | Confirmation | le formulaire s'efface, le bloc de succès apparaît avec le prénom | ✅ |
 | Email déjà inscrit | `409` → message serveur dans un bandeau d'erreur | ✅ |
-| Trop de tentatives | `429` → message serveur ; plafond 3/h/IP | ✅ |
+| Trop de tentatives | `429` → message serveur ; plafond 5/h/IP | ✅ |
 | Après un refus | le bouton redevient actif — l'inscrit n'est pas coincé | ✅ |
+
+*(Ce tableau décrit l'état au lancement. Lors du câblage de la refonte, le même
+formulaire alimentait une liste d'attente via `POST /api/waitlist` ; cette route
+et son fichier `waitlist.json` ont été retirés, aucun compte n'y ayant été
+enregistré.)*
 
 Les erreurs passaient auparavant par `alert()`. Elles s'affichent maintenant
 dans un bandeau au sein du formulaire, dans la langue visuelle de la refonte.
@@ -367,7 +375,7 @@ dans un bandeau au sein du formulaire, dans la langue visuelle de la refonte.
 
 | Contrôle | Action réelle | Statut |
 |---|---|---|
-| Capacités · Méthode · Tarifs · Accès anticipé | ancres de la page | ✅ |
+| Capacités · Méthode · Tarifs · Créer un compte | ancres de la page | ✅ |
 | Hébergement & RGPD · Sécurité des données | `/politique-confidentialite.html` | ✅ |
 | Sources cliniques | ancre `#capacites` | ✅ |
 | Accéder à l'application | `/login.html` | ✅ |
@@ -386,13 +394,15 @@ Les deux défauts relevés sur l'ancienne vitrine sont corrigés :
 | Bouton micro de la démo | — | 44 px |
 | Boutons et liens d'action | variable | 44 px minimum |
 
-## 7. Constat connu
+## 7. Constat connu — réglé au lancement
 
-ⓘ **Le compteur « 47 médecins inscrits » est une valeur figée dans la page.**
-`GET /api/stats` existe et renvoie le compte réel de la liste d'attente, qui
-vaut `0` en production. Décision prise de le laisser en l'état pour l'instant ;
-il est signalé ici, en commentaire dans `index.html`, et à chaque passage du
-harnais (ligne `NOTE`) pour qu'il ne se fasse jamais passer pour une donnée.
+ⓘ **Le compteur « 47 médecins inscrits » était une valeur figée dans la page.**
+Il avait été laissé en l'état pendant la refonte, signalé ici, en commentaire
+dans `index.html` et à chaque passage du harnais (ligne `NOTE`) pour qu'il ne se
+fasse jamais passer pour une donnée. Il a été retiré au lancement, en même temps
+que la mention « Bêta fermée » qui contredisait un formulaire ouvrant désormais
+l'application immédiatement. `GET /api/stats`, qui comptait les inscrits de la
+liste d'attente, a été retiré avec elle.
 
 ## 8. Compatibilité
 

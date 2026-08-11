@@ -1,6 +1,5 @@
 node_modules/
 .env
-waitlist.json
 users.json
 # Index vectoriel généré (racine uniquement — surtout pas lib/rag/, qui est du code)
 /rag/

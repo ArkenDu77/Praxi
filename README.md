@@ -27,6 +27,8 @@ praxi/
 │   ├── cgu.html
 │   └── politique-confidentialite.html
 ├── lib/
+│   ├── plans.js                         ← Plans d'abonnement : droits, quotas, whitelist
+│   ├── facturation.js                   ← Adaptateur Stripe (checkout, portail, webhooks)
 │   ├── ingest.js                        ← Orchestration de l'ingestion (CLI + route admin)
 │   ├── specialites.js                   ← Registre des spécialités « avis spécialisé »
 │   └── rag/                             ← Brique RAG générique (réutilisable)
@@ -39,7 +41,6 @@ praxi/
 ├── scripts/
 │   └── ingest.js                        ← CLI d'ingestion de la base de connaissances
 ├── server.js                            ← Backend Express
-├── waitlist.json                        ← Inscriptions waitlist
 ├── users.json                           ← Comptes médecins (créé au 1er register)
 ├── rag/                                 ← Index vectoriel (généré, non versionné)
 ├── .env.example                         ← Modèle de configuration
@@ -57,19 +58,30 @@ ADMIN_TOKEN=change-moi-en-prod
 # Authentification JWT
 JWT_SECRET=change-moi-en-production
 JWT_EXPIRES_IN=7d
+
+# Comptes à accès illimité (facultatif — deux emails par défaut dans le code)
+ARKIBA_ADMIN_EMAILS=benarken@yahoo.com,sbh75@gmx.fr
+
+# Stripe — facultatif : sans clé, le paiement est fermé (503) et le reste
+# de l'application fonctionne normalement
+STRIPE_SECRET_KEY=sk_live_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_PRO=price_...
+STRIPE_PRICE_GROUPE=price_...
 ```
+
+Liste complète et commentée : `.env.example`.
 
 ## API
 
-### Waitlist (public)
+### Public
 
 | Méthode | Route | Description |
 |---------|-------|-------------|
-| POST   | `/api/waitlist` | Inscription liste d'attente |
-| GET    | `/api/stats` | Stats publiques (total inscrits) |
 | GET    | `/api/specialites` | Liste fermée des spécialités — source unique des menus du front |
+| GET    | `/health` | Sonde de l'hébergeur : IA, stockage, facturation |
 
-> `/api/specialites` sert exactement la liste contre laquelle `/api/waitlist`,
+> `/api/specialites` sert exactement la liste contre laquelle
 > `/api/auth/register` et `/api/auth/profile` valident. Les pages `index.html`,
 > `register.html` et `app.html` peuplent leur menu depuis cette route : ne
 > réintroduisez pas de liste écrite en dur dans une page. Une copie figée dans
@@ -106,23 +118,27 @@ Chaque route protégée attend l'en-tête `Authorization: Bearer <token>`.
 Le profil du médecin (prénom, nom, spécialité, adresse, RPPS…) est automatiquement
 injecté dans le system prompt — aucun champ vide entre crochets n'apparaît dans le document.
 
+### Abonnement / facturation
+
+| Méthode | Route | Description |
+|---------|-------|-------------|
+| GET    | `/api/billing/state` | Formule, essai restant, quota, fonctionnalités ouvertes (JWT) |
+| POST   | `/api/billing/checkout` | Ouvre une session de paiement Stripe (JWT) |
+| POST   | `/api/billing/portal` | Portail client Stripe : moyen de paiement, factures, résiliation (JWT) |
+| POST   | `/api/stripe/webhook` | Notifications Stripe — signature vérifiée, corps brut |
+
+Voir la section [Abonnements](#abonnements) plus bas.
+
 ### Admin
 
 | Méthode | Route | Description |
 |---------|-------|-------------|
-| GET    | `/api/admin/list` | Liste complète des inscrits waitlist |
-| PATCH  | `/api/admin/status/:id` | Changer le statut d'un inscrit |
 | POST   | `/admin/ingest?specialite=X` | Lancer l'ingestion d'une spécialité (voir section RAG) |
 | GET    | `/admin/ingest/:id` | Avancement d'un job d'ingestion |
 | GET    | `/admin/ingest` | Jobs récents + état des index |
 
 ```bash
-curl http://localhost:3001/api/admin/list -H "x-admin-token: arkiba-admin-dev"
-
-curl -X PATCH http://localhost:3001/api/admin/status/1 \
-  -H "x-admin-token: arkiba-admin-dev" \
-  -H "Content-Type: application/json" \
-  -d '{"status":"invited"}'
+curl http://localhost:3001/admin/ingest -H "x-admin-token: arkiba-admin-dev"
 ```
 
 ## Fonctionnalités de l'application (`/app.html`)
@@ -355,7 +371,7 @@ médicales.
 2. Ajouter la variable `DATA_DIR=/data`
 3. Ajouter `RAG_DIR=/data/rag` si la base de connaissances est utilisée
 
-Fichiers écrits dans `DATA_DIR` : `users.json`, `waitlist.json`, **`dossiers.json`**
+Fichiers écrits dans `DATA_DIR` : `users.json`, **`dossiers.json`**
 (fiches patients + documents).
 
 ### 2. Variables d'environnement
@@ -405,9 +421,132 @@ npm start
 # Ctrl+A D pour détacher
 ```
 
-## Statuts waitlist
+## Abonnements
 
-- `pending` → inscrit, pas encore invité
-- `invited` → email d'invitation envoyé
-- `active`  → compte créé
-- `rejected` → refusé (hors cible)
+### Parcours d'inscription
+
+Le formulaire de la page d'accueil (`#acces`) et `register.html` créent tous deux
+un vrai compte via `POST /api/auth/register` et entrent **directement** dans
+l'application avec le jeton renvoyé.
+
+L'ancienne liste d'attente a été retirée : `POST /api/waitlist`, `GET /api/stats`,
+`GET /api/admin/list`, `PATCH /api/admin/status/:id`, le fichier `waitlist.json`
+et les statuts associés (`pending` / `invited` / `active` / `rejected`) n'existent
+plus. Aucun compte n'y avait été enregistré. Un `waitlist.json` resté sur un
+volume de production n'est plus lu par personne et peut être supprimé à la main.
+
+### Plans
+
+| Plan | Champ `plan` | Ce qui est ouvert |
+|------|--------------|-------------------|
+| Essai (30 jours) | `trial` | Lettre de liaison, compte-rendu, résumé, dictée et analyse clinique · **50 documents** · **10 dossiers patients** |
+| Essai terminé | `free` | Lecture seule : l'historique et les dossiers restent consultables et supprimables, plus aucune génération |
+| Arkiba Pro | `pro` | Tout l'essai sans plafond + MDPH, ALD, certificat, ordonnance, avis spécialisé · dossiers illimités |
+| Arkiba Groupe | `groupe` | Identique à Pro (tarif par médecin) |
+| Accès illimité | *(whitelist)* | Tout, sans abonnement ni paiement — voir ci-dessous |
+
+Tout compte démarre sur `trial`. Les comptes créés avant l'introduction des plans
+sont migrés à la première lecture et démarrent 30 jours d'essai à ce moment-là
+(et non à leur date d'inscription) : les inscrits de la bêta ne se réveillent pas
+bloqués au lancement.
+
+### Où le droit d'accès est décidé
+
+`lib/plans.js` est la source unique. `server.js` place `exigerFonctionnalite()`
+devant chaque route concernée, **avant** tout appel au modèle, et refuse avec un
+`402` portant un `code` exploitable par le front :
+
+| `code` | Signification |
+|--------|---------------|
+| `plan_required` | Module réservé à Arkiba Pro |
+| `quota_exceeded` | Plafond de l'essai atteint (documents ou dossiers) |
+| `trial_expired` | Période d'essai terminée, compte en lecture seule |
+
+L'interface (`app.html`) ne fait que refléter `me.abonnement.fonctionnalites` :
+retirer un cadenas depuis la console du navigateur ne débloque rien, la route
+répond quand même `402`. `tests/abonnement.test.js` verrouille cet invariant en
+appelant les routes payantes directement, sans passer par l'interface.
+
+Le compteur de documents n'est incrémenté **qu'après une réponse acceptée** :
+une génération qui échoue (erreur du modèle, validation) ne consomme rien.
+
+### Comptes à accès illimité
+
+Une whitelist d'emails donne accès à toutes les fonctionnalités, indépendamment
+du statut d'abonnement : pas de paiement, pas de plafond, et **aucune session
+Stripe n'est jamais créée** pour ces comptes (`/api/billing/checkout` répond
+`400 compte_illimite` avant tout appel à Stripe).
+
+- Le contrôle se fait sur **l'email du compte en base** (`users.json`), jamais
+  sur un mot de passe ou un jeton écrit dans le code.
+- Le mot de passe de ces comptes reste géré par l'authentification normale :
+  la whitelist ouvre des fonctionnalités, pas la porte d'entrée.
+- Le drapeau `illimite` stocké sur le compte est **recalculé à chaque lecture**
+  à partir de la whitelist : le poser à la main en base sur un compte hors liste
+  ne donne rien, et retirer un email de la liste retire l'accès.
+
+Liste par défaut : `benarken@yahoo.com`, `sbh75@gmx.fr`.
+Surchargeable par `ARKIBA_ADMIN_EMAILS` (emails séparés par des virgules).
+
+### Stripe
+
+Clés uniquement en variables d'environnement (voir `.env.example`) :
+`STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_PRO`,
+`STRIPE_PRICE_GROUPE`. Sans `STRIPE_SECRET_KEY`, l'application tourne
+normalement et les routes de paiement répondent `503` — le lancement ne dépend
+donc pas de l'activation du paiement.
+
+Le paiement passe par **Stripe Checkout hébergé** : aucun numéro de carte ne
+transite par Arkiba. Le webhook `/api/stripe/webhook` reçoit le corps brut
+(exception au parseur JSON global) et vérifie la signature ; un événement mal
+signé est rejeté sans être lu.
+
+Événements traités → effet sur le champ `plan` / `planStatus` :
+
+| Événement | Effet |
+|-----------|-------|
+| `checkout.session.completed` | Lit l'abonnement créé → `pro`/`groupe`, `active` |
+| `customer.subscription.created` / `.updated` / `.resumed` / `.paused` | Formule et statut réalignés (upgrade, downgrade, résiliation programmée) |
+| `customer.subscription.deleted` | Retour à `free`, statut `canceled` |
+| `invoice.payment_failed` | Statut `past_due` → l'accès payant se ferme |
+| `invoice.paid` / `invoice.payment_succeeded` | Statut `active` → l'accès rouvre |
+
+Le compte visé est retrouvé par `stripe.customerId`, puis par l'identifiant
+Arkiba placé en métadonnée à la création de la session, puis par email. Un
+événement sans compte correspondant est journalisé et acquitté (un `5xx` le
+ferait rejouer pendant des jours) ; une vraie erreur de traitement rend un `500`
+pour que Stripe rejoue.
+
+### Recette en mode test, puis bascule en production
+
+```bash
+# 1. Clés de test
+export STRIPE_SECRET_KEY=sk_test_...
+export STRIPE_PRICE_PRO=price_...        # tarif récurrent 89 €/mois créé en mode test
+
+# 2. Rediriger les webhooks vers le serveur local
+stripe listen --forward-to localhost:3001/api/stripe/webhook
+# → recopier le whsec_... affiché
+export STRIPE_WEBHOOK_SECRET=whsec_...
+
+npm start
+```
+
+À vérifier, dans l'ordre :
+
+1. `GET /health` → `facturation.active: true`, `facturation.webhook: true`, `plans: ["pro"]`.
+2. Créer un compte depuis la page d'accueil → l'application s'ouvre directement, badge « Essai ».
+3. Ouvrir **Abonnement** → « Passer à Arkiba Pro » → payer avec `4242 4242 4242 4242`
+   (date future, CVC quelconque) → retour sur l'application, badge « Arkiba Pro »
+   après quelques secondes, modules MDPH/ALD/certificat/ordonnance/avis déverrouillés.
+4. Échec de paiement : carte `4000 0000 0000 0341` → le compte repasse en accès
+   restreint après l'événement `invoice.payment_failed`.
+5. Résiliation depuis « Gérer mon abonnement » → à la fin de la période,
+   `customer.subscription.deleted` ramène le compte en lecture seule.
+6. Se connecter avec un email de la whitelist → écran Abonnement sans aucun
+   bouton de paiement, toutes les fonctionnalités ouvertes.
+
+Bascule en production : recréer le produit et le tarif **en mode Live**, créer un
+endpoint webhook Live pointant sur `https://www.arkiba.fr/api/stripe/webhook`
+(avec les événements du tableau ci-dessus), puis remplacer les quatre variables
+par leurs équivalents Live sur l'hébergeur. Aucun changement de code.

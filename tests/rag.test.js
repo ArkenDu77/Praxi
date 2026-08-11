@@ -266,6 +266,22 @@ describe('registre des spécialités', () => {
 
 // ─── ROUTE API ─────────────────────────────────────────────────────────────
 
+
+// L'avis spécialisé fait partie d'Arkiba Pro. Ces suites testent la validation
+// des entrées et le comportement du RAG, pas l'abonnement : on place le compte
+// sur un plan payant, comme le ferait le webhook Stripe. Le contrôle d'accès
+// lui-même est couvert par tests/abonnement.test.js.
+function passerEnPro(token) {
+  const { email } = require('jsonwebtoken').decode(token);
+  const fichier = path.join(process.env.DATA_DIR, 'users.json');
+  const db = JSON.parse(fs.readFileSync(fichier, 'utf8'));
+  const u = db.users.find(x => x.email === email);
+  if (!u) throw new Error('compte de test introuvable : ' + email);
+  u.plan = 'pro';
+  u.planStatus = 'active';
+  fs.writeFileSync(fichier, JSON.stringify(db, null, 2));
+}
+
 describe('API avis spécialisé', () => {
   let token;
 
@@ -278,6 +294,7 @@ describe('API avis spécialisé', () => {
       ville: 'Lyon',
     });
     token = res.body.token;
+    passerEnPro(token);
   });
 
   test('la liste des spécialités exige une authentification', async () => {
@@ -700,6 +717,7 @@ describe('POST /api/avis-specialise/resume', () => {
       ville: 'Nantes',
     });
     token = res.body.token;
+    passerEnPro(token);
   });
 
   test('refuse sans authentification', async () => {

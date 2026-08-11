@@ -99,6 +99,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
     Profil
   </button>
+  <button class="side-link" data-view="abonnement">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+    Abonnement <span class="side-plan" id="side-plan"></span>
+  </button>
 
   </nav>
 
@@ -1139,6 +1143,51 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     </div>
   </section>
 
+  <!-- ─── ABONNEMENT ───
+       L'écran ne décide de rien : il affiche l'état renvoyé par
+       GET /api/billing/state et sert de point d'atterrissage quand le serveur
+       refuse une génération avec un 402. -->
+  <section class="view" id="view-abonnement">
+    <header class="screen-head">
+      <p class="eyebrow">Mon espace</p>
+      <h1 class="page-title">Abonnement</h1>
+      <p class="page-sub" id="abo-sub">Chargement de votre abonnement…</p>
+    </header>
+
+    <div class="alert-plan" id="abo-alerte" role="status" hidden></div>
+
+    <div class="card">
+      <span class="card-title">Votre formule</span>
+      <div class="abo-etat" id="abo-etat"></div>
+    </div>
+
+    <div class="card" id="abo-offres">
+      <span class="card-title">Passer à Arkiba Pro</span>
+      <p class="page-sub" style="margin-top:0">
+        Documents et dossiers illimités, MDPH, ALD, certificats, ordonnances et avis spécialisé.
+      </p>
+      <ul class="abo-liste">
+        <li>Tout ce que fait l'essai, sans plafond de documents</li>
+        <li>Certificat MDPH et protocole ALD pré-remplis</li>
+        <li>Certificats médicaux et ordonnances</li>
+        <li>Avis spécialisé sourcé</li>
+        <li>Dossiers patients illimités</li>
+      </ul>
+      <div class="abo-actions">
+        <button class="btn btn-primary" id="abo-checkout">
+          <span class="btn-label">Passer à Arkiba Pro — 89 €/mois</span>
+        </button>
+        <button class="btn btn-ghost" id="abo-portail" hidden>
+          <span class="btn-label">Gérer mon abonnement</span>
+        </button>
+      </div>
+      <p class="abo-legal">
+        Paiement sécurisé par Stripe · Sans engagement, résiliable à tout moment depuis le portail ·
+        Facturation en euros, TVA applicable.
+      </p>
+    </div>
+  </section>
+
 </main>
 
 <!-- ─── MODALE DOCTOLIB ─── -->
@@ -1247,7 +1296,17 @@ function api(path, opts = {}) {
     if (res.status === 401) { logout(); throw new Error('Session expirée.'); }
     let data = {};
     try { data = await res.json(); } catch (_) {}
-    if (!res.ok) throw new Error(data.error || ('Erreur ' + res.status));
+    if (!res.ok) {
+      const err = new Error(data.error || ('Erreur ' + res.status));
+      err.status  = res.status;
+      err.code    = data.code || null;
+      err.feature = data.feature || null;
+      // 402 = le serveur a refusé pour cause d'abonnement ou de plafond. C'est
+      // lui qui tranche : l'interface se contente d'amener le médecin sur
+      // l'écran qui explique pourquoi et comment débloquer.
+      if (res.status === 402) refuserPourAbonnement(err);
+      throw err;
+    }
     return data;
   });
 }
@@ -1286,6 +1345,11 @@ api('/api/auth/me').then(async ({ user }) => {
   localStorage.setItem(PROFIL_KEY, JSON.stringify(user));
   renderUser();
   fillProfileForm();
+  // L'état d'abonnement arrive avec le profil : les verrous sont posés avant
+  // le premier clic. L'appel à /api/billing/state qui suit ne sert qu'à savoir
+  // si le paiement en ligne est ouvert.
+  marquerVerrous();
+  majAbonnement();
 
   // Reprise des données de l'ancien stockage local, puis chargement serveur.
   // L'ordre compte : migrer avant de lire, sinon la première liste affichée
@@ -1295,6 +1359,192 @@ api('/api/auth/me').then(async ({ user }) => {
   injectPatientPicks();
   if (document.querySelector('.view.active')?.id === 'view-patients') renderPatients();
 }).catch(() => {/* la fn api() gère déjà le 401 */});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ABONNEMENT — reflet de la décision serveur
+//
+//  Aucun droit n'est accordé ici. `me.abonnement.fonctionnalites` est calculé
+//  par le backend (lib/plans.js) et rejoué à chaque appel protégé : retirer le
+//  verrou depuis la console du navigateur ne débloque rien, la route répond
+//  402. L'interface sert uniquement à ne pas laisser cliquer dans le vide.
+// ═══════════════════════════════════════════════════════════════════════
+const FEATURE_PAR_VUE = {
+  consult:    'clinical.analyze',
+  liaison:    'generate.liaison',
+  cr:         'generate.compte-rendu',
+  resume:     'generate.resume',
+  mdph:       'generate.mdph',
+  ald:        'generate.ald',
+  certificat: 'generate.certificat',
+  ordonnance: 'generate.ordonnance',
+  avis:       'avis-specialise',
+};
+
+const LIBELLE_PLAN = {
+  illimite: 'Accès illimité',
+  pro:      'Arkiba Pro',
+  groupe:   'Arkiba Groupe',
+  trial:    'Essai',
+  free:     'Essai terminé',
+};
+
+let facturationActive = false;
+
+function abonnement() { return (me && me.abonnement) || null; }
+
+/** La vue est-elle accessible avec le plan courant ? (permissif si l'état n'est pas encore chargé) */
+function vueAutorisee(nom) {
+  const feature = FEATURE_PAR_VUE[nom];
+  if (!feature) return true;
+  const a = abonnement();
+  if (!a || !a.fonctionnalites) return true;
+  return a.fonctionnalites[feature] !== false;
+}
+
+/** Pose (ou retire) le cadenas sur les entrées de menu verrouillées. */
+function marquerVerrous() {
+  document.querySelectorAll('.side-link[data-view]').forEach(b => {
+    const bloque = !vueAutorisee(b.dataset.view);
+    b.classList.toggle('locked', bloque);
+    b.setAttribute('aria-disabled', bloque ? 'true' : 'false');
+    if (bloque && !b.querySelector('.side-lock')) {
+      const lock = document.createElement('span');
+      lock.className = 'side-lock';
+      lock.title = 'Inclus dans Arkiba Pro';
+      lock.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>';
+      b.appendChild(lock);
+    }
+    if (!bloque) b.querySelector('.side-lock')?.remove();
+  });
+
+  const badge = document.getElementById('side-plan');
+  const a = abonnement();
+  if (badge && a) {
+    badge.textContent = LIBELLE_PLAN[a.plan] || '';
+    badge.dataset.plan = a.plan;
+  }
+}
+
+/** Amène l'écran d'abonnement, en expliquant ce qui vient d'être refusé. */
+function refuserPourAbonnement(err) {
+  majAbonnement().then(() => {
+    switchView('abonnement');
+    const alerte = document.getElementById('abo-alerte');
+    if (!alerte) return;
+    alerte.hidden = false;
+    alerte.textContent = err.message;
+  });
+}
+
+/** Recharge l'état d'abonnement depuis le serveur et rafraîchit l'affichage. */
+async function majAbonnement() {
+  try {
+    const data = await api('/api/billing/state');
+    if (me) me.abonnement = data.abonnement;
+    facturationActive = Boolean(data.facturation && data.facturation.active);
+    try { localStorage.setItem(PROFIL_KEY, JSON.stringify(me)); } catch (_) {}
+    marquerVerrous();
+    renderAbonnement();
+  } catch (_) { /* 401 déjà traité par api() */ }
+}
+
+function renderAbonnement() {
+  const a = abonnement();
+  const etat = document.getElementById('abo-etat');
+  const sub  = document.getElementById('abo-sub');
+  const offres   = document.getElementById('abo-offres');
+  const checkout = document.getElementById('abo-checkout');
+  const portail  = document.getElementById('abo-portail');
+  if (!a || !etat) return;
+
+  const lignes = [];
+  lignes.push(['Formule', LIBELLE_PLAN[a.plan] || a.plan]);
+
+  if (a.illimite) {
+    sub.textContent = "Ce compte dispose d'un accès total à toutes les fonctionnalités, sans abonnement ni paiement.";
+    lignes.push(['Documents', 'Illimités']);
+    lignes.push(['Dossiers patients', 'Illimités']);
+    // Un compte de la whitelist n'a rien à acheter : on ne lui montre pas
+    // d'appel au paiement, et le serveur refuserait de lui ouvrir une caisse.
+    offres.hidden = true;
+  } else if (a.payant) {
+    sub.textContent = 'Votre abonnement est actif. Tout est débloqué.';
+    lignes.push(['Statut', a.statut === 'past_due' ? 'Paiement en attente' : 'Actif']);
+    if (a.finPeriode) {
+      lignes.push([a.resiliationProgrammee ? 'Prend fin le' : 'Prochain renouvellement',
+                   new Date(a.finPeriode).toLocaleDateString('fr-FR')]);
+    }
+    offres.hidden = false;
+    checkout.hidden = true;
+    portail.hidden = !facturationActive;
+  } else if (a.essai.actif) {
+    const j = a.essai.joursRestants;
+    sub.textContent = `Essai en cours — ${j} jour${j > 1 ? 's' : ''} restant${j > 1 ? 's' : ''}.`;
+    lignes.push(['Fin de l\'essai', a.essai.finLe ? new Date(a.essai.finLe).toLocaleDateString('fr-FR') : '—']);
+    lignes.push(['Documents', `${a.documents.utilises} / ${a.documents.limite}`]);
+    lignes.push(['Dossiers patients', `${a.patients.limite} maximum`]);
+    offres.hidden = false;
+    checkout.hidden = !facturationActive;
+    portail.hidden = true;
+  } else {
+    sub.textContent = "Votre période d'essai est terminée. Vos documents et dossiers restent consultables.";
+    lignes.push(['Documents générés', String(a.documents.utilises)]);
+    offres.hidden = false;
+    checkout.hidden = !facturationActive;
+    portail.hidden = true;
+  }
+
+  if (!facturationActive && !a.illimite) {
+    lignes.push(['Paiement en ligne', 'Bientôt disponible — écrivez à contact@arkiba.fr']);
+  }
+
+  etat.innerHTML = '';
+  for (const [cle, valeur] of lignes) {
+    const ligne = document.createElement('div');
+    ligne.className = 'abo-ligne';
+    const k = document.createElement('span'); k.className = 'abo-cle';    k.textContent = cle;
+    const v = document.createElement('span'); v.className = 'abo-valeur'; v.textContent = valeur;
+    ligne.appendChild(k); ligne.appendChild(v);
+    etat.appendChild(ligne);
+  }
+}
+
+async function ouvrirPaiement(route, plan) {
+  const boutons = [document.getElementById('abo-checkout'), document.getElementById('abo-portail')];
+  boutons.forEach(b => { if (b) b.disabled = true; });
+  const alerte = document.getElementById('abo-alerte');
+  try {
+    const data = await api(route, {
+      method: 'POST',
+      body: JSON.stringify(plan ? { plan } : {}),
+    });
+    if (!data.url) throw new Error('Réponse inattendue du serveur.');
+    // Redirection vers la page hébergée par Stripe : aucun numéro de carte ne
+    // transite par Arkiba.
+    location.href = data.url;
+  } catch (err) {
+    if (alerte) { alerte.hidden = false; alerte.textContent = err.message; }
+    boutons.forEach(b => { if (b) b.disabled = false; });
+  }
+}
+
+document.getElementById('abo-checkout')?.addEventListener('click', () => ouvrirPaiement('/api/billing/checkout', 'pro'));
+document.getElementById('abo-portail')?.addEventListener('click',  () => ouvrirPaiement('/api/billing/portal'));
+
+// Retour depuis Stripe : l'abonnement est enregistré par le webhook, qui peut
+// arriver une poignée de secondes après la redirection. On relit l'état, puis
+// une seconde fois un peu plus tard plutôt que d'afficher « essai » à quelqu'un
+// qui vient de payer.
+(function retourDeStripe() {
+  const params = new URLSearchParams(location.search);
+  const etat = params.get('abonnement');
+  if (!etat) return;
+  history.replaceState(null, '', location.pathname);
+  if (etat === 'succes') {
+    setTimeout(() => majAbonnement(), 1500);
+    setTimeout(() => majAbonnement(), 6000);
+  }
+})();
 
 function initial(name) { return (name || '').trim().charAt(0).toUpperCase() || '·'; }
 function renderUser() {
@@ -1400,6 +1650,16 @@ document.getElementById('side-user').addEventListener('click', () => switchView(
 
 function switchView(name) {
   ouvrirMenu(false);
+  // Module verrouillé : on n'ouvre pas un écran dont le serveur refusera la
+  // moindre génération, on explique pourquoi.
+  if (!vueAutorisee(name)) {
+    const a = abonnement();
+    return refuserPourAbonnement({
+      message: a && a.plan === 'free'
+        ? "Votre période d'essai est terminée. Passez à Arkiba Pro pour générer à nouveau."
+        : 'Ce module fait partie d\'Arkiba Pro.',
+    });
+  }
   const prev = document.querySelector('.side-link.active[data-view]');
   if (prev && prev.dataset.view !== 'patients') sessionStorage.setItem('praxi_lastView', prev.dataset.view);
   document.querySelectorAll('.side-link[data-view]').forEach(b =>
@@ -1408,6 +1668,7 @@ function switchView(name) {
     v.classList.toggle('active', v.id === 'view-' + name));
   if (name === 'patients') refreshPatients().then(() => renderPatients());
   if (name === 'profile') refreshHistory().then(renderUsageStats);
+  if (name === 'abonnement') majAbonnement();
   if (name === 'avis') initAvis();
   if (name === 'consult') consultOnEnter();
   placeClinicalSettings(name);

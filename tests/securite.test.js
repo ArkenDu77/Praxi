@@ -127,17 +127,17 @@ describe('stockage JSON — lecture et écriture', () => {
 
 describe('CORS — origines autorisées', () => {
   test("accepte l'origine de production", async () => {
-    const res = await request(app).get('/api/stats').set('Origin', 'https://praxi.example.fr');
+    const res = await request(app).get('/api/specialites').set('Origin', 'https://praxi.example.fr');
     expect(res.headers['access-control-allow-origin']).toBe('https://praxi.example.fr');
   });
 
   test("refuse un domaine qui se contente de commencer par l'origine autorisée", async () => {
-    const res = await request(app).get('/api/stats').set('Origin', 'https://praxi.example.fr.attaquant.tld');
+    const res = await request(app).get('/api/specialites').set('Origin', 'https://praxi.example.fr.attaquant.tld');
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
   });
 
   test("n'ouvre pas à tout le monde en l'absence d'en-tête Origin", async () => {
-    const res = await request(app).get('/api/stats');
+    const res = await request(app).get('/api/specialites');
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
   });
 });
