@@ -312,8 +312,21 @@ html[data-theme="dark"] .eyebrow { color: #55c6ef; color: var(--accent); }
   display: flex;
   flex-direction: column;
   width: 280px;
+  /* `100vh` vaut, sur Safari iOS, la hauteur de la fenêtre barres d'outils
+     RÉTRACTÉES — pas la hauteur réellement visible. Le tiroir dépassait donc
+     sous la barre du navigateur : « Mode clair » et « Déconnexion » étaient
+     hors écran, et le doigt qui visait le bouton tombait sur la barre de Safari
+     (retour, partage, onglets). Pire, comme le conteneur était plus haut que
+     l'écran, la liste ne débordait jamais : rien ne défilait, il n'y avait donc
+     aucun moyen d'atteindre le bas du menu.
+     `100dvh` suit la hauteur réellement affichée, barres comprises. Le repli en
+     `100vh` reste pour les navigateurs qui ignorent l'unité. */
   height: 100vh;
+  height: 100dvh;
   padding: 20px 16px;
+  /* Sous la barre d'outils, iOS place encore l'indicateur d'accueil : sans cette
+     marge, le dernier bouton s'y colle. */
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
   border-right: 1px solid var(--line);
   background: var(--surface);
   overflow: hidden;
@@ -430,6 +443,11 @@ html[data-theme="dark"] .side-link.active { border-color: rgba(85, 198, 239, 0.2
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* Le défilement s'arrête au bout de la liste au lieu d'entraîner la page
+     derrière le tiroir — sur téléphone, continuer le geste faisait bouger
+     l'écran de travail sous le menu ouvert. */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   margin-top: 6px;
   padding-right: 4px;
 }
@@ -3097,10 +3115,15 @@ html, body {
 }
 
 @media (max-height: 760px) and (max-width: 1024px) {
-  /* Sur un téléphone, la liste complète doit tenir sans défilement interne :
-     on resserre les intitulés de groupe et le bloc médecin, jamais les cibles
-     tactiles, qui restent à 44 px. */
-  .sidebar { padding: 14px 14px 12px; }
+  /* Sur un téléphone, on resserre les intitulés de groupe et le bloc médecin
+     pour qu'un maximum d'entrées tienne d'un coup d'œil — jamais les cibles
+     tactiles, qui restent à 44 px. Ce qui dépasse défile dans `.side-nav` :
+     la liste a douze entrées, elle ne tient plus entièrement sur un petit
+     écran, et prétendre le contraire avait laissé le bas du menu inatteignable. */
+  .sidebar {
+    padding: 14px 14px 12px;
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
   .side-logo { font-size: 23px; min-height: 40px; }
   .side-user { min-height: 52px; margin-top: 12px; padding: 7px 10px; }
   .side-avatar { width: 34px; height: 34px; font-size: 15px; }
@@ -3661,4 +3684,155 @@ html:not([data-theme="dark"]) .clinical-block h3 { color: var(--accent); }
   .abo-ligne { flex-direction: column; gap: 2px; }
   .abo-valeur { text-align: left; }
   .abo-actions .btn { width: 100%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   CHOIX DU THÈME À LA PREMIÈRE OUVERTURE
+
+   Deux cartes, une par thème, chacune montrant une maquette miniature de
+   l'application dans ce thème — plutôt qu'un simple libellé. Survoler
+   applique le thème pour de vrai : on juge sur l'écran, pas sur un mot.
+   Les animations sont neutralisées par le bloc `prefers-reduced-motion`
+   global plus haut dans ce fichier.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.theme-pick {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  padding-bottom: max(20px, env(safe-area-inset-bottom));
+  background: var(--voile);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  animation: ark-pop 0.22s ease both;
+}
+.theme-pick[hidden] { display: none; }
+.theme-pick.closing { animation: theme-pick-out 0.2s ease both; }
+
+@keyframes theme-pick-out {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
+.theme-pick-card {
+  width: 100%;
+  max-width: 520px;
+  max-height: 88dvh;
+  overflow-y: auto;
+  padding: 28px 26px 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--ombre-forte);
+  text-align: center;
+  outline: none;
+  animation: ark-in-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+html[data-theme="dark"] .theme-pick-card {
+  background: rgba(20, 26, 36, 0.96);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 40px 120px -40px rgba(85, 198, 239, 0.45);
+}
+
+.theme-pick-eyebrow {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+.theme-pick-card h2 {
+  margin: 0 0 8px;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--text);
+}
+.theme-pick-sub {
+  margin: 0 auto 22px;
+  max-width: 380px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.theme-pick-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.theme-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-l);
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+  animation: ark-in-up 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: var(--d, 0ms);
+}
+.theme-opt:hover,
+.theme-opt:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px -18px rgba(85, 198, 239, 0.7);
+  outline: none;
+}
+
+/* Maquette miniature : barre latérale à gauche, lignes de texte à droite.
+   Les couleurs sont écrites en dur, et non prises aux variables de thème :
+   chaque carte doit montrer SON thème, y compris celui qui n'est pas actif. */
+.theme-opt-preview {
+  display: flex;
+  gap: 5px;
+  height: 74px;
+  padding: 6px;
+  border-radius: var(--r-s);
+  overflow: hidden;
+}
+.theme-opt-preview .tp-side { width: 26%; border-radius: 4px; }
+.theme-opt-preview .tp-body { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.theme-opt-preview .tp-line { height: 6px; border-radius: 3px; }
+.theme-opt-preview .tp-line.s { width: 62%; }
+
+.tp-light { background: #f7f4ee; border: 1px solid #ddd9cf; }
+.tp-light .tp-side { background: #fcfaf6; border: 1px solid #ddd9cf; }
+.tp-light .tp-line { background: #c6c2b6; }
+.tp-light .tp-line.s { background: #2d4a3f; }
+
+.tp-dark { background: #0e1219; border: 1px solid #28313c; }
+.tp-dark .tp-side { background: #141a24; border: 1px solid #28313c; }
+.tp-dark .tp-line { background: #3a4553; }
+.tp-dark .tp-line.s { background: #55c6ef; }
+
+.theme-opt-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+
+.theme-opt-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.theme-opt-name svg { width: 16px; height: 16px; flex: none; color: var(--accent); }
+.theme-opt-note { font-size: 11.5px; line-height: 1.45; color: var(--text-dim); }
+
+@media (max-width: 480px) {
+  .theme-pick-card { padding: 22px 18px 20px; }
+  .theme-pick-card h2 { font-size: 22px; }
+  .theme-pick-options { grid-template-columns: 1fr; gap: 10px; }
+  /* En colonne, la maquette n'a plus besoin d'être haute : elle sert de repère,
+     pas de démonstration plein écran. */
+  .theme-opt { flex-direction: row; align-items: center; gap: 12px; }
+  .theme-opt-preview { width: 82px; height: 56px; flex: none; }
 }

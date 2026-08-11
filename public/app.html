@@ -1190,6 +1190,53 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 
 </main>
 
+<!-- ─── CHOIX DU THÈME, À LA PREMIÈRE OUVERTURE ───
+     Le réglage existait déjà, en bas du menu — c'est-à-dire à l'endroit le
+     moins visible de l'application, et sur téléphone derrière un tiroir. Un
+     médecin qui travaille en pièce éclairée découvrait le mode clair des
+     semaines après. La question est donc posée une fois, à l'arrivée, puis
+     plus jamais : le choix est mémorisé et reste modifiable au même endroit. -->
+<div class="theme-pick" id="theme-pick" role="dialog" aria-modal="true"
+     aria-labelledby="theme-pick-title" hidden>
+  <div class="theme-pick-card" tabindex="-1">
+    <p class="theme-pick-eyebrow">Bienvenue</p>
+    <h2 id="theme-pick-title">Comment préférez-vous travailler&nbsp;?</h2>
+    <p class="theme-pick-sub">
+      Vous pourrez en changer à tout moment, en bas du menu.
+    </p>
+
+    <div class="theme-pick-options">
+      <button type="button" class="theme-opt" data-theme-choice="light" style="--d:60ms">
+        <span class="theme-opt-preview tp-light" aria-hidden="true">
+          <span class="tp-side"></span>
+          <span class="tp-body"><span class="tp-line"></span><span class="tp-line s"></span><span class="tp-line"></span></span>
+        </span>
+        <span class="theme-opt-text">
+          <span class="theme-opt-name">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+            Mode clair
+          </span>
+          <span class="theme-opt-note">Cabinet éclairé, plein jour</span>
+        </span>
+      </button>
+
+      <button type="button" class="theme-opt" data-theme-choice="dark" style="--d:120ms">
+        <span class="theme-opt-preview tp-dark" aria-hidden="true">
+          <span class="tp-side"></span>
+          <span class="tp-body"><span class="tp-line"></span><span class="tp-line s"></span><span class="tp-line"></span></span>
+        </span>
+        <span class="theme-opt-text">
+          <span class="theme-opt-name">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+            Mode sombre
+          </span>
+          <span class="theme-opt-note">Garde, fin de journée, pièce sombre</span>
+        </span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── MODALE DOCTOLIB ─── -->
 <div class="modal-bg" id="modal-doctolib">
   <div class="modal">
@@ -1713,8 +1760,98 @@ function applyTheme(t) {
 // accordée au script de pré-rendu en tête de page, sinon l'application démarre
 // dans un thème puis bascule dans l'autre sous les yeux du médecin.
 applyTheme(localStorage.getItem(THEME_KEY) === 'light' ? 'light' : 'dark');
-document.getElementById('theme-toggle').addEventListener('click', () =>
-  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'));
+document.getElementById('theme-toggle').addEventListener('click', () => {
+  applyTheme(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+  marquerThemeChoisi();   // basculer soi-même vaut choix : plus de proposition
+});
+
+// ─── Proposition de thème à la première ouverture ───────────────────────
+// Le réglage vivait en bas du menu, donc sur téléphone derrière un tiroir : la
+// plupart des médecins ne savaient pas qu'un mode clair existait. La question
+// est posée une fois, à l'arrivée dans l'application, sur tous les appareils.
+//
+// Le drapeau est distinct de THEME_KEY : celui-ci est écrit à chaque
+// application de thème, y compris celle du défaut au chargement, et ne dit
+// donc rien de ce que le médecin a choisi. Comme le thème, il survit à la
+// déconnexion (il ne porte aucune donnée de santé) — se reconnecter ne doit pas
+// reposer la question.
+const THEME_CHOIX_KEY = 'praxi_theme_choisi';
+
+function themeDejaChoisi() {
+  try { return localStorage.getItem(THEME_CHOIX_KEY) === '1'; } catch (_) { return true; }
+}
+function marquerThemeChoisi() {
+  try { localStorage.setItem(THEME_CHOIX_KEY, '1'); } catch (_) {}
+}
+
+(function proposerTheme() {
+  if (themeDejaChoisi()) return;
+
+  const boite = document.getElementById('theme-pick');
+  if (!boite) return;
+  const options = Array.from(boite.querySelectorAll('[data-theme-choice]'));
+  const themeInitial = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+  const focusPrecedent = document.activeElement;
+
+  function fermer(choix) {
+    applyTheme(choix);
+    marquerThemeChoisi();
+    boite.classList.add('closing');
+    document.removeEventListener('keydown', auClavier, true);
+    setTimeout(() => {
+      boite.hidden = true;
+      boite.classList.remove('closing');
+      if (focusPrecedent && focusPrecedent.focus) focusPrecedent.focus();
+    }, 200);
+  }
+
+  function auClavier(e) {
+    // Échap ne force rien : on garde le thème affiché à cet instant, mais la
+    // question est considérée comme posée.
+    if (e.key === 'Escape') { e.preventDefault(); fermer(themeCourant()); return; }
+    // Le focus reste dans la boîte tant qu'elle est ouverte.
+    if (e.key !== 'Tab') return;
+    const i = options.indexOf(document.activeElement);
+    e.preventDefault();
+    const suivant = e.shiftKey ? (i <= 0 ? options.length - 1 : i - 1)
+                               : (i === -1 || i === options.length - 1 ? 0 : i + 1);
+    options[suivant].focus();
+  }
+
+  const themeCourant = () => document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+
+  options.forEach(opt => {
+    const choix = opt.dataset.themeChoice;
+    // Aperçu réel au survol / au focus clavier : on juge sur l'écran, pas sur
+    // un libellé. Sans souris, il n'y a pas de survol — la touche applique
+    // directement, ce qui revient au même geste.
+    const apercu = () => { if (!boite.hidden) appliquerSansMemoriser(choix); };
+    const retour = () => { if (!boite.hidden) appliquerSansMemoriser(themeInitial); };
+    opt.addEventListener('mouseenter', apercu);
+    opt.addEventListener('mouseleave', retour);
+    opt.addEventListener('focus', apercu);
+    opt.addEventListener('blur', retour);
+    opt.addEventListener('click', () => fermer(choix));
+  });
+
+  // L'aperçu ne doit pas écrire dans localStorage : survoler n'est pas choisir,
+  // et un médecin qui repart sans cliquer doit retrouver son thème d'avant.
+  function appliquerSansMemoriser(t) {
+    if (t === 'dark') document.documentElement.dataset.theme = 'dark';
+    else delete document.documentElement.dataset.theme;
+  }
+
+  // Un temps court : l'application se peint d'abord, la proposition arrive
+  // ensuite — elle se lit comme un accueil, pas comme un écran de chargement.
+  setTimeout(() => {
+    boite.hidden = false;
+    document.addEventListener('keydown', auClavier, true);
+    // Le focus va sur la boîte, pas sur la première option : la poser sur
+    // « Mode clair » déclenchait son aperçu, et l'application basculait en clair
+    // toute seule avant le moindre choix. Tab entre ensuite dans les options.
+    boite.querySelector('.theme-pick-card').focus({ preventScroll: true });
+  }, 450);
+})();
 
 // ═══════════════════════════════════════════════════════════════════════
 //  SAUVEGARDE AUTOMATIQUE — brouillons en continu, indicateur visible
