@@ -3836,3 +3836,42 @@ html[data-theme="dark"] .theme-pick-card {
   .theme-opt { flex-direction: row; align-items: center; gap: 12px; }
   .theme-opt-preview { width: 82px; height: 56px; flex: none; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   RÉINITIALISATION D'UN MODULE
+
+   Le bouton se place sous l'action principale et reste volontairement
+   discret : il efface un formulaire rempli, il ne doit jamais se prendre
+   pour l'action du module. Sa cible tactile fait quand même 44 px.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.btn-reinit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--r-m);
+  background: none;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.16s ease, border-color 0.16s ease;
+}
+.btn-reinit svg { width: 14px; height: 14px; }
+.btn-reinit:hover,
+.btn-reinit:focus-visible { color: var(--danger); border-color: var(--danger); outline: none; }
+
+/* Bouton de confirmation destructrice : la couleur annonce ce qu'il fait. */
+.btn-danger {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.btn-danger:hover:not(:disabled) { border-color: var(--danger); filter: brightness(1.06); }
+.btn-danger:disabled { opacity: 0.45; }

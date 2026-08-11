@@ -214,7 +214,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
       </div>
       </div>
       <div class="consult-nav">
-        <span></span>
+        <button type="button" class="btn btn-ghost" data-reinit="consult">
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+          Réinitialiser
+        </button>
         <button class="btn btn-primary" id="ct-next-1">
           <span class="btn-label">Commencer la consultation</span>
           <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-6-6l6 6-6 6"/></svg>
@@ -471,6 +474,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
       <button class="btn btn-primary" data-gen="liaison">
         <span class="btn-label">Générer la lettre</span>
       </button>
+      <button type="button" class="btn-reinit" data-reinit="liaison">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
+      </button>
     </div>
     <div class="alert alert-error" id="l-error"></div>
 
@@ -555,6 +562,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
       <button class="btn btn-primary" data-gen="cr">
         <span class="btn-label">Générer le compte-rendu</span>
       </button>
+      <button type="button" class="btn-reinit" data-reinit="cr">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
+      </button>
     </div>
     <div class="alert alert-error" id="c-error"></div>
 
@@ -600,6 +611,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <div class="actions">
       <button class="btn btn-primary" data-gen="resume" disabled>
         <span class="btn-label">Analyser le document</span>
+      </button>
+      <button type="button" class="btn-reinit" data-reinit="resume">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
       </button>
     </div>
     <div class="alert alert-error" id="r-error"></div>
@@ -657,6 +672,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
       <button class="btn btn-primary" data-gen="mdph">
         <span class="btn-label">Générer le certificat MDPH</span>
       </button>
+      <button type="button" class="btn-reinit" data-reinit="mdph">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
+      </button>
     </div>
     <div class="alert alert-error" id="m-error"></div>
 
@@ -712,6 +731,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <div class="actions">
       <button class="btn btn-primary" data-gen="ald">
         <span class="btn-label">Générer le protocole ALD</span>
+      </button>
+      <button type="button" class="btn-reinit" data-reinit="ald">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
       </button>
     </div>
     <div class="alert alert-error" id="a-error"></div>
@@ -775,6 +798,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <div class="actions">
       <button class="btn btn-primary" data-gen="certificat">
         <span class="btn-label">Générer le certificat</span>
+      </button>
+      <button type="button" class="btn-reinit" data-reinit="certificat">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
       </button>
     </div>
     <div class="alert alert-error" id="cert-error"></div>
@@ -869,6 +896,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
         <span class="btn-label">Générer l'ordonnance</span>
       </button>
       <p class="anon-hint"><i data-lucide="lock"></i> Nom, date de naissance, adresse et NIR restent sur cet appareil — ils sont remis dans le document après génération</p>
+      <button type="button" class="btn-reinit" data-reinit="ordonnance">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
+      </button>
     </div>
     <div class="alert alert-error" id="ord-error"></div>
 
@@ -938,6 +969,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <div class="actions">
       <button class="btn btn-primary" id="av-submit">
         <span class="btn-label">Demander l'avis</span>
+      </button>
+      <button type="button" class="btn-reinit" data-reinit="avis">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 2v6h6M3.51 15a9 9 0 102.13-9.36L3 8"/></svg>
+        Réinitialiser
       </button>
     </div>
     <div class="alert alert-error" id="av-error"></div>
@@ -1189,6 +1224,22 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
   </section>
 
 </main>
+
+<!-- ─── CONFIRMATION DE RÉINITIALISATION ───
+     Effacer un formulaire rempli est irréversible et ne se répare pas : on
+     demande avant, en nommant ce qui va disparaître. -->
+<div class="modal-bg" id="modal-reinit">
+  <div class="modal">
+    <h2 id="reinit-titre">Réinitialiser ?</h2>
+    <p class="modal-desc" id="reinit-desc"></p>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="reinit-cancel">Annuler</button>
+      <button class="btn btn-danger" id="reinit-confirm">
+        <span class="btn-label">Effacer</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ─── CHOIX DU THÈME, À LA PREMIÈRE OUVERTURE ───
      Le réglage existait déjà, en bas du menu — c'est-à-dire à l'endroit le
@@ -5342,6 +5393,169 @@ document.getElementById('cloture-confirm').addEventListener('click', consultDoCl
 ['ct-patient', 'ct-age'].forEach(id =>
   document.getElementById(id).addEventListener('input', consultUpdateStepperContext));
 consultOnEnter();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  RÉINITIALISATION D'UN MODULE
+//
+//  Les brouillons sont enregistrés en continu et restaurés au retour : c'est
+//  voulu — une consultation interrompue par un appel ne doit pas être perdue.
+//  Mais rien ne permettait de repartir d'une page blanche autrement qu'en
+//  vidant les champs un par un, ce qui est long et laisse toujours traîner un
+//  reste : un résultat encore affiché, une pièce jointe, une photo.
+//
+//  Chaque module a donc son bouton. Il efface les champs, leur brouillon, le
+//  document produit et les pièces attachées — le tout dans le seul module
+//  concerné, jamais les autres, et sans jamais toucher à l'historique ni aux
+//  dossiers patients déjà enregistrés.
+// ═══════════════════════════════════════════════════════════════════════
+const REINIT = {
+  consult: {
+    titre: 'Réinitialiser la consultation ?',
+    detail: 'Ouverture, notes de consultation, prescriptions et documents non enregistrés seront effacés. ' +
+            'Les consultations déjà clôturées restent dans l\'historique.',
+    resultats: ['ct-result', 'rx-result'],
+    sorties:   ['ct-out', 'rx-out'],
+    erreurs:   ['ct-error', 'rx-error'],
+    archives:  ['consult', 'rx'],
+    apres() {
+      document.querySelectorAll('#ct-pane-3 .chip.on').forEach(c => c.classList.remove('on'));
+      ['bio', 'img', 'soin'].forEach(updateRxCount);
+      document.querySelectorAll('#ct-pane-3 details.disclosure').forEach(d => { d.open = false; });
+      consultUpdateStepperContext();
+      ctGoto(1);
+      document.getElementById('ct-patient').focus();
+    },
+  },
+  liaison:    { titre: 'Réinitialiser la lettre de liaison ?', detail: 'Les champs saisis et la lettre générée seront effacés.',
+                resultats: ['l-result'],    sorties: ['l-out'],    erreurs: ['l-error'],    archives: ['liaison'] },
+  cr:         { titre: 'Réinitialiser le compte-rendu ?', detail: 'Les champs saisis et le compte-rendu généré seront effacés.',
+                resultats: ['c-result'],    sorties: ['c-out'],    erreurs: ['c-error'],    archives: ['cr'],
+                // La date repart sur aujourd'hui, comme à l'ouverture de l'écran.
+                apres() { document.getElementById('c-date').value = new Date().toISOString().slice(0, 10); } },
+  resume:     { titre: 'Réinitialiser l\'analyse ?', detail: 'Le document chargé et son analyse seront effacés.',
+                resultats: ['r-result'],    sorties: ['r-out'],    erreurs: ['r-error'],    archives: ['resume'],
+                apres() { resetFile(); } },
+  mdph:       { titre: 'Réinitialiser le certificat MDPH ?', detail: 'Les champs saisis et le certificat généré seront effacés.',
+                resultats: ['m-result'],    sorties: ['m-out'],    erreurs: ['m-error'],    archives: ['mdph'] },
+  ald:        { titre: 'Réinitialiser le protocole ALD ?', detail: 'Les champs saisis et le protocole généré seront effacés.',
+                resultats: ['a-result'],    sorties: ['a-out'],    erreurs: ['a-error'],    archives: ['ald'] },
+  certificat: { titre: 'Réinitialiser le certificat ?', detail: 'Les champs saisis et le certificat généré seront effacés.',
+                resultats: ['cert-result'], sorties: ['cert-out'], erreurs: ['cert-error'], archives: ['certificat'],
+                apres() { document.querySelectorAll('#view-certificat .chip.on').forEach(c => c.classList.remove('on')); } },
+  ordonnance: { titre: 'Réinitialiser l\'ordonnance ?', detail: 'Les champs saisis et l\'ordonnance générée seront effacés.',
+                resultats: ['ord-result'],  sorties: ['ord-out'],  erreurs: ['ord-error'],  archives: ['ordonnance'] },
+  avis:       { titre: 'Réinitialiser l\'avis spécialisé ?', detail: 'Le cas clinique, les photos jointes et l\'avis rendu seront effacés.',
+                resultats: ['av-result'],   sorties: ['av-out'],   erreurs: ['av-error'],   archives: ['avis'],
+                apres() { avisPhotos = []; avisRenderPhotos(); avisTextes = { complet: '', resume: '' }; } },
+};
+
+// Le bloc « Réglages du document » est déplacé d'une vue à l'autre par
+// placeClinicalSettings() : il se trouve donc physiquement DANS le module
+// affiché, alors qu'il porte une préférence commune à tous. Le réinitialiser
+// avec un module la remettrait à zéro pour tous les autres.
+const REINIT_EXCLUS = new Set(['clinical-mode', 'clinical-style']);
+
+/** Champs de saisie d'un module (hors recherche et réglages communs). */
+function champsDeLaVue(nom) {
+  const vue = document.getElementById('view-' + nom);
+  if (!vue) return [];
+  return Array.from(vue.querySelectorAll('.input, .textarea, .select'))
+    .filter(el => !DRAFT_EXCLUDED.has(el.id) && !REINIT_EXCLUS.has(el.id));
+}
+
+/**
+ * Le champ porte-t-il une saisie du médecin ?
+ *
+ * « Non vide » ne suffit pas : un menu déroulant affiche sa première option
+ * sans qu'on y ait touché, et le compte-rendu pré-remplit sa date avec le jour
+ * même. Les compter comme saisie faisait proposer d'effacer un module auquel
+ * personne n'avait touché.
+ */
+function champRempli(el) {
+  if (el.type === 'checkbox' || el.type === 'radio') return el.checked;
+  if (el.tagName === 'SELECT') return el.selectedIndex > 0;
+  if (el.id === 'c-date') return el.value !== new Date().toISOString().slice(0, 10);
+  return el.value.trim() !== '';
+}
+
+/** Y a-t-il quelque chose à effacer ? Sert à ne pas demander confirmation pour rien. */
+function vueRemplie(nom) {
+  const cfg = REINIT[nom];
+  if (champsDeLaVue(nom).some(champRempli)) return true;
+  if ((cfg.resultats || []).some(id => document.getElementById(id)?.classList.contains('show'))) return true;
+  if (nom === 'resume' && docText) return true;
+  if (nom === 'avis' && avisPhotos.length) return true;
+  return false;
+}
+
+function reinitialiserVue(nom) {
+  const cfg = REINIT[nom];
+  if (!cfg) return;
+  const vue = document.getElementById('view-' + nom);
+
+  // Les champs et leur brouillon partent ensemble : n'effacer que l'écran
+  // laisserait le texte revenir au rechargement suivant, ce qui est exactement
+  // le comportement qu'on cherche à corriger.
+  const brouillons = loadDrafts();
+  champsDeLaVue(nom).forEach(el => {
+    if (el.id) delete brouillons[el.id];
+    if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+    // Un menu déroulant revient à sa première option — son invite — et non à
+    // une valeur vide qui n'existe pas dans la liste et ne changerait rien.
+    else if (el.tagName === 'SELECT') el.selectedIndex = 0;
+    else el.value = '';
+  });
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(brouillons)); } catch (_) {}
+
+  (cfg.resultats || []).forEach(id => document.getElementById(id)?.classList.remove('show'));
+  (cfg.sorties || []).forEach(id => {
+    const out = document.getElementById(id);
+    if (out) { out.dataset.plain = ''; out.innerHTML = ''; }
+  });
+  (cfg.erreurs || []).forEach(clearError);
+  vue.querySelectorAll('[data-complete]').forEach(box => { box.classList.remove('show'); box.innerHTML = ''; });
+  // Le prochain document de ce module ouvre une nouvelle entrée d'historique au
+  // lieu de remplacer celle qu'on vient d'abandonner.
+  (cfg.archives || []).forEach(cle => { delete dernierArchive[cle]; });
+
+  if (cfg.apres) cfg.apres();
+  autosavePill('saved', 'Module réinitialisé');
+}
+
+// ── Confirmation ──
+(function cablerReinit() {
+  const modale  = document.getElementById('modal-reinit');
+  const titre   = document.getElementById('reinit-titre');
+  const detail  = document.getElementById('reinit-desc');
+  let cible = null;
+
+  function fermer() { modale.classList.remove('show'); cible = null; }
+
+  document.querySelectorAll('[data-reinit]').forEach(bouton => {
+    bouton.addEventListener('click', () => {
+      const nom = bouton.dataset.reinit;
+      if (!REINIT[nom]) return;
+      // Rien de saisi : pas de question à poser, on le dit et on s'arrête.
+      if (!vueRemplie(nom)) { autosavePill('saved', 'Rien à effacer'); return; }
+      cible = nom;
+      titre.textContent  = REINIT[nom].titre;
+      detail.textContent = REINIT[nom].detail;
+      modale.classList.add('show');
+      document.getElementById('reinit-cancel').focus();
+    });
+  });
+
+  document.getElementById('reinit-cancel').addEventListener('click', fermer);
+  document.getElementById('reinit-confirm').addEventListener('click', () => {
+    const nom = cible;
+    fermer();
+    if (nom) reinitialiserVue(nom);
+  });
+  modale.addEventListener('click', e => { if (e.target === modale) fermer(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modale.classList.contains('show')) fermer();
+  });
+})();
 
 // ═══════════════════════════════════════════════════════════════════════
 //  AVIS SPÉCIALISÉ — cas clinique + photos, réponse sourcée
