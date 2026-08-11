@@ -37,7 +37,7 @@ if (secretsParDefaut.length && process.env.ARKIBA_ALLOW_DEV_SECRETS !== '1') {
   console.error(
     `[FATAL] Secret(s) par défaut détecté(s) : ${secretsParDefaut.join(', ')}.\n` +
     "        Un JWT_SECRET par défaut laisse forger un jeton pour n'importe quel compte médecin.\n" +
-    "        Un ADMIN_TOKEN par défaut ouvre /api/admin/list (identités, emails, villes des inscrits).\n" +
+    "        Un ADMIN_TOKEN par défaut ouvre les routes /admin/ingest (ingestion, recherche RAG).\n" +
     '        Définissez ces variables dans l\'environnement — ou ARKIBA_ALLOW_DEV_SECRETS=1 en local.'
   );
   process.exit(1);
@@ -138,7 +138,6 @@ async function sendPasswordResetEmail(email, prenom, token) {
 // redéploiement / redémarrage. Par défaut : dossier du projet (comportement local).
 const DATA_DIR = process.env.DATA_DIR || __dirname;
 try { fs.mkdirSync(DATA_DIR, { recursive: true }); } catch (_) {}
-const DB_PATH = path.join(DATA_DIR, 'waitlist.json');
 
 /**
  * Lecture d'un fichier JSON de données.
@@ -182,9 +181,6 @@ function writeJsonFile(file, data) {
     throw err;
   }
 }
-
-function readDB()      { return readJsonFile(DB_PATH, { entries: [], nextId: 1 }); }
-function writeDB(data) { writeJsonFile(DB_PATH, data); }
 
 // ── STOCKAGE UTILISATEURS (médecins) ──
 const USERS_PATH = path.join(DATA_DIR, 'users.json');
@@ -458,90 +454,6 @@ function parseSpecialites(body) {
 // serveur ne peut plus diverger de celle qui valide.
 app.get('/api/specialites', (_req, res) => {
   res.json({ specialites: SPECIALITES });
-});
-
-// POST /api/waitlist
-app.post('/api/waitlist', (req, res) => {
-  const ip = clientIp(req);
-
-  if (!rateLimit(ip, 3, 'waitlist')) {
-    return res.status(429).json({ error: 'Trop de tentatives. Réessayez dans une heure.' });
-  }
-
-  const prenom     = s(req.body.prenom);
-  const nom        = s(req.body.nom);
-  const email      = s(req.body.email, 200).toLowerCase();
-  const specialite = s(req.body.specialite);
-  const ville      = s(req.body.ville);
-
-  const errors = [];
-  if (!prenom)                          errors.push('Prénom requis');
-  if (!nom)                             errors.push('Nom requis');
-  if (!EMAIL_RE.test(email))            errors.push('Email invalide');
-  if (!SPECIALITES.includes(specialite)) errors.push('Spécialité invalide');
-  if (!ville)                           errors.push('Ville requise');
-  if (errors.length) return res.status(400).json({ error: errors.join(', ') });
-
-  const db = readDB();
-
-  // Doublon
-  if (db.entries.some(e => e.email === email)) {
-    return res.status(409).json({ error: 'Cet email est déjà inscrit.' });
-  }
-
-  const entry = {
-    id: db.nextId++,
-    prenom, nom, email, specialite, ville,
-    status: 'pending',
-    ip: ip.slice(0, 45),
-    created_at: new Date().toISOString()
-  };
-
-  db.entries.unshift(entry); // plus récent en premier
-  writeDB(db);
-
-  console.log(`[waitlist] +1 : ${prenom} ${nom} — ${specialite} — ${ville}`);
-  res.status(201).json({ ok: true, message: 'Inscription confirmée.' });
-});
-
-// GET /api/stats
-app.get('/api/stats', (_req, res) => {
-  const db = readDB();
-  const bySpec = db.entries.reduce((acc, e) => {
-    acc[e.specialite] = (acc[e.specialite] || 0) + 1;
-    return acc;
-  }, {});
-  res.json({ total: db.entries.length, bySpecialite: bySpec });
-});
-
-// GET /api/admin/list
-app.get('/api/admin/list', (req, res) => {
-  if (req.headers['x-admin-token'] !== ADMIN_TOKEN)
-    return res.status(401).json({ error: 'Non autorisé.' });
-
-  const db = readDB();
-  res.json({ count: db.entries.length, waitlist: db.entries });
-});
-
-// PATCH /api/admin/status/:id
-app.patch('/api/admin/status/:id', (req, res) => {
-  if (req.headers['x-admin-token'] !== ADMIN_TOKEN)
-    return res.status(401).json({ error: 'Non autorisé.' });
-
-  const STATUSES = ['pending','invited','active','rejected'];
-  const { status } = req.body;
-  if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Statut invalide.' });
-
-  const id = parseInt(req.params.id, 10);
-  if (Number.isNaN(id)) return res.status(400).json({ error: 'ID invalide.' });
-
-  const db  = readDB();
-  const idx = db.entries.findIndex(e => e.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Introuvable.' });
-
-  db.entries[idx].status = status;
-  writeDB(db);
-  res.json({ ok: true });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -3182,7 +3094,7 @@ if (require.main === module) {
     // par tous les collaborateurs du projet et repartent souvent vers un
     // agrégateur tiers. L'imprimer revenait à publier un accès administrateur.
     console.log(`  → Admin : en-tête x-admin-token (valeur non journalisée)`);
-    console.log(`  → Data  : waitlist.json · users.json`);
+    console.log(`  → Data  : users.json · dossiers.json`);
     console.log(`  → Auth  : JWT (${JWT_EXPIRES_IN})${process.env.JWT_SECRET ? '' : ' — ⚠ JWT_SECRET par défaut'}`);
     console.log(`  → IA    : ${anthropic ? `activée (${AI_MODEL})` : 'désactivée — ANTHROPIC_API_KEY manquante'}`);
     console.log(`  → Data  : ${DATA_DIR}${process.env.DATA_DIR ? '' : ' — ⚠ stockage éphémère (définis DATA_DIR + volume pour persister)'}`);

@@ -8,7 +8,8 @@
  * s'était mis à valider contre une liste fermée de praticiens
  * (« Médecin généraliste », « Cardiologue »). Aucun libellé ne correspondait :
  * parseSpecialites() filtrait tout, la liste ressortait vide, la validation
- * échouait. index.html avait exactement le même défaut sur /api/waitlist.
+ * échouait. index.html portait exactement le même défaut sur son propre
+ * formulaire, qui crée désormais le compte lui aussi.
  *
  * Les tests existants ne pouvaient pas le voir : ils envoyaient le vocabulaire
  * du serveur, jamais celui que le navigateur envoie réellement.
@@ -141,26 +142,6 @@ describe('POST /api/auth/register accepte chaque spécialité servie', () => {
       ville: 'Lyon',
     }).expect(400);
     expect(res.body.error).toMatch(/Spécialité requise/);
-  });
-});
-
-describe('POST /api/waitlist accepte chaque spécialité servie', () => {
-  test('un échantillon de libellés passe la validation', async () => {
-    // La route est plafonnée à 3 requêtes/heure par IP : on vérifie le principe
-    // sur les premiers libellés plutôt que de buter sur la limitation de débit.
-    const echantillon = ['Médecin généraliste', 'Cardiologue', 'Pédiatre'];
-    const refuses = [];
-    for (const [i, specialite] of echantillon.entries()) {
-      const res = await request(app).post('/api/waitlist')
-        .set('X-Forwarded-For', `10.0.3.${i + 1}`)
-        .send({
-        prenom: 'Marie', nom: 'Test',
-        email: `wl.${i}.${Date.now()}@example.com`,
-        specialite, ville: 'Paris',
-      });
-      if (res.status !== 201) refuses.push(`${specialite} → ${res.status} ${res.body.error}`);
-    }
-    expect(refuses).toEqual([]);
   });
 });
 

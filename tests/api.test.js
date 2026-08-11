@@ -409,66 +409,28 @@ describe('POST /api/generate/ordonnance', () => {
   });
 });
 
-// ─── WAITLIST ──────────────────────────────────────────────────────────────
-
-describe('POST /api/waitlist', () => {
-  test('enregistre une entrée valide', async () => {
-    const res = await request(app)
-      .post('/api/waitlist')
-      .send({
-        prenom: 'Marie', nom: 'Curie', email: `waitlist.${Date.now()}@example.com`,
-        specialite: 'Médecin généraliste', ville: 'Paris'
-      })
-      .expect(201);
-    expect(res.body).toHaveProperty('ok', true);
-  });
-
-  test('rejette sans email', async () => {
-    await request(app)
-      .post('/api/waitlist')
-      .send({ prenom: 'Test', nom: 'Test', specialite: 'Médecin généraliste', ville: 'Paris' })
-      .expect(400);
-  });
-});
-
-// ─── ADMIN ─────────────────────────────────────────────────────────────────
-
-describe('GET /api/admin/list', () => {
-  test('refuse sans token admin', async () => {
-    await request(app).get('/api/admin/list').expect(401);
-  });
-
-  test('refuse avec mauvais token admin', async () => {
-    await request(app)
-      .get('/api/admin/list')
-      .set('x-admin-token', 'wrong-token')
-      .expect(401);
-  });
-
-  test('accepte avec bon token admin', async () => {
-    const res = await request(app)
-      .get('/api/admin/list')
-      .set('x-admin-token', 'test-admin-token')
-      .expect(200);
-    expect(res.body).toHaveProperty('count');
-  });
-});
-
 // ─── INPUT VALIDATION / XSS ────────────────────────────────────────────────
 
 describe('Validation des inputs — injection XSS', () => {
   test('les champs texte sont tronqués et nettoyés', async () => {
     const xssPayload = '<script>alert("xss")</script>';
     const res = await request(app)
-      .post('/api/waitlist')
+      .post('/api/auth/register')
+      // IP distincte : l'inscription est plafonnée à 5 par heure et les suites
+      // précédentes ont déjà consommé le quota de l'IP par défaut.
+      .set('x-forwarded-for', '10.0.9.1')
       .send({
         prenom: xssPayload,
         nom: 'Test',
         email: `xss.${Date.now()}@example.com`,
-        specialite: 'Médecin généraliste',
+        password: 'TestPassword1',
+        specialites: ['Médecin généraliste'],
         ville: 'Paris'
       });
-    // La réponse ne doit pas contenir de balises <script>
+    // Le prénom ressort nettoyé : ni la réponse, ni donc le profil injecté dans
+    // les documents générés ne portent de balise.
+    expect(res.status).toBe(201);
     expect(JSON.stringify(res.body)).not.toContain('<script>');
+    expect(res.body.user.prenom).not.toContain('<');
   });
 });

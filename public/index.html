@@ -451,6 +451,18 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
 .plan ul li { display: flex; align-items: flex-start; gap: 10px; font-size: .875rem; color: var(--lumen-soft); }
 .plan ul svg { margin-top: 3px; width: 14px; height: 14px; flex: none; color: var(--accent); }
 .plan .btn { position: relative; margin-top: 32px; width: 100%; }
+/* Fonctionnalité annoncée mais pas encore livrée. Elle reste dans la grille —
+   elle est au programme — mais ne doit pas se lire comme disponible le jour de
+   la souscription : la ligne est atténuée et porte sa propre mention. */
+.plan ul li.soon { color: var(--lumen-dim); }
+.plan ul li.soon svg { color: var(--lumen-dim); opacity: .6; }
+.plan .soon-tag {
+  display: inline-flex; align-items: center; height: 18px; margin-left: 2px;
+  border: 1px solid var(--border); border-radius: 999px; padding: 0 8px;
+  font-family: var(--font-mono); font-size: .5rem; font-weight: 600;
+  letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
+  color: var(--lumen-dim);
+}
 
 /* ── Création de compte ────────────────────────────── */
 .acces { position: relative; overflow: hidden; }
@@ -900,6 +912,7 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Certificats &amp; ordonnances</li>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Avis spécialisé sourcé</li>
           <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Support par un médecin</li>
+          <li class="soon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Intégration logiciel métier <span class="soon-tag">Bientôt disponible</span></li>
         </ul>
         <a href="#acces" class="btn btn-primary">Essai gratuit 30 jours</a>
       </article>
@@ -934,9 +947,9 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
          Les champs sont donc ceux qu'exige le serveur : prénom, nom, email,
          mot de passe, spécialité, ville. La spécialité est peuplée par
          GET /api/specialites — la liste même contre laquelle le serveur valide.
-         Une copie en dur ici avait fini par diverger, et l'inscription refusait
+         Une copie en dur ici avait fini par diverger, et le formulaire refusait
          alors toutes ses propres options. -->
-    <form class="form-card glass-night" id="waitlist-form" novalidate>
+    <form class="form-card glass-night" id="register-form" novalidate>
       <label class="field"><span>Prénom</span>
         <input name="prenom" required autocomplete="given-name" placeholder="Camille" />
       </label>
@@ -1265,7 +1278,7 @@ function toggleMic(btn) {
 //  validation manuelle. Le jeton renvoyé par /api/auth/register est rangé sous
 //  la même clé que celle lue par app.html et login.html.
 // ═══════════════════════════════════════════════════════════════════════
-const form = document.getElementById('waitlist-form');
+const form = document.getElementById('register-form');
 const btn = document.getElementById('submit-btn');
 const successEl = document.getElementById('form-success');
 const successName = document.getElementById('success-name');
@@ -1274,7 +1287,7 @@ const errorText = document.getElementById('form-error-text');
 const specialiteSelect = form.querySelector('select[name="specialite"]');
 
 // Options servies par /api/specialites, la liste même contre laquelle
-// /api/waitlist valide — une copie en dur ici avait fini par diverger.
+// /api/auth/register valide — une copie en dur ici avait fini par diverger.
 (async () => {
   try {
     const res = await fetch('/api/specialites');

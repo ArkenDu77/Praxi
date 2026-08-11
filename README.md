@@ -41,7 +41,6 @@ praxi/
 ├── scripts/
 │   └── ingest.js                        ← CLI d'ingestion de la base de connaissances
 ├── server.js                            ← Backend Express
-├── waitlist.json                        ← Inscriptions waitlist
 ├── users.json                           ← Comptes médecins (créé au 1er register)
 ├── rag/                                 ← Index vectoriel (généré, non versionné)
 ├── .env.example                         ← Modèle de configuration
@@ -75,15 +74,14 @@ Liste complète et commentée : `.env.example`.
 
 ## API
 
-### Waitlist (public)
+### Public
 
 | Méthode | Route | Description |
 |---------|-------|-------------|
-| POST   | `/api/waitlist` | Inscription liste d'attente |
-| GET    | `/api/stats` | Stats publiques (total inscrits) |
 | GET    | `/api/specialites` | Liste fermée des spécialités — source unique des menus du front |
+| GET    | `/health` | Sonde de l'hébergeur : IA, stockage, facturation |
 
-> `/api/specialites` sert exactement la liste contre laquelle `/api/waitlist`,
+> `/api/specialites` sert exactement la liste contre laquelle
 > `/api/auth/register` et `/api/auth/profile` valident. Les pages `index.html`,
 > `register.html` et `app.html` peuplent leur menu depuis cette route : ne
 > réintroduisez pas de liste écrite en dur dans une page. Une copie figée dans
@@ -135,19 +133,12 @@ Voir la section [Abonnements](#abonnements) plus bas.
 
 | Méthode | Route | Description |
 |---------|-------|-------------|
-| GET    | `/api/admin/list` | Liste complète des inscrits waitlist |
-| PATCH  | `/api/admin/status/:id` | Changer le statut d'un inscrit |
 | POST   | `/admin/ingest?specialite=X` | Lancer l'ingestion d'une spécialité (voir section RAG) |
 | GET    | `/admin/ingest/:id` | Avancement d'un job d'ingestion |
 | GET    | `/admin/ingest` | Jobs récents + état des index |
 
 ```bash
-curl http://localhost:3001/api/admin/list -H "x-admin-token: arkiba-admin-dev"
-
-curl -X PATCH http://localhost:3001/api/admin/status/1 \
-  -H "x-admin-token: arkiba-admin-dev" \
-  -H "Content-Type: application/json" \
-  -d '{"status":"invited"}'
+curl http://localhost:3001/admin/ingest -H "x-admin-token: arkiba-admin-dev"
 ```
 
 ## Fonctionnalités de l'application (`/app.html`)
@@ -380,7 +371,7 @@ médicales.
 2. Ajouter la variable `DATA_DIR=/data`
 3. Ajouter `RAG_DIR=/data/rag` si la base de connaissances est utilisée
 
-Fichiers écrits dans `DATA_DIR` : `users.json`, `waitlist.json`, **`dossiers.json`**
+Fichiers écrits dans `DATA_DIR` : `users.json`, **`dossiers.json`**
 (fiches patients + documents).
 
 ### 2. Variables d'environnement
@@ -436,15 +427,13 @@ npm start
 
 Le formulaire de la page d'accueil (`#acces`) et `register.html` créent tous deux
 un vrai compte via `POST /api/auth/register` et entrent **directement** dans
-l'application avec le jeton renvoyé. Il n'y a plus de liste d'attente ni de
-validation manuelle dans le parcours d'inscription. La route `/api/waitlist` et
-les statuts ci-dessous restent en place pour les inscrits de la bêta fermée
-enregistrés avant le lancement :
+l'application avec le jeton renvoyé.
 
-- `pending` → inscrit, pas encore invité
-- `invited` → email d'invitation envoyé
-- `active`  → compte créé
-- `rejected` → refusé (hors cible)
+L'ancienne liste d'attente a été retirée : `POST /api/waitlist`, `GET /api/stats`,
+`GET /api/admin/list`, `PATCH /api/admin/status/:id`, le fichier `waitlist.json`
+et les statuts associés (`pending` / `invited` / `active` / `rejected`) n'existent
+plus. Aucun compte n'y avait été enregistré. Un `waitlist.json` resté sur un
+volume de production n'est plus lu par personne et peut être supprimé à la main.
 
 ### Plans
 
