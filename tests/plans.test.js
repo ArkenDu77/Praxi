@@ -9,6 +9,9 @@
  * Run : npx jest tests/plans.test.js
  */
 
+const fs   = require('fs');
+const path = require('path');
+
 const plans = require('../lib/plans');
 
 const JOUR = 86_400_000;
@@ -225,5 +228,30 @@ describe('etatAbonnement — ce que voit le front', () => {
     expect(etat.illimite).toBe(true);
     expect(etat.documents.limite).toBeNull();
     expect(Object.values(etat.fonctionnalites).every(Boolean)).toBe(true);
+  });
+});
+
+// ─── La vitrine ne doit pas annoncer une autre durée que celle appliquée ────
+//
+// Le dépôt a déjà connu cette panne avec la liste des spécialités : une copie
+// figée dans une page avait divergé du serveur, et l'inscription refusait
+// toutes ses propres options. La durée d'essai court le même risque — elle est
+// écrite noir sur blanc à cinq endroits de la page d'accueil, et c'est
+// lib/plans.js qui l'applique.
+
+describe("durée d'essai annoncée sur la vitrine", () => {
+  const page = fs.readFileSync(path.join(__dirname, '..', 'public', 'index.html'), 'utf8')
+    // Les commentaires HTML racontent l'historique de la page : ils peuvent
+    // citer d'anciennes durées sans que le visiteur les voie.
+    .replace(/<!--[\s\S]*?-->/g, '');
+
+  test('aucune durée en jours ne contredit DUREE_ESSAI_JOURS', () => {
+    const annoncees = [...page.matchAll(/(\d+)\s*jours?\b/gi)].map(m => Number(m[1]));
+    const fautives  = annoncees.filter(n => n !== plans.DUREE_ESSAI_JOURS);
+    expect(fautives).toEqual([]);
+  });
+
+  test('la durée appliquée est bien affichée quelque part', () => {
+    expect(page).toMatch(new RegExp(plans.DUREE_ESSAI_JOURS + '\\s*jours'));
   });
 });

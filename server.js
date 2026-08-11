@@ -807,7 +807,9 @@ app.post('/api/auth/register', async (req, res) => {
     specialite, specialites, ville, rpps,
     adresse: '', telephone: '', emailPro: email,
     status: 'verified',
-    // Abonnement : tout compte démarre sur l'essai de 30 jours. `illimite` est
+    // Abonnement : tout compte démarre sur l'essai gratuit. Sa durée vit dans
+    // lib/plans.js — un seul chiffre, pour que la vitrine et le serveur ne
+    // puissent pas annoncer deux durées différentes. `illimite` est
     // dérivé de la whitelist d'emails par normaliserCompte() juste en dessous —
     // on ne l'écrit pas à la main pour qu'il n'existe qu'une seule règle.
     plan: 'trial',

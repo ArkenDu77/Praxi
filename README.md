@@ -439,14 +439,14 @@ volume de production n'est plus lu par personne et peut être supprimé à la ma
 
 | Plan | Champ `plan` | Ce qui est ouvert |
 |------|--------------|-------------------|
-| Essai (30 jours) | `trial` | Lettre de liaison, compte-rendu, résumé, dictée et analyse clinique · **50 documents** · **10 dossiers patients** |
+| Essai (15 jours) | `trial` | Lettre de liaison, compte-rendu, résumé, dictée et analyse clinique · **50 documents** · **10 dossiers patients** |
 | Essai terminé | `free` | Lecture seule : l'historique et les dossiers restent consultables et supprimables, plus aucune génération |
 | Arkiba Pro | `pro` | Tout l'essai sans plafond + MDPH, ALD, certificat, ordonnance, avis spécialisé · dossiers illimités |
 | Arkiba Groupe | `groupe` | Identique à Pro (tarif par médecin) |
 | Accès illimité | *(whitelist)* | Tout, sans abonnement ni paiement — voir ci-dessous |
 
 Tout compte démarre sur `trial`. Les comptes créés avant l'introduction des plans
-sont migrés à la première lecture et démarrent 30 jours d'essai à ce moment-là
+sont migrés à la première lecture et démarrent leur essai à ce moment-là
 (et non à leur date d'inscription) : les inscrits de la bêta ne se réveillent pas
 bloqués au lancement.
 

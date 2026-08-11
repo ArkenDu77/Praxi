@@ -321,7 +321,7 @@ pointe pas dans le vide.
 | « Rejoindre la bêta — gratuit » (héros) | `#acces` → formulaire visible | ✅ |
 | « Accès anticipé » (en-tête) | `#acces` → formulaire visible | ✅ |
 | « Commencer gratuitement » (Découverte) | `#acces` → formulaire visible | ✅ |
-| « Essai gratuit 30 jours » (Pro) · « Nous contacter » (Groupe) | `#acces` | ✅ |
+| « Essai gratuit 15 jours » (Pro) · « Nous contacter » (Groupe) | `mailto:` pour Groupe | ✅ |
 | « Créer mon compte pour générer le document » (démo) | `#acces` | ✅ |
 
 ## 3. Démonstration de dictée
