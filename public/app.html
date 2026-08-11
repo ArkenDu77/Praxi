@@ -1225,6 +1225,65 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 
 </main>
 
+<!-- ─── MODIFIER LA FICHE PATIENT ─── -->
+<div class="modal-bg" id="modal-patient-edit">
+  <div class="modal">
+    <h2>Modifier la fiche</h2>
+    <p class="modal-desc">Ces informations alimentent le contexte repris dans les documents du dossier.</p>
+    <div class="alert alert-error" id="ed-error"></div>
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Nom complet</label>
+        <input class="input" id="ed-nom" placeholder="Ex. M. Dupont Jean" />
+      </div>
+      <div class="field" style="max-width:170px">
+        <label class="label">Date de naissance</label>
+        <input class="input" id="ed-ddn" type="date" />
+      </div>
+    </div>
+    <div class="field">
+      <label class="label">Pathologies chroniques <span class="label-opt">Antécédents, comorbidités</span></label>
+      <input class="input" id="ed-patho" placeholder="Ex. HTA, Diabète T2..." />
+    </div>
+    <div class="field">
+      <label class="label">Traitements en cours</label>
+      <input class="input" id="ed-traitements" placeholder="Ex. Ramipril 5mg, Metformine 1g..." />
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label class="label">Allergies <span class="label-opt">Laisser vide si aucune</span></label>
+        <input class="input" id="ed-allergies" placeholder="Ex. Pénicillines, AINS..." />
+      </div>
+      <div class="field" style="max-width:200px">
+        <label class="label">Médecin traitant</label>
+        <input class="input" id="ed-mt" placeholder="Dr Nom Prénom" />
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="ed-cancel">Annuler</button>
+      <button class="btn btn-primary" id="ed-save">
+        <span class="btn-label">Enregistrer</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SUPPRESSION DÉFINITIVE (fiche patient, document d'historique) ───
+     Une donnée enregistrée qui disparaît ne se récupère pas : la même question
+     est posée avant chaque suppression, quelle qu'en soit la cible. -->
+<div class="modal-bg" id="modal-suppression">
+  <div class="modal">
+    <h2 id="sp-titre">Supprimer ?</h2>
+    <p class="modal-desc" id="sp-desc"></p>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="sp-cancel">Annuler</button>
+      <button class="btn btn-danger" id="sp-confirm">
+        <span class="btn-label">Supprimer définitivement</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ─── CONFIRMATION DE RÉINITIALISATION ───
      Effacer un formulaire rempli est irréversible et ne se répare pas : on
      demande avant, en nommant ce qui va disparaître. -->
@@ -2302,17 +2361,35 @@ document.getElementById('l-specialiste').addEventListener('change', e => {
 });
 
 // ── Chips type de certificat ──
+// Un second appui retire la sélection. Sans cela, un type choisi par erreur ne
+// pouvait plus être retiré : il fallait réinitialiser tout le module pour
+// revenir à un formulaire sans type.
+const CERT_PLACEHOLDER = document.getElementById('cert-notes').placeholder;
 document.querySelectorAll('[data-cert-type]').forEach(btn => {
   btn.addEventListener('click', function() {
+    const dejaChoisi = this.classList.contains('on');
     document.querySelectorAll('[data-cert-type]').forEach(b => b.classList.remove('on'));
+    const notesEl = document.getElementById('cert-notes');
+
+    if (dejaChoisi) {
+      document.getElementById('cert-type').value = '';
+      if (!notesEl.value.trim()) notesEl.placeholder = CERT_PLACEHOLDER;
+      return;
+    }
+
     this.classList.add('on');
     document.getElementById('cert-type').value = this.dataset.certType;
     const hint = this.dataset.certHint;
-    if (hint) {
-      const notesEl = document.getElementById('cert-notes');
-      if (!notesEl.value.trim()) notesEl.placeholder = hint;
-    }
+    if (hint && !notesEl.value.trim()) notesEl.placeholder = hint;
   });
+});
+
+// Saisir un type personnalisé retire la puce : elle affirmerait un choix que le
+// champ ne porte plus.
+document.getElementById('cert-type').addEventListener('input', function() {
+  const saisi = this.value.trim();
+  document.querySelectorAll('[data-cert-type]').forEach(b =>
+    b.classList.toggle('on', b.dataset.certType === saisi));
 });
 
 // ── Toggle bizone ordonnance ──
@@ -4155,6 +4232,14 @@ function renderDossierHead(p, stats) {
           <span>Nouvelle consultation</span>
         </button>
         <button class="btn btn-ghost" id="ds-new-doc">Autre document</button>
+        <button class="btn btn-ghost" id="ds-edit" title="Modifier la fiche">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <span>Modifier</span>
+        </button>
+        <button class="btn btn-ghost btn-ghost-danger" id="ds-delete" title="Supprimer le dossier">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M3 6h18M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2m2 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6"/></svg>
+          <span>Supprimer</span>
+        </button>
       </div>
     </div>
     ${p.allergies ? `
@@ -4177,7 +4262,146 @@ function renderDossierHead(p, stats) {
     lierPatient(p);
     switchView('cr');
   });
+  document.getElementById('ds-edit').addEventListener('click', () => ouvrirEditionPatient(p));
+  document.getElementById('ds-delete').addEventListener('click', () => ouvrirSuppressionPatient(p));
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+//  MODIFIER / SUPPRIMER UN DOSSIER PATIENT
+//
+//  Le dossier ne se corrigeait pas : une date de naissance fautive, une
+//  allergie oubliée ou une fiche créée par erreur restaient telles quelles,
+//  alors que le serveur sait faire les deux depuis toujours
+//  (PATCH et DELETE /api/patients/:id).
+// ═══════════════════════════════════════════════════════════════════════
+const CHAMPS_FICHE = [
+  ['nom',         'ed-nom'],
+  ['ddn',         'ed-ddn'],
+  ['patho',       'ed-patho'],
+  ['traitements', 'ed-traitements'],
+  ['allergies',   'ed-allergies'],
+  ['mt',          'ed-mt'],
+];
+let patientEnEdition = null;
+
+/** État occupé d'un bouton de modale, avec son propre libellé. */
+function boutonOccupe(bouton, occupe, libelle) {
+  bouton.disabled = occupe;
+  bouton.innerHTML = occupe
+    ? '<span class="spinner"></span><span class="btn-label">' + libelle + '</span>'
+    : '<span class="btn-label">' + libelle + '</span>';
+}
+
+function ouvrirEditionPatient(p) {
+  patientEnEdition = p;
+  CHAMPS_FICHE.forEach(([cle, id]) => { document.getElementById(id).value = p[cle] || ''; });
+  clearError('ed-error');
+  document.getElementById('modal-patient-edit').classList.add('show');
+  document.getElementById('ed-nom').focus();
+}
+
+function fermerEditionPatient() {
+  document.getElementById('modal-patient-edit').classList.remove('show');
+  patientEnEdition = null;
+}
+
+async function enregistrerFichePatient() {
+  if (!patientEnEdition) return;
+  const bouton = document.getElementById('ed-save');
+  const corps = {};
+  CHAMPS_FICHE.forEach(([cle, id]) => { corps[cle] = document.getElementById(id).value.trim(); });
+  if (!corps.nom) { showError('ed-error', 'Le nom du patient est requis.'); return; }
+
+  boutonOccupe(bouton, true, 'Enregistrement…');
+  try {
+    const { patient } = await api('/api/patients/' + encodeURIComponent(patientEnEdition.id), {
+      method: 'PATCH',
+      body: JSON.stringify(corps),
+    });
+    fermerEditionPatient();
+    await refreshPatients();
+    // Le dossier rouvert reprend la fiche à jour ; si le patient était rattaché
+    // à un document en cours, le rattachement suit la correction.
+    const frais = patientsCache.find(x => x.id === patient.id) || patient;
+    if (patientLie && patientLie.id === frais.id) patientLie = frais;
+    openDossier(frais.id);
+    autosavePill('saved', 'Fiche mise à jour');
+  } catch (err) {
+    showError('ed-error', err.message);
+  } finally {
+    boutonOccupe(bouton, false, 'Enregistrer');
+  }
+}
+
+/**
+ * Confirmation avant une suppression définitive. Résout à true si le médecin
+ * confirme, false s'il annule, ferme au clic hors de la boîte ou par Échap.
+ */
+function demanderSuppression({ titre, detail }) {
+  const modale = document.getElementById('modal-suppression');
+  document.getElementById('sp-titre').textContent = titre;
+  document.getElementById('sp-desc').textContent  = detail;
+  modale.classList.add('show');
+  // Le focus part sur « Annuler » : sur une action irréversible, la touche
+  // Entrée réflexe ne doit pas valider la destruction.
+  document.getElementById('sp-cancel').focus();
+
+  return new Promise(resolve => {
+    const oui    = document.getElementById('sp-confirm');
+    const non    = document.getElementById('sp-cancel');
+    const finir  = reponse => {
+      oui.removeEventListener('click', surOui);
+      non.removeEventListener('click', surNon);
+      modale.removeEventListener('click', surFond);
+      document.removeEventListener('keydown', surEchap, true);
+      modale.classList.remove('show');
+      boutonOccupe(oui, false, 'Supprimer définitivement');
+      resolve(reponse);
+    };
+    const surOui   = () => finir(true);
+    const surNon   = () => finir(false);
+    const surFond  = e => { if (e.target === modale) finir(false); };
+    const surEchap = e => { if (e.key === 'Escape') { e.preventDefault(); finir(false); } };
+    oui.addEventListener('click', surOui);
+    non.addEventListener('click', surNon);
+    modale.addEventListener('click', surFond);
+    document.addEventListener('keydown', surEchap, true);
+  });
+}
+
+async function ouvrirSuppressionPatient(p) {
+  const n = p.nbDocuments || 0;
+  const confirme = await demanderSuppression({
+    titre: 'Supprimer ce dossier ?',
+    detail: `La fiche de ${p.nom} sera supprimée définitivement` +
+            (n ? `, avec ${n} document${n > 1 ? 's' : ''} de son fil de suivi.` : '.') +
+            ' Cette action est irréversible.',
+  });
+  if (!confirme) return;
+
+  try {
+    await api('/api/patients/' + encodeURIComponent(p.id), { method: 'DELETE' });
+    // Un document en cours ne doit pas rester rattaché à un dossier disparu.
+    if (patientLie && patientLie.id === p.id) lierPatient(null);
+    await refreshPatients();
+    await refreshHistory();
+    switchView('patients');
+    renderPatients();
+    autosavePill('saved', 'Dossier supprimé');
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+document.getElementById('ed-cancel').addEventListener('click', fermerEditionPatient);
+document.getElementById('ed-save').addEventListener('click', enregistrerFichePatient);
+document.getElementById('modal-patient-edit').addEventListener('click', e => {
+  if (e.target.id === 'modal-patient-edit') fermerEditionPatient();
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (document.getElementById('modal-patient-edit').classList.contains('show')) fermerEditionPatient();
+});
 
 // Dans un fil de suivi, ce qu'on cherche d'un coup d'œil c'est « pourquoi il
 // est venu », pas le squelette du document. On saute donc les titres de
@@ -4257,20 +4481,55 @@ async function rouvrirDocument(documentId) {
 }
 
 // ── Rattachement d'un document à un dossier ──
+// Champs d'identité que le rattachement à un dossier remplit — dans TOUS les
+// modules à la fois, puisqu'un même patient peut donner lieu à une lettre, un
+// compte-rendu et une ordonnance dans la foulée.
+const CHAMPS_NOM = ['ct-patient','l-patient','c-patient','m-patient','a-patient','cert-patient','ord-patient'];
+const CHAMPS_AGE = ['ct-age', 'c-age', 'l-age'];
+
+/**
+ * Efface l'identité écrite par un rattachement, dans tous les modules.
+ *
+ * Un champ n'est vidé que s'il porte encore EXACTEMENT ce que le rattachement y
+ * avait mis : si le médecin l'a corrigé depuis, sa saisie est la sienne et on
+ * n'y touche pas. Les brouillons correspondants partent avec, sans quoi le nom
+ * reviendrait au prochain chargement.
+ */
+function effacerIdentiteLiee(patient) {
+  if (!patient) return;
+  const brouillons = loadDrafts();
+  const vider = (id, attendu) => {
+    const el = document.getElementById(id);
+    if (!el || !attendu || el.value.trim() !== String(attendu).trim()) return;
+    el.value = '';
+    delete brouillons[id];
+  };
+  CHAMPS_NOM.forEach(id => vider(id, patient.nom));
+  CHAMPS_AGE.forEach(id => vider(id, patient.age !== null && patient.age !== undefined ? patient.age + ' ans' : ''));
+  vider('ord-ddn', patient.ddn);
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(brouillons)); } catch (_) {}
+}
+
 function lierPatient(p) {
+  const precedent = patientLie;
   patientLie = p || null;
   document.querySelectorAll('[data-patient-pick]').forEach(el => syncPatientPick(el));
-  if (!p) return;
+
+  // Détacher devait rendre l'application à son état d'avant : le sélecteur
+  // repassait bien sur « Aucun dossier », mais le nom et l'âge restaient
+  // inscrits dans les sept modules, sans plus aucun moyen de les retirer
+  // autrement qu'à la main, module par module.
+  if (!p) { effacerIdentiteLiee(precedent); return; }
+  if (precedent && precedent.id !== p.id) effacerIdentiteLiee(precedent);
 
   // Pré-remplissage des champs identité de la vue visée.
-  ['ct-patient','l-patient','c-patient','m-patient','a-patient','cert-patient','ord-patient']
-    .forEach(id => { const el = document.getElementById(id); if (el) el.value = p.nom; });
+  CHAMPS_NOM.forEach(id => { const el = document.getElementById(id); if (el) el.value = p.nom; });
   if (p.ddn) {
     const ddn = document.getElementById('ord-ddn');
     if (ddn) ddn.value = p.ddn;
   }
   if (p.age !== null && p.age !== undefined) {
-    ['ct-age', 'c-age', 'l-age'].forEach(id => {
+    CHAMPS_AGE.forEach(id => {
       const el = document.getElementById(id);
       if (el && !el.value.trim()) el.value = p.age + ' ans';
     });
@@ -4494,10 +4753,22 @@ function renderHistory(query) {
   container.querySelectorAll('[data-del]').forEach(b => {
     b.addEventListener('click', async e => {
       e.stopPropagation();
+      // La croix effaçait un document signé sur simple appui, sans confirmation
+      // ni retour arrière — un doigt qui glisse dans la liste suffisait.
+      const item = historyCache.find(x => x.id === b.dataset.del);
+      const quoi = item
+        ? `Le document « ${item.typeLabel || item.type} »` + (item.patientNom ? ` de ${item.patientNom}` : '')
+        : 'Ce document';
+      const confirme = await demanderSuppression({
+        titre: 'Supprimer ce document ?',
+        detail: `${quoi} sera supprimé définitivement de votre historique. Cette action est irréversible.`,
+      });
+      if (!confirme) return;
       try {
         await api('/api/documents/' + encodeURIComponent(b.dataset.del), { method: 'DELETE' });
         await refreshHistory();
         renderHistory(query);
+        autosavePill('saved', 'Document supprimé');
       } catch (err) { toast(err.message); }
     });
   });
@@ -5517,6 +5788,12 @@ function reinitialiserVue(nom) {
   // Le prochain document de ce module ouvre une nouvelle entrée d'historique au
   // lieu de remplacer celle qu'on vient d'abandonner.
   (cfg.archives || []).forEach(cle => { delete dernierArchive[cle]; });
+
+  // Le rattachement à un dossier est commun à tous les modules : il remplit le
+  // nom et l'âge partout à la fois. Ne le défaire que dans le module qu'on
+  // réinitialise laissait l'identité inscrite dans les six autres, et obligeait
+  // à les réinitialiser un par un pour s'en débarrasser.
+  if (patientLie) lierPatient(null);
 
   if (cfg.apres) cfg.apres();
   autosavePill('saved', 'Module réinitialisé');

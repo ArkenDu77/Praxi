@@ -3875,3 +3875,8 @@ html[data-theme="dark"] .theme-pick-card {
 }
 .btn-danger:hover:not(:disabled) { border-color: var(--danger); filter: brightness(1.06); }
 .btn-danger:disabled { opacity: 0.45; }
+
+/* Action destructrice dans une barre d'actions : discrète au repos, explicite
+   au survol. Elle ne doit pas attirer l'œil avant qu'on la cherche. */
+.btn-ghost-danger { color: var(--text-dim); }
+.btn-ghost-danger:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }
