@@ -28,6 +28,16 @@ const ADMIN_TOKEN    = process.env.ADMIN_TOKEN || DEV_ADMIN_TOKEN;
 const JWT_SECRET     = process.env.JWT_SECRET  || DEV_JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
+// Secret de service pour arkiba-intake (raccordement Intake → Arkiba, voir
+// /api/internal/intake-results). Séparé d'ADMIN_TOKEN à dessein : une autre
+// portée (un seul dossier patient à la fois, jamais l'accès admin), donc un
+// autre secret — la compromission de l'un ne doit pas ouvrir l'autre.
+// Contrairement à JWT_SECRET/ADMIN_TOKEN, il n'y a pas de valeur par défaut ni
+// de refus de démarrage : cette route est une intégration optionnelle, pas un
+// fondamental de sécurité de l'application (même logique que STRIPE_SECRET_KEY
+// plus bas — absent, la route répond 503).
+const INTAKE_SERVICE_TOKEN = process.env.INTAKE_SERVICE_TOKEN || '';
+
 const secretsParDefaut = [
   JWT_SECRET  === DEV_JWT_SECRET  ? 'JWT_SECRET'  : null,
   ADMIN_TOKEN === DEV_ADMIN_TOKEN ? 'ADMIN_TOKEN' : null,
@@ -477,6 +487,19 @@ const ingestJobs = new Map();
 
 function requireAdmin(req, res, next) {
   if (req.headers['x-admin-token'] !== ADMIN_TOKEN) {
+    return res.status(401).json({ error: 'Non autorisé.' });
+  }
+  next();
+}
+
+// Garde de /api/internal/intake-results. Même forme que requireAdmin, secret
+// distinct. Non configuré = intégration désactivée, pas un serveur qui refuse
+// de démarrer : voir le commentaire sur INTAKE_SERVICE_TOKEN plus haut.
+function requireIntakeService(req, res, next) {
+  if (!INTAKE_SERVICE_TOKEN) {
+    return res.status(503).json({ error: 'Service intake non configuré.' });
+  }
+  if (req.headers['x-intake-token'] !== INTAKE_SERVICE_TOKEN) {
     return res.status(401).json({ error: 'Non autorisé.' });
   }
   next();
@@ -2837,6 +2860,60 @@ app.post('/api/dossiers/import', authenticateJWT, exigerFonctionnalite('patients
     documents: Array.isArray(req.body.documents) ? req.body.documents : [],
   });
   res.json(result);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  RACCORDEMENT ARKIBA INTAKE
+//
+//  Machine à machine, pas un médecin : authentification par secret de service
+//  (requireIntakeService), pas par JWT. Le dossier arrive déjà construit par
+//  l'interrogatoire téléphonique — cette route ne fait qu'écrire ce qu'on lui
+//  donne, elle ne génère ni ne complète rien.
+//
+//  Pas de exigerFonctionnalite() ici volontairement : un appel entrant ne doit
+//  jamais échouer à créer un dossier parce que le plafond d'essai du médecin
+//  est atteint — ce plafond porte sur ce QUE LE MÉDECIN fait dans Arkiba, pas
+//  sur ce qu'Intake lui remonte automatiquement.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// POST /api/internal/intake-results — upsert d'un dossier Arkiba Intake
+app.post('/api/internal/intake-results', requireIntakeService, (req, res) => {
+  const email = s(req.body.practitioner_email, 200).toLowerCase();
+  const intakeId = s(req.body.intake_id, 80);
+  if (!email)    return res.status(400).json({ error: 'practitioner_email requis.' });
+  if (!intakeId) return res.status(400).json({ error: 'intake_id requis.' });
+
+  const user = readUsers().users.find(u => u.email === email);
+  if (!user) return res.status(404).json({ error: 'Médecin introuvable pour cet email.' });
+
+  const patientBody = req.body.patient || {};
+  const resume = req.body.patient_summary || {};
+  const nom = [s(patientBody.last_name, 80), s(patientBody.first_name, 80)].filter(Boolean).join(' ');
+  const resultatPatient = dossiers.upsertPatientFromIntake(user.id, intakeId, {
+    nom,
+    ddn:         s(patientBody.date_of_birth, 20),
+    patho:       txt(resume.patho, 1000),
+    traitements: txt(resume.traitements, 1000),
+    allergies:   txt(resume.allergies, 500),
+  });
+  if (resultatPatient.error) return res.status(400).json({ error: resultatPatient.error });
+
+  const documentBody = req.body.document || {};
+  const resultatDocument = dossiers.upsertIntakeDocument(
+    user.id,
+    resultatPatient.patient.id,
+    resultatPatient.patient.nom,
+    intakeId,
+    txt(documentBody.contenu, 40000),
+  );
+  if (resultatDocument.error) return res.status(400).json({ error: resultatDocument.error });
+
+  res.status(resultatPatient.created ? 201 : 200).json({
+    ok: true,
+    patientId: resultatPatient.patient.id,
+    documentId: resultatDocument.document.id,
+    created: resultatPatient.created,
+  });
 });
 
 // GET /api/referentiels — référentiels documentaires disponibles
