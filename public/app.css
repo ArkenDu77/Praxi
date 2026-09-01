@@ -3880,3 +3880,98 @@ html[data-theme="dark"] .theme-pick-card {
    au survol. Elle ne doit pas attirer l'œil avant qu'on la cherche. */
 .btn-ghost-danger { color: var(--text-dim); }
 .btn-ghost-danger:hover:not(:disabled) { color: var(--danger); border-color: var(--danger); }
+
+/* ==========================================================================
+   PRÉ-CONSULTATION
+   ==========================================================================
+   Le dossier préparé par l'appel patient. Il reprend les jetons de
+   l'application — aucune couleur ni ombre nouvelle : un écran clinique doit se
+   lire d'un coup d'œil, pas se remarquer.
+   ========================================================================== */
+
+.pc-list { display: grid; gap: 0.4rem; }
+
+.pc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 1rem;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+.pc-row:hover { border-color: var(--line-2); }
+.pc-row-name { font-weight: 600; }
+.pc-row-meta { color: var(--text-muted); font-size: 0.85rem; }
+
+.pc-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; }
+.pc-name { font-size: 1.25rem; font-weight: 600; }
+.pc-meta { color: var(--text-muted); font-size: 0.9rem; margin-top: 0.15rem; }
+.pc-status {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.1rem 0.65rem;
+  white-space: nowrap;
+}
+
+/* Une ligne = une donnée. Valeur d'abord, nuance ensuite : le médecin lit la
+   valeur, pas la métadonnée. */
+.pc-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--line);
+}
+.pc-item:last-child { border-bottom: 0; }
+.pc-item-label { min-width: 11rem; color: var(--text-muted); font-size: 0.88rem; }
+.pc-item-value { font-weight: 500; }
+.pc-item-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border: 1px dashed var(--line-2);
+  border-radius: 999px;
+  padding: 0.02rem 0.5rem;
+}
+
+.pc-kinds { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.9rem; }
+.pc-docs { display: grid; gap: 0.4rem; }
+.pc-check { display: flex; align-items: center; gap: 0.55rem; padding: 0.35rem 0; cursor: pointer; }
+.pc-stale {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border: 1px dashed var(--line-2);
+  border-radius: 999px;
+  padding: 0.02rem 0.5rem;
+}
+
+/* L'aperçu : ce qui autorise le geste. Le médecin doit lire ce qui part avant
+   de l'envoyer, sans rien déplier. */
+.pc-preview {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  padding: 0.85rem 1rem;
+}
+.pc-preview-head { font-size: 0.9rem; }
+.pc-preview ul { margin: 0.55rem 0 0; padding-left: 1.15rem; }
+.pc-preview li { margin: 0.18rem 0; }
+.pc-tag {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 0.02rem 0.5rem;
+}
+.pc-warn { color: var(--danger, #b23225); font-size: 0.85rem; margin: 0.55rem 0 0; }

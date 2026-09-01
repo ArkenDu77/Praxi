@@ -45,6 +45,13 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 
   <nav class="side-nav">
   <div class="side-section">Consultation</div>
+  <!-- Le dossier prepare par l'appel patient attend le medecin ICI, dans
+       Arkiba. Place avant « Nouvelle consultation » parce que c'est l'ordre
+       reel de son travail : il relit ce qui l'attend, puis il consulte. -->
+  <button class="side-link" data-view="preconsult">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+    Pré-consultation
+  </button>
   <button class="side-link active" data-view="consult">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6v0a6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3M8 15v1a6 6 0 006 6v0a6 6 0 006-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
     Nouvelle consultation
@@ -354,6 +361,107 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
   </section>
 
   <!-- ── LIAISON ── -->
+
+  <!-- ==========================================================================
+       PRÉ-CONSULTATION — le dossier préparé par l'appel patient
+       ==========================================================================
+
+       C'est ici que l'appel téléphonique arrive chez le médecin. Le dossier
+       l'attend : il n'a rien à lancer, rien à ouvrir ailleurs.
+
+       Cet écran LIT le moteur Arkiba Intake, il ne recopie rien. La provenance,
+       les incertitudes, les contradictions et l'historique des corrections
+       restent là où ils sont testés ; Arkiba en est la fenêtre.
+       ========================================================================== -->
+  <section class="view" id="view-preconsult">
+    <div class="page-head">
+      <h1 class="page-title">Pré-consultation</h1>
+      <p class="page-sub">Les dossiers préparés par l'appel patient, en attente de votre relecture.</p>
+    </div>
+
+    <div class="alert alert-error" id="pc-error"></div>
+
+    <!-- Liste -->
+    <div class="card" id="pc-list-card">
+      <div class="card-title">Dossiers<span class="panel-aside" id="pc-count"></span></div>
+      <div id="pc-list" class="pc-list"></div>
+    </div>
+
+    <!-- Dossier ouvert -->
+    <div id="pc-detail" hidden>
+      <button class="btn btn-ghost" id="pc-back" type="button">← Tous les dossiers</button>
+
+      <!-- En-tête patient -->
+      <div class="card pc-header">
+        <div>
+          <div class="pc-name" id="pc-patient">—</div>
+          <div class="pc-meta" id="pc-meta"></div>
+        </div>
+        <div class="pc-status" id="pc-status"></div>
+      </div>
+
+      <!-- Divergence du rendez-vous : le RDV a bougé après l'appel -->
+      <div class="alert alert-warn" id="pc-divergence" hidden></div>
+
+      <!-- Ce que le patient a déclaré -->
+      <div class="card">
+        <div class="card-title">Ce que le patient a déclaré<span class="panel-aside">Appel de pré-consultation</span></div>
+        <div id="pc-intake"></div>
+      </div>
+
+      <!-- Points à vérifier -->
+      <div class="card" id="pc-alerts-card" hidden>
+        <div class="card-title">À vérifier<span class="panel-aside">Signalé par Arkiba</span></div>
+        <div id="pc-alerts"></div>
+      </div>
+
+      <!-- Validation -->
+      <div class="card">
+        <div class="card-title">Validation</div>
+        <p class="muted" id="pc-review-state">—</p>
+        <div class="actions">
+          <button class="btn btn-primary" id="pc-validate" type="button">Valider le dossier</button>
+        </div>
+      </div>
+
+      <!-- Notes brutes de consultation — MÊME composant que « Nouvelle consultation » -->
+      <div class="card">
+        <div class="card-title">Notes de consultation</div>
+        <div class="field">
+          <label class="label"><span>Notes brutes</span><span class="label-opt">Dictez ou tapez — les deux fonctionnent ensemble</span></label>
+          <div class="with-mic">
+            <textarea class="textarea" id="pc-notes" style="min-height:180px" placeholder="Motif, plaintes du patient, examen clinique, impression diagnostique, traitement…"></textarea>
+            <button type="button" class="mic-btn" data-mic="pc-notes" title="Dictée vocale">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" id="pc-save-notes" type="button">Enregistrer les notes</button>
+        </div>
+      </div>
+
+      <!-- Documents -->
+      <div class="card">
+        <div class="card-title">Documents<span class="panel-aside">Zéro, un, ou plusieurs</span></div>
+        <div class="pc-kinds" id="pc-kinds"></div>
+        <div id="pc-docs" class="pc-docs"></div>
+      </div>
+
+      <!-- Terminer & transférer -->
+      <div class="card">
+        <div class="card-title">Terminer &amp; transférer</div>
+        <p class="muted">Cochez ce qui doit partir. Rien d'autre ne sera envoyé.</p>
+        <label class="pc-check"><input type="checkbox" id="pc-scope-intake" checked> Données pré-consultation <span class="muted">(appel patient + vos corrections)</span></label>
+        <label class="pc-check"><input type="checkbox" id="pc-scope-notes"> Notes de consultation</label>
+        <div class="pc-preview" id="pc-preview"></div>
+        <div class="actions">
+          <button class="btn btn-primary" id="pc-transfer" type="button">Terminer &amp; transférer</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="view" id="view-liaison">
     <header class="screen-head">
       <p class="eyebrow">Rédaction</p>
@@ -1828,6 +1936,7 @@ function switchView(name) {
   if (name === 'abonnement') majAbonnement();
   if (name === 'avis') initAvis();
   if (name === 'consult') consultOnEnter();
+  if (name === 'preconsult') pcCharger();
   placeClinicalSettings(name);
   if (['liaison', 'cr', 'ordonnance'].includes(name)) setTimeout(() => renderQuickTemplates(name), 0);
   if (name === 'history') {
@@ -1842,6 +1951,291 @@ function switchView(name) {
   if (typeof stopMic === 'function') stopMic();   // pas de dictée orpheline sur un champ caché
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
+/* ==========================================================================
+   PRÉ-CONSULTATION — la fenêtre d'Arkiba sur le moteur Intake
+   ==========================================================================
+
+   Le médecin n'ouvre qu'Arkiba. L'appel patient, le dossier structuré, les
+   corrections, les documents et le transfert vivent dans le moteur ; cet écran
+   les lui montre.
+
+   RIEN N'EST RECOPIÉ ICI. Aucune donnée clinique n'est stockée côté Arkiba :
+   tout est lu à la demande. C'est ce qui empêche la double vérité — une
+   correction faite ici est faite là où la donnée existe, pas dans une copie
+   qui divergera.
+
+   Le serveur Arkiba relaie vers le moteur : le navigateur ne porte jamais les
+   identifiants du moteur.
+   ========================================================================== */
+
+let pcEncounter = null;
+let pcDocs = [];
+let pcChosenDocs = [];
+
+function pcErreur(message) {
+  const el = document.getElementById('pc-error');
+  if (!el) return;
+  el.textContent = message || '';
+  el.classList.toggle('show', Boolean(message));
+}
+
+function pcEchappe(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/** Liste des dossiers en attente. */
+async function pcCharger() {
+  pcErreur('');
+  const liste = document.getElementById('pc-list');
+  liste.innerHTML = '<p class="muted">Chargement…</p>';
+  try {
+    const data = await api('/api/preconsult/encounters');
+    const dossiers = data.encounters || [];
+    document.getElementById('pc-count').textContent =
+      dossiers.length ? `${dossiers.length} dossier${dossiers.length > 1 ? 's' : ''}` : '';
+    if (!dossiers.length) {
+      liste.innerHTML = '<p class="muted">Aucun dossier de pré-consultation pour le moment. ' +
+        'Ils apparaissent ici automatiquement après l\'appel au patient.</p>';
+      return;
+    }
+    liste.innerHTML = dossiers.map(d => `
+      <button class="pc-row" data-encounter="${pcEchappe(d.encounter_id)}">
+        <span class="pc-row-name">${pcEchappe(d.patient_name || 'Patient')}</span>
+        <span class="pc-row-meta">${pcEchappe(d.scheduled_start || '')} · ${pcEchappe(d.display_status || d.status || '')}</span>
+      </button>`).join('');
+    liste.querySelectorAll('[data-encounter]').forEach(b =>
+      b.addEventListener('click', () => pcOuvrir(b.dataset.encounter)));
+  } catch (e) {
+    liste.innerHTML = '';
+    // Un moteur injoignable est un ETAT, pas une page blanche : on le dit.
+    pcErreur(e.message);
+  }
+}
+
+/** Ouvre UN dossier et affiche ce que l'appel a recueilli. */
+async function pcOuvrir(id) {
+  pcErreur('');
+  try {
+    const data = await api('/api/preconsult/encounters/' + encodeURIComponent(id));
+    pcEncounter = data;
+    pcDocs = (data.encounter.documents || []);
+    pcChosenDocs = [];
+    document.getElementById('pc-list-card').hidden = true;
+    document.getElementById('pc-detail').hidden = false;
+    pcRendre();
+    await pcChargerTypes();
+    await pcRafraichirApercu();
+  } catch (e) {
+    pcErreur(e.message);
+  }
+}
+
+function pcRendre() {
+  const e = pcEncounter.encounter;
+  const c = pcEncounter.clinical_data || {};
+  const p = e.patient || {};
+
+  document.getElementById('pc-patient').textContent =
+    [p.last_name, p.first_name].filter(Boolean).join(' ') || 'Patient';
+  document.getElementById('pc-meta').textContent =
+    [e.practitioner_name, e.scheduled_start, e.planned_procedure_raw].filter(Boolean).join(' · ');
+  document.getElementById('pc-status').textContent = pcEncounter.display_status || e.status;
+
+  // Ce que le patient a déclaré. On montre la VALEUR et, quand elle aide, sa
+  // provenance — pas quinze identifiants techniques.
+  const bloc = [];
+  const ligne = (label, valeur, note) => {
+    if (valeur == null || valeur === '') return;
+    bloc.push(`<div class="pc-item"><span class="pc-item-label">${pcEchappe(label)}</span>` +
+      `<span class="pc-item-value">${pcEchappe(valeur)}</span>` +
+      (note ? `<span class="pc-item-note">${pcEchappe(note)}</span>` : '') + '</div>');
+  };
+
+  const meds = c.medications || [];
+  if (meds.length) {
+    meds.forEach(m => ligne('Traitement',
+      [m.normalized_name || (m.name && m.name.value), m.dose && m.dose.value, m.frequency && m.frequency.value]
+        .filter(Boolean).join(' · '),
+      m.temporal_status && m.temporal_status !== 'current' ? 'arrêté / ancien' : ''));
+  } else ligne('Traitements', 'aucun signalé');
+
+  const alg = c.allergies || [];
+  if (alg.length) {
+    alg.forEach(a => ligne('Allergie',
+      a.normalized_substance || (a.substance && a.substance.value),
+      a.requires_physician_audit ? 'à confirmer — réponses contradictoires' : ''));
+  } else ligne('Allergies', 'aucune signalée');
+
+  const su = c.substance_use || {};
+  if (su.tobacco) ligne('Tabac', su.tobacco.value === 'yes'
+    ? (su.cigarettes_per_day && su.cigarettes_per_day.value ? su.cigarettes_per_day.value + '/jour' : 'oui')
+    : (su.tobacco.value === 'no' ? 'non' : 'non renseigné'));
+  if (su.alcohol) ligne('Alcool', su.alcohol.value === 'yes' ? 'oui' : (su.alcohol.value === 'no' ? 'non' : 'non renseigné'));
+
+  const ah = c.anesthesia_history || {};
+  if (ah.previous_anesthesia) ligne('Anesthésie antérieure',
+    ah.previous_anesthesia.value === 'yes' ? 'oui' : (ah.previous_anesthesia.value === 'no' ? 'non' : 'non renseigné'));
+
+  const cv = c.cardiovascular || {};
+  if (cv.reported_cardiac_history) ligne('Antécédent cardiaque',
+    cv.reported_cardiac_history.value === 'yes' ? 'oui' : (cv.reported_cardiac_history.value === 'no' ? 'non' : 'non renseigné'));
+
+  document.getElementById('pc-intake').innerHTML = bloc.join('') ||
+    '<p class="muted">L\'appel n\'a pas encore produit de données structurées.</p>';
+
+  // Points à vérifier
+  const alertes = e.alerts || [];
+  const carte = document.getElementById('pc-alerts-card');
+  carte.hidden = alertes.length === 0;
+  document.getElementById('pc-alerts').innerHTML = alertes.map(a =>
+    `<div class="pc-item"><span class="pc-item-label">${pcEchappe(a.label)}</span>` +
+    `<span class="pc-item-note">${pcEchappe(a.detail || '')}</span></div>`).join('');
+
+  // Divergence du rendez-vous
+  const div = document.getElementById('pc-divergence');
+  const divergences = (pcEncounter.appointment_divergences || []).filter(d => !d.applied);
+  div.hidden = divergences.length === 0;
+  if (divergences.length) {
+    div.textContent = 'Le rendez-vous a changé dans l\'agenda après l\'appel : ' +
+      divergences.map(d => d.field).join(', ') + '. La valeur dite au patient a été conservée.';
+    div.classList.add('show');
+  }
+
+  const revu = e.doctor_review;
+  document.getElementById('pc-review-state').textContent = revu
+    ? `Validé par ${revu.reviewed_by}.`
+    : 'Ce dossier n\'a pas encore été validé. La validation est requise avant tout transfert.';
+  document.getElementById('pc-validate').disabled = Boolean(revu);
+
+  document.getElementById('pc-notes').value = (e.consultation_notes || {}).text || '';
+  pcRendreDocs();
+}
+
+function pcRendreDocs() {
+  const el = document.getElementById('pc-docs');
+  if (!pcDocs.length) {
+    el.innerHTML = '<p class="muted">Aucun document généré pour cette consultation.</p>';
+    return;
+  }
+  const version = pcEncounter.encounter.document_version;
+  el.innerHTML = pcDocs.map(d => `
+    <label class="pc-check">
+      <input type="checkbox" data-doc="${pcEchappe(d.document_id)}" ${pcChosenDocs.includes(d.document_id) ? 'checked' : ''}>
+      ${pcEchappe(d.title)}
+      ${d.source_document_version < version ? '<span class="pc-stale">antérieur à la dernière correction</span>' : ''}
+    </label>`).join('');
+  el.querySelectorAll('[data-doc]').forEach(cb => cb.addEventListener('change', () => {
+    const id = cb.dataset.doc;
+    pcChosenDocs = cb.checked ? [...pcChosenDocs, id] : pcChosenDocs.filter(x => x !== id);
+    pcRafraichirApercu();
+  }));
+}
+
+/** Les types que le moteur sait RÉELLEMENT produire, avec leurs exigences. */
+async function pcChargerTypes() {
+  try {
+    const data = await api('/api/preconsult/document-kinds');
+    document.getElementById('pc-kinds').innerHTML = (data.kinds || []).map(k =>
+      `<button class="btn btn-ghost" data-kind="${pcEchappe(k.kind)}" title="Exige : ${pcEchappe((k.requires || []).join(', '))}">+ ${pcEchappe(k.label)}</button>`
+    ).join('');
+    document.getElementById('pc-kinds').querySelectorAll('[data-kind]').forEach(b =>
+      b.addEventListener('click', () => pcGenerer(b.dataset.kind)));
+  } catch (_) { /* le moteur dira lui-même s'il est injoignable */ }
+}
+
+async function pcGenerer(kind) {
+  pcErreur('');
+  try {
+    // Un courrier a besoin d'un destinataire : on le DEMANDE avant, plutôt que
+    // de laisser le moteur refuser — ou pire, de produire un document troué.
+    let recipient = null;
+    if (kind === 'lettre_liaison' || kind === 'courrier_specialiste') {
+      recipient = window.prompt('Destinataire du courrier ?');
+      if (recipient === null) return;
+    }
+    await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) + '/documents',
+      { method: 'POST', body: JSON.stringify({ kind, recipient }) });
+    await pcOuvrir(pcEncounter.encounter.encounter_id);
+  } catch (e) {
+    pcErreur(e.message);
+  }
+}
+
+async function pcEnregistrerNotes() {
+  pcErreur('');
+  const texte = document.getElementById('pc-notes').value;
+  try {
+    await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) + '/notes',
+      { method: 'PUT', body: JSON.stringify({ text: texte, entry: 'typed' }) });
+    await pcOuvrir(pcEncounter.encounter.encounter_id);
+  } catch (e) { pcErreur(e.message); }
+}
+
+async function pcValider() {
+  pcErreur('');
+  try {
+    await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) + '/review',
+      { method: 'POST', body: JSON.stringify({ reviewed_by: (me && me.email) || 'medecin', note: null }) });
+    await pcOuvrir(pcEncounter.encounter.encounter_id);
+  } catch (e) { pcErreur(e.message); }
+}
+
+/** L'aperçu vient de la MÊME construction que l'envoi réel. */
+async function pcRafraichirApercu() {
+  const el = document.getElementById('pc-preview');
+  if (!pcEncounter) return;
+  const q = new URLSearchParams({
+    intake: document.getElementById('pc-scope-intake').checked ? 'true' : 'false',
+    notes: document.getElementById('pc-scope-notes').checked ? 'true' : 'false',
+  });
+  if (pcChosenDocs.length) q.set('documents', pcChosenDocs.join(','));
+  try {
+    const p = await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) +
+      '/transfer-preview?' + q.toString());
+    el.innerHTML =
+      `<div class="pc-preview-head">Destination : <strong>${pcEchappe(p.target_system)}</strong>` +
+      `<span class="pc-tag">${pcEchappe(p.mode)}</span>` +
+      (p.simulated ? '<span class="pc-tag">connecteur simulé</span>' : '') + '</div>' +
+      '<ul>' + (p.summary || []).map(l => `<li>${pcEchappe(l)}</li>`).join('') + '</ul>' +
+      (p.unsupported && p.unsupported.length
+        ? `<p class="pc-warn">Non pris en charge par ${pcEchappe(p.target_system)} : ${pcEchappe(p.unsupported.join(', '))}</p>` : '') +
+      (p.partially_supported && p.partially_supported.length
+        ? `<p class="pc-warn">Le transfert aura lieu, mais sans : ${pcEchappe(p.partially_supported.join(', '))}.</p>` : '') +
+      (p.already_transferred ? '<p class="pc-warn">Cette sélection a déjà été transférée dans cette version du dossier.</p>' : '');
+  } catch (e) {
+    el.innerHTML = `<p class="pc-warn">${pcEchappe(e.message)}</p>`;
+  }
+}
+
+async function pcTransferer() {
+  pcErreur('');
+  try {
+    const r = await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) + '/transfer',
+      { method: 'POST', body: JSON.stringify({ selection: {
+        intake_structured_data: document.getElementById('pc-scope-intake').checked,
+        clinical_notes: document.getElementById('pc-scope-notes').checked,
+        document_ids: pcChosenDocs,
+      } }) });
+    pcErreur('');
+    alert(r.message || 'Transfert effectué.');
+    await pcOuvrir(pcEncounter.encounter.encounter_id);
+  } catch (e) { pcErreur(e.message); }
+}
+
+document.getElementById('pc-back').addEventListener('click', () => {
+  document.getElementById('pc-detail').hidden = true;
+  document.getElementById('pc-list-card').hidden = false;
+  pcEncounter = null;
+  pcCharger();
+});
+document.getElementById('pc-save-notes').addEventListener('click', pcEnregistrerNotes);
+document.getElementById('pc-validate').addEventListener('click', pcValider);
+document.getElementById('pc-transfer').addEventListener('click', pcTransferer);
+document.getElementById('pc-scope-intake').addEventListener('change', pcRafraichirApercu);
+document.getElementById('pc-scope-notes').addEventListener('change', pcRafraichirApercu);
+
 document.querySelectorAll('.side-link[data-view]').forEach(b => {
   b.addEventListener('click', () => {
     switchView(b.dataset.view);

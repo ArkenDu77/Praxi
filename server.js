@@ -38,6 +38,26 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 // plus bas — absent, la route répond 503).
 const INTAKE_SERVICE_TOKEN = process.env.INTAKE_SERVICE_TOKEN || '';
 
+/**
+ * ============================================================================
+ *  ARKIBA INTAKE EST UN MOTEUR, PAS UN SECOND PRODUIT
+ * ============================================================================
+ *
+ * Le medecin n'ouvre qu'Arkiba. L'interrogatoire telephonique, le dossier
+ * pre-consultation, les corrections, les documents et le transfert vivent dans
+ * le moteur — mais c'est ARKIBA qui les lui montre.
+ *
+ * POURQUOI LE NAVIGATEUR NE PARLE PAS DIRECTEMENT AU MOTEUR : il n'a pas a
+ * porter les identifiants du moteur, et c'est ce serveur qui sait QUI est le
+ * medecin. C'est aussi le seul endroit ou poser le cloisonnement par cabinet
+ * le jour ou il y en aura deux.
+ *
+ * Non configure, la section pre-consultation se desactive proprement et le
+ * DIT — elle ne fait jamais semblant.
+ */
+const INTAKE_ENGINE_URL = (process.env.INTAKE_ENGINE_URL || 'http://127.0.0.1:3001').replace(/\/+$/, '');
+const intakeEngineConfigured = () => Boolean(INTAKE_ENGINE_URL);
+
 const secretsParDefaut = [
   JWT_SECRET  === DEV_JWT_SECRET  ? 'JWT_SECRET'  : null,
   ADMIN_TOKEN === DEV_ADMIN_TOKEN ? 'ADMIN_TOKEN' : null,
@@ -2877,6 +2897,102 @@ app.post('/api/dossiers/import', authenticateJWT, exigerFonctionnalite('patients
 // ═══════════════════════════════════════════════════════════════════════════
 
 // POST /api/internal/intake-results — upsert d'un dossier Arkiba Intake
+/**
+ * ============================================================================
+ *  FENETRE SUR LE MOTEUR — lecture et actions du dossier pre-consultation
+ * ============================================================================
+ *
+ * Ces routes ne dupliquent AUCUNE logique metier. Elles authentifient le
+ * medecin avec la session Arkiba, puis relaient vers le moteur. Toute la
+ * verite clinique — Ledger, provenance, contradictions, capacites du
+ * connecteur, empreinte de transfert — reste du cote du moteur, ou elle est
+ * testee.
+ *
+ * Le pont historique `/api/internal/intake-results` APLATISSAIT le dossier en
+ * trois chaines et un bloc de markdown. Il reste en place pour la liste des
+ * patients du cabinet, mais il n'est plus le chemin par lequel le medecin
+ * travaille : ces routes-ci lisent la structure la ou elle existe encore.
+ */
+async function relayerVersMoteur(req, res, chemin, options = {}) {
+  if (!intakeEngineConfigured()) {
+    return res.status(503).json({ error: "Le moteur de pré-consultation n'est pas configuré." });
+  }
+  try {
+    const reponse = await fetch(`${INTAKE_ENGINE_URL}${chemin}`, {
+      method: options.method || 'GET',
+      headers: { 'content-type': 'application/json' },
+      ...(options.body ? { body: JSON.stringify(options.body) } : {}),
+      signal: AbortSignal.timeout(20_000),
+    });
+    const texte = await reponse.text();
+    let corps = {};
+    try { corps = texte ? JSON.parse(texte) : {}; } catch (_) { corps = { raw: texte }; }
+    return res.status(reponse.status).json(corps);
+  } catch (erreur) {
+    // Un moteur injoignable est un etat CONNU, pas une page blanche : l'ecran
+    // doit pouvoir le dire au medecin au lieu de tourner dans le vide.
+    return res.status(502).json({
+      error: "Le moteur de pré-consultation est injoignable.",
+      detail: String(erreur.message || erreur).slice(0, 200),
+    });
+  }
+}
+
+/** Les dossiers pre-consultation en attente du medecin. */
+app.get('/api/preconsult/encounters', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, '/api/encounters'));
+
+/** UN dossier, avec son Intake structure, ses alertes et sa transcription. */
+app.get('/api/preconsult/encounters/:id', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}`));
+
+/** Correction d'une donnee par le medecin. Le moteur conserve l'original. */
+app.post('/api/preconsult/encounters/:id/review/:field', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res,
+    `/api/encounters/${encodeURIComponent(req.params.id)}/review/${encodeURIComponent(req.params.field)}`,
+    { method: 'POST', body: req.body }));
+
+/** Validation du dossier. Sans elle, aucun transfert n'est possible. */
+app.post('/api/preconsult/encounters/:id/review', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}/review`,
+    { method: 'POST', body: req.body }));
+
+/**
+ * Notes brutes de consultation. Le medecin tape ou dicte dans le MEME champ —
+ * le micro est une methode de saisie, pas un second mode.
+ */
+app.put('/api/preconsult/encounters/:id/notes', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}/notes`,
+    { method: 'PUT', body: { ...req.body, author: req.user.email } }));
+
+/** Les types de documents que le moteur sait REELLEMENT produire. */
+app.get('/api/preconsult/document-kinds', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, '/api/document-kinds'));
+
+/**
+ * Generation d'un document lie au dossier.
+ *
+ * Le moteur rend par GABARIT DETERMINISTE, sans appeler de modele : l'identite
+ * du patient n'est donc envoyee a aucun tiers. Les generateurs LLM d'Arkiba
+ * (lettre de liaison, compte-rendu libre, MDPH…) gardent leur propre
+ * pseudonymisation cote navigateur et ne passent pas par ici.
+ */
+app.post('/api/preconsult/encounters/:id/documents', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}/documents`,
+    { method: 'POST', body: { ...req.body, author: req.user.email } }));
+
+/** Apercu du transfert. Construit par la MEME fonction que l'envoi reel. */
+app.get('/api/preconsult/encounters/:id/transfer-preview', authenticateJWT, (req, res) => {
+  const q = new URLSearchParams(req.query).toString();
+  return relayerVersMoteur(req, res,
+    `/api/encounters/${encodeURIComponent(req.params.id)}/transfer-preview${q ? '?' + q : ''}`);
+});
+
+/** Terminer & transferer. Le perimetre vient du medecin, rien d'autre ne part. */
+app.post('/api/preconsult/encounters/:id/transfer', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}/transfer`,
+    { method: 'POST', body: { ...req.body, actor: req.user.email } }));
+
 app.post('/api/internal/intake-results', requireIntakeService, (req, res) => {
   const email = s(req.body.practitioner_email, 200).toLowerCase();
   const intakeId = s(req.body.intake_id, 80);
