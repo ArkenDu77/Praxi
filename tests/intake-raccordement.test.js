@@ -68,7 +68,13 @@ describe('POST /api/internal/intake-results', () => {
 
   test('403/503 quand le service n\'est pas configuré', async () => {
     const previous = process.env.INTAKE_SERVICE_TOKEN;
-    delete process.env.INTAKE_SERVICE_TOKEN;
+    // Chaine VIDE, jamais `delete`. Recharger le serveur rejoue son
+    // `dotenv.config()` de premiere ligne, et dotenv REMPLIT une variable
+    // absente : un `delete` etait annule aussitot par le .env du poste, le
+    // secret redevenait present, et la route repondait 401 au lieu de 503.
+    // Le test etait donc rouge sur toute machine ayant un .env, et vert sur
+    // une machine nue — il ne testait pas ce qu'il croyait.
+    process.env.INTAKE_SERVICE_TOKEN = '';
     jest.resetModules();
     const appSansSecret = require('../server');
     await request(appSansSecret)
