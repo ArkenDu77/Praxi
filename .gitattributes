@@ -1,0 +1,15 @@
+# ============================================================================
+#  FINS DE LIGNE — ce n'est pas cosmetique ici
+# ============================================================================
+#
+#  Le test de pseudonymisation EXTRAIT le code reellement livre depuis
+#  public/app.html, en cherchant "\n}\n" pour trouver la fin d'une fonction.
+#  Une conversion en CRLF rend ce marqueur introuvable : l'extraction renvoie
+#  un bloc VIDE, et les 40 tests qui protegent la frontiere de confidentialite
+#  ne s'executent plus — sans echouer franchement, ce qui est pire.
+#
+#  Git sur Windows convertit par defaut (core.autocrlf). On l'en empeche.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary
