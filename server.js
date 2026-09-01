@@ -778,12 +778,22 @@ function authenticateJWT(req, res, next) {
      * que le navigateur controle n'est pas une preuve d'autorisation : il dit
      * ce que le client PRETEND etre, pas ce qu'il est.
      *
-     * Le repli sur `tenant-demo` ne concerne que les comptes crees avant
-     * l'existence des organisations. Les nouveaux en ont un des l'inscription.
+     * PAS DE REPLI. Un compte sans cabinet retombait sur `tenant-demo` — et
+     * tous ceux dans ce cas y retombaient ENSEMBLE, donc se voyaient les uns
+     * les autres. Un repli partage n'est pas une valeur par defaut, c'est une
+     * fusion silencieuse de cabinets.
+     *
+     * `getUserById` normalise a chaque lecture et attribue le cabinet manquant,
+     * donc ce cas ne devrait jamais survenir. « Ne devrait jamais » se dit en
+     * refusant, pas en devinant.
      */
+    if (!user.organizationId) {
+      console.error(`[securite] compte ${user.id} sans organizationId — acces refuse`);
+      return res.status(500).json({ error: "Compte incomplet. Contactez l'administrateur." });
+    }
     req.principal = {
       userId: user.id,
-      tenantId: user.organizationId || 'tenant-demo',
+      tenantId: user.organizationId,
       roles: ['physician'],
     };
     next();
@@ -2969,7 +2979,12 @@ app.post('/api/dossiers/import', authenticateJWT, exigerFonctionnalite('patients
  */
 async function relayerVersMoteur(req, res, chemin, options = {}) {
   // Le cabinet est DERIVE de la session, jamais lu dans la requete entrante.
-  options.tenantId = options.tenantId || (req.principal && req.principal.tenantId) || 'tenant-demo';
+  // Sans principal, la route n'est pas passee par l'authentification : on
+  // refuse plutot que de relayer au nom d'un cabinet par defaut partage.
+  options.tenantId = options.tenantId || (req.principal && req.principal.tenantId);
+  if (!options.tenantId) {
+    return res.status(401).json({ error: 'Session requise.' });
+  }
   if (!intakeEngineConfigured()) {
     return res.status(503).json({ error: "Le moteur de pré-consultation n'est pas configuré." });
   }
@@ -2982,7 +2997,7 @@ async function relayerVersMoteur(req, res, chemin, options = {}) {
         // du navigateur : un en-tete que le client controle ne serait pas une
         // preuve d'autorisation. Aujourd'hui un cabinet par compte ; le jour ou
         // un compte appartiendra a une organisation, c'est ici que ca changera.
-        'x-arkiba-tenant': options.tenantId || 'tenant-demo',
+        'x-arkiba-tenant': options.tenantId,
         // IDENTITE DE SERVICE. Le moteur ne croit l'en-tete ci-dessus que
         // s'il sait QUI l'envoie : sans ce jeton, « je suis le cabinet X »
         // n'est qu'une declaration, et n'importe qui atteignant le port du
