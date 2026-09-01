@@ -56,6 +56,19 @@ const INTAKE_SERVICE_TOKEN = process.env.INTAKE_SERVICE_TOKEN || '';
  * DIT — elle ne fait jamais semblant.
  */
 const INTAKE_ENGINE_URL = (process.env.INTAKE_ENGINE_URL || 'http://127.0.0.1:3001').replace(/\/+$/, '');
+
+/**
+ * Identite de service d'Arkiba AUPRES du moteur — le sens SORTANT.
+ *
+ * Distinct d'INTAKE_SERVICE_TOKEN, qui authentifie le moteur aupres d'Arkiba
+ * (sens entrant). Deux relations de confiance, deux portees, donc deux
+ * secrets : la compromission de l'une ne doit pas ouvrir l'autre. C'est la
+ * meme raison qui separe deja INTAKE_SERVICE_TOKEN d'ADMIN_TOKEN.
+ *
+ * Sans lui, Arkiba parle au moteur sans prouver son identite. Le moteur
+ * l'accepte en developpement local, et refuse de demarrer en production.
+ */
+const ARKIBA_ENGINE_TOKEN = process.env.ARKIBA_ENGINE_TOKEN || '';
 const intakeEngineConfigured = () => Boolean(INTAKE_ENGINE_URL);
 
 const secretsParDefaut = [
@@ -2970,6 +2983,14 @@ async function relayerVersMoteur(req, res, chemin, options = {}) {
         // preuve d'autorisation. Aujourd'hui un cabinet par compte ; le jour ou
         // un compte appartiendra a une organisation, c'est ici que ca changera.
         'x-arkiba-tenant': options.tenantId || 'tenant-demo',
+        // IDENTITE DE SERVICE. Le moteur ne croit l'en-tete ci-dessus que
+        // s'il sait QUI l'envoie : sans ce jeton, « je suis le cabinet X »
+        // n'est qu'une declaration, et n'importe qui atteignant le port du
+        // moteur pourrait lire les dossiers de n'importe quel medecin.
+        //
+        // Absent en developpement local, ou le moteur sert en le disant fort.
+        // Obligatoire en production, ou le moteur refuse de demarrer sans.
+        ...(ARKIBA_ENGINE_TOKEN ? { 'x-arkiba-service-token': ARKIBA_ENGINE_TOKEN } : {}),
       },
       ...(options.body ? { body: JSON.stringify(options.body) } : {}),
       signal: AbortSignal.timeout(20_000),

@@ -25,6 +25,7 @@ process.env.DATA_DIR = TMP;
 process.env.JWT_SECRET = 'test-secret-key-min-32-chars-000000';
 process.env.ADMIN_TOKEN = 'test-admin-token';
 process.env.INTAKE_SERVICE_TOKEN = 'test-intake-token';
+process.env.ARKIBA_ENGINE_TOKEN = 'jeton-sortant-de-test-suffisamment-long-01';
 process.env.NODE_ENV = 'test';
 
 /**
@@ -39,7 +40,7 @@ const DOSSIERS = {
 const vus = [];
 const moteur = http.createServer((req, res) => {
   const tenant = req.headers['x-arkiba-tenant'];
-  vus.push({ url: req.url.split('?')[0], tenant });
+  vus.push({ url: req.url.split('?')[0], tenant, service: req.headers['x-arkiba-service-token'] });
   const json = (o, code = 200) => {
     res.writeHead(code, { 'content-type': 'application/json' });
     res.end(JSON.stringify(o));
@@ -105,6 +106,22 @@ describe('chaque medecin a son propre cabinet', () => {
     const tenants = vus.map((v) => v.tenant);
     expect(tenants[0]).toBe('org-1');
     expect(tenants[1]).toBe('org-2');
+  });
+
+  test('Arkiba prouve son identite de service au moteur', async () => {
+    // Le moteur ne croit `x-arkiba-tenant` que s'il sait QUI l'envoie. Sans ce
+    // jeton, « je suis le cabinet X » n'est qu'une declaration, et le
+    // cloisonnement repondrait fidelement a un menteur.
+    vus.length = 0;
+    await commeA(request(app).get('/api/preconsult/encounters'));
+    expect(vus[0].service).toBe('jeton-sortant-de-test-suffisamment-long-01');
+  });
+
+  test('le jeton sortant differe du jeton entrant', () => {
+    // Deux relations de confiance, deux portees : la compromission de l'une
+    // ne doit pas ouvrir l'autre. Meme raison qui separe deja le jeton du
+    // moteur de celui de l'administration.
+    expect(process.env.ARKIBA_ENGINE_TOKEN).not.toBe(process.env.INTAKE_SERVICE_TOKEN);
   });
 
   test('un en-tete de cabinet envoye par le CLIENT est ignore', async () => {
