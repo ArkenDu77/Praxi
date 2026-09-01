@@ -1,6 +1,11 @@
 node_modules/
 .env
+# Donnees produites par l'application quand DATA_DIR n'est pas defini : elles
+# atterrissent alors A LA RACINE DU DEPOT. `users.json` etait ignore, pas
+# `dossiers.json` — qui contient des noms et des dates de naissance de
+# patients. Un seul `git add .` les aurait publies. On ignore la CLASSE.
 users.json
+dossiers.json
 # Index vectoriel généré (racine uniquement — surtout pas lib/rag/, qui est du code)
 /rag/
 # Captures produites par `npm run screenshots` / `shot-document.js`. 8 Mo de PNG
