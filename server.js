@@ -752,6 +752,27 @@ function authenticateJWT(req, res, next) {
     const user = getUserById(payload.id);
     if (!user) return res.status(401).json({ error: 'Compte introuvable.' });
     req.user = user;
+
+    /**
+     * ========================================================================
+     *  QUI ETES-VOUS  /=  A QUOI AVEZ-VOUS ACCES
+     * ========================================================================
+     *
+     * `req.user` repond a la premiere question. `req.principal` repond a la
+     * seconde, et c'est LUI que les couches suivantes doivent lire.
+     *
+     * Le cabinet est DERIVE du compte, jamais lu dans la requete. Un en-tete
+     * que le navigateur controle n'est pas une preuve d'autorisation : il dit
+     * ce que le client PRETEND etre, pas ce qu'il est.
+     *
+     * Le repli sur `tenant-demo` ne concerne que les comptes crees avant
+     * l'existence des organisations. Les nouveaux en ont un des l'inscription.
+     */
+    req.principal = {
+      userId: user.id,
+      tenantId: user.organizationId || 'tenant-demo',
+      roles: ['physician'],
+    };
     next();
   } catch (_) {
     return res.status(401).json({ error: 'Session expirée ou invalide. Reconnectez-vous.' });
@@ -855,6 +876,26 @@ app.post('/api/auth/register', async (req, res) => {
     // puissent pas annoncer deux durées différentes. `illimite` est
     // dérivé de la whitelist d'emails par normaliserCompte() juste en dessous —
     // on ne l'écrit pas à la main pour qu'il n'existe qu'une seule règle.
+    /**
+     * ========================================================================
+     *  L'ORGANISATION NAIT AVEC LE COMPTE
+     * ========================================================================
+     *
+     * Sans elle, TOUT medecin retombait sur le cabinet de laboratoire
+     * `tenant-demo` — et deux cabinets reels auraient partage le meme espace
+     * de donnees. Le cloisonnement pose plus bas dans la chaine n'aurait rien
+     * cloisonne, faute d'avoir deux valeurs differentes a comparer.
+     *
+     * UN CABINET PAR COMPTE AUJOURD'HUI, et c'est assez : le produit ne sait
+     * pas encore inviter un confrere. Mais c'est un CHAMP, pas une constante —
+     * le jour ou plusieurs medecins partageront un cabinet, seule la valeur
+     * assignee ici changera, pas les cent endroits qui la lisent.
+     *
+     * Deriver de l'identifiant du compte plutot que tirer au hasard : la valeur
+     * est reproductible, lisible dans un journal, et deux comptes ne peuvent
+     * pas collisionner.
+     */
+    organizationId: `org-${db.nextId - 1}`,
     plan: 'trial',
     planStatus: 'trialing',
     trialEndsAt: new Date(maintenant + plans.DUREE_ESSAI_JOURS * 86_400_000).toISOString(),
@@ -2915,7 +2956,7 @@ app.post('/api/dossiers/import', authenticateJWT, exigerFonctionnalite('patients
  */
 async function relayerVersMoteur(req, res, chemin, options = {}) {
   // Le cabinet est DERIVE de la session, jamais lu dans la requete entrante.
-  options.tenantId = options.tenantId || (req.user && req.user.organizationId) || 'tenant-demo';
+  options.tenantId = options.tenantId || (req.principal && req.principal.tenantId) || 'tenant-demo';
   if (!intakeEngineConfigured()) {
     return res.status(503).json({ error: "Le moteur de pré-consultation n'est pas configuré." });
   }
