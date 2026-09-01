@@ -2914,13 +2914,22 @@ app.post('/api/dossiers/import', authenticateJWT, exigerFonctionnalite('patients
  * travaille : ces routes-ci lisent la structure la ou elle existe encore.
  */
 async function relayerVersMoteur(req, res, chemin, options = {}) {
+  // Le cabinet est DERIVE de la session, jamais lu dans la requete entrante.
+  options.tenantId = options.tenantId || (req.user && req.user.organizationId) || 'tenant-demo';
   if (!intakeEngineConfigured()) {
     return res.status(503).json({ error: "Le moteur de pré-consultation n'est pas configuré." });
   }
   try {
     const reponse = await fetch(`${INTAKE_ENGINE_URL}${chemin}`, {
       method: options.method || 'GET',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        'content-type': 'application/json',
+        // LE CABINET DU MEDECIN CONNECTE. Il vient de la session Arkiba, jamais
+        // du navigateur : un en-tete que le client controle ne serait pas une
+        // preuve d'autorisation. Aujourd'hui un cabinet par compte ; le jour ou
+        // un compte appartiendra a une organisation, c'est ici que ca changera.
+        'x-arkiba-tenant': options.tenantId || 'tenant-demo',
+      },
       ...(options.body ? { body: JSON.stringify(options.body) } : {}),
       signal: AbortSignal.timeout(20_000),
     });
