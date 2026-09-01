@@ -3038,9 +3038,17 @@ app.post('/api/preconsult/encounters/:id/review/:field', authenticateJWT, (req, 
     `/api/encounters/${encodeURIComponent(req.params.id)}/review/${encodeURIComponent(req.params.field)}`,
     { method: 'POST', body: req.body }));
 
-/** Validation du dossier. Sans elle, aucun transfert n'est possible. */
+/**
+ * Validation du dossier. Sans elle, aucun transfert n'est possible.
+ *
+ * Le moteur nomme cette route `/validate`. Elle relayait vers `/review`, qui
+ * n'existe pas : le medecin ne pouvait donc PAS valider depuis Arkiba, et
+ * comme aucun transfert n'est permis sans validation, toute la fin de la
+ * chaine etait injoignable. Personne ne l'avait vu parce que chaque moitie
+ * etait testee contre une doublure de l'autre, qui repondait a tout.
+ */
 app.post('/api/preconsult/encounters/:id/review', authenticateJWT, (req, res) =>
-  relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}/review`,
+  relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}/validate`,
     { method: 'POST', body: req.body }));
 
 /**
