@@ -56,6 +56,15 @@ const moteur = http.createServer((req, res) => {
     if (req.url === '/api/connections' && req.method === 'POST') {
       return json({ integration: { connector_id: 'cnx_1', state: 'AWAITING_OPERATOR', pilote: true } }, 201);
     }
+    if (req.url === '/api/connections/cnx_1/auth-session' && req.method === 'POST') {
+      return json({ interactive: { url: 'https://plan.invalide/vue/rbs_1', expires_at: '2026-09-02T10:00:00.000Z' } }, 201);
+    }
+    if (req.url === '/api/connections/cnx_1/auth-session' && req.method === 'GET') {
+      return json({ authenticated: true, detail: null, interactive: null });
+    }
+    if (req.url === '/api/connections/cnx_1/auth-session/checkpoint') {
+      return json({ integration: { connector_id: 'cnx_1', state: 'CONNECTED', pilote: true } });
+    }
     if (req.url === '/api/connections/cnx_1/revoke') {
       return json({ integration: { connector_id: 'cnx_1', state: 'REVOKED', pilote: true } });
     }
@@ -190,5 +199,64 @@ describe('l\'écran existe et dit la vérité', () => {
     // lire le même état.
     expect(page).toContain("titre: 'Connecté'");
     expect(page).toContain("titre: 'Reconnexion nécessaire'");
+  });
+});
+
+describe("le médecin s'authentifie lui-même, sans rien installer", () => {
+  test("ouvrir une session d'authentification rend une URL interactive", async () => {
+    const res = await auth(request(app).post('/api/integrations/cnx_1/auth-session')).send({});
+    expect(res.status).toBe(201);
+    expect(res.body.interactive.url).toMatch(/^https:\/\//);
+    expect(res.body.interactive.expires_at).toBeTruthy();
+  });
+
+  test("aucune de ces routes n'accepte un identifiant de session", async () => {
+    // Le client nomme SA connexion, jamais une session de navigateur. Le corps
+    // qu'il envoie est ignoré : le proxy compose le sien.
+    recu.length = 0;
+    await auth(request(app).post('/api/integrations/cnx_1/auth-session'))
+      .send({ session_id: 'rbs_de_quelqu_un_d_autre' });
+    expect(JSON.stringify(recu[0].body)).not.toContain('rbs_de_quelqu_un_d_autre');
+  });
+
+  test("sans session Arkiba, rien n'est accessible", async () => {
+    expect((await request(app).post('/api/integrations/cnx_1/auth-session')).status).toBe(401);
+    expect((await request(app).get('/api/integrations/cnx_1/auth-session')).status).toBe(401);
+    expect((await request(app).post('/api/integrations/cnx_1/auth-session/checkpoint')).status).toBe(401);
+  });
+
+  test('la capture est relayée telle quelle', async () => {
+    const res = await auth(request(app).post('/api/integrations/cnx_1/auth-session/checkpoint')).send({});
+    expect(res.status).toBe(200);
+    expect(res.body.integration.state).toBe('CONNECTED');
+  });
+
+  test('aucun mot de passe ne traverse ces routes non plus', async () => {
+    const envoye = JSON.stringify(recu);
+    expect(envoye).not.toMatch(/password|mot_de_passe|mdp/i);
+  });
+});
+
+describe("l'écran n'exige plus aucune installation", () => {
+  const page = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.html'), 'utf8');
+
+  test("il n'invite plus à lancer un connecteur sur un poste", () => {
+    // La direction « un agent installé au cabinet » est abandonnée : le
+    // médecin n'installe rien.
+    expect(page).not.toContain('lancez le connecteur du cabinet');
+  });
+
+  test('la fenêtre est ouverte AU CLIC, pas après un aller-retour réseau', () => {
+    // Un navigateur bloque toute fenêtre ouverte après une réponse asynchrone.
+    // Le médecin resterait devant « connexion en cours » sans rien voir venir.
+    const bloc = page.slice(page.indexOf('async function intConnecter'));
+    const clic = bloc.indexOf('window.open');
+    const reseau = bloc.indexOf('await api(');
+    expect(clic).toBeGreaterThan(-1);
+    expect(clic).toBeLessThan(reseau);
+  });
+
+  test("il dit au médecin qu'Arkiba ne voit ni son mot de passe ni son code", () => {
+    expect(page).toMatch(/ne voit ni votre mot de passe ni votre code/);
   });
 });

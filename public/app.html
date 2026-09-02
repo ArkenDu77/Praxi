@@ -2311,24 +2311,82 @@ function intRendre(integration) {
   pilote.textContent = integration && integration.pilote === false ? '' : 'raccordement pilote';
 }
 
+/**
+ * « Connecter Doctolib ».
+ *
+ * LE MEDECIN N'INSTALLE RIEN. Arkiba lui ouvre un navigateur distant ; il y
+ * saisit lui-meme ses identifiants et valide son MFA. Rien de ce qu'il tape ne
+ * passe par Arkiba.
+ *
+ * La fenetre est ouverte SYNCHRONEMENT sur le clic : un navigateur bloque
+ * toute fenetre ouverte apres un aller-retour reseau, et le medecin resterait
+ * devant un ecran qui dit « connexion en cours » sans rien voir venir. On
+ * l'ouvre donc vide, puis on l'envoie a la bonne adresse.
+ */
 async function intConnecter() {
   intErreur('');
   const bouton = document.getElementById('int-connecter');
   bouton.disabled = true;
+  const fenetre = window.open('', 'arkiba-doctolib', 'width=1100,height=800');
   try {
-    const data = await api('/api/integrations/doctolib', { method: 'POST', body: {} });
-    intCourante = data.integration || null;
-    intRendre(intCourante);
-    // La fenetre Doctolib est ouverte par le connecteur du cabinet, sur le
-    // poste ou il tourne. Arkiba ne peut pas l'ouvrir a distance, et pretendre
-    // le contraire laisserait le medecin attendre une fenetre qui ne vient pas.
+    if (!intCourante) {
+      const cree = await api('/api/integrations/doctolib', { method: 'POST', body: {} });
+      intCourante = cree.integration || null;
+      intRendre(intCourante);
+    }
+    const ouverte = await api(`/api/integrations/${encodeURIComponent(intCourante.connector_id)}/auth-session`,
+      { method: 'POST', body: {} });
+    const url = ouverte.interactive && ouverte.interactive.url;
+    if (!url) throw new Error("Le navigateur d'authentification n'a pas pu être ouvert.");
+
+    if (fenetre) fenetre.location.href = url;
     document.getElementById('int-commande').textContent =
-      "Si la fenêtre ne s'ouvre pas, lancez le connecteur du cabinet sur le poste prévu.";
+      "Terminez la connexion dans la fenêtre Doctolib. Arkiba attend, et ne voit ni votre mot de passe ni votre code.";
+    intSurveiller();
   } catch (e) {
+    if (fenetre) fenetre.close();
     intErreur(e.message);
   } finally {
     bouton.disabled = false;
   }
+}
+
+/**
+ * Attend que le medecin ait fini, puis capture.
+ *
+ * On CONSTATE, on ne provoque pas : tant qu'il n'a pas valide son second
+ * facteur, il n'y a rien a capturer. La surveillance s'arrete d'elle-meme —
+ * une boucle qui interroge indefiniment un onglet oublie est une facon lente
+ * de saturer un serveur.
+ */
+let intSurveillance = null;
+function intSurveiller() {
+  if (intSurveillance) clearInterval(intSurveillance);
+  const debut = Date.now();
+  intSurveillance = setInterval(async () => {
+    if (!intCourante || Date.now() - debut > 10 * 60 * 1000) {
+      clearInterval(intSurveillance);
+      intSurveillance = null;
+      return;
+    }
+    try {
+      const etat = await api(`/api/integrations/${encodeURIComponent(intCourante.connector_id)}/auth-session`);
+      if (!etat.authenticated) return;
+      clearInterval(intSurveillance);
+      intSurveillance = null;
+      const fin = await api(`/api/integrations/${encodeURIComponent(intCourante.connector_id)}/auth-session/checkpoint`,
+        { method: 'POST', body: {} });
+      intCourante = fin.integration || intCourante;
+      intRendre(intCourante);
+      document.getElementById('int-commande').textContent =
+        'Connexion établie. Vous pouvez fermer la fenêtre Doctolib.';
+    } catch (e) {
+      // Une session expiree n'est pas une panne : le medecin peut recommencer.
+      clearInterval(intSurveillance);
+      intSurveillance = null;
+      intErreur(e.message);
+    }
+  }, 3000);
 }
 
 async function intRevoquer() {

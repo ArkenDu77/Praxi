@@ -3118,6 +3118,33 @@ app.post('/api/integrations/doctolib', authenticateJWT, (req, res) =>
     body: { doctor_id: String(req.user.id), kind: 'doctolib_browser' },
   }));
 
+/**
+ * ============================================================================
+ *  LE MEDECIN S'AUTHENTIFIE LUI-MEME, DANS UN NAVIGATEUR FOURNI
+ * ============================================================================
+ *
+ * Il n'installe RIEN. Arkiba lui ouvre un navigateur distant, il y saisit ses
+ * identifiants et valide son MFA. Ni son mot de passe ni son code ne passent
+ * par ici — ces routes ne transportent qu'un etat et une URL ephemere.
+ *
+ * Aucune ne prend d'identifiant de session : le cabinet vient de la session
+ * Arkiba, la connexion de l'URL, et la session de navigateur est deduite par
+ * le moteur. Un client ne peut donc pas demander a ouvrir celle d'un autre.
+ */
+app.post('/api/integrations/:id/auth-session', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res,
+    `/api/connections/${encodeURIComponent(req.params.id)}/auth-session`,
+    { method: 'POST', body: {} }));
+
+app.get('/api/integrations/:id/auth-session', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res,
+    `/api/connections/${encodeURIComponent(req.params.id)}/auth-session`));
+
+app.post('/api/integrations/:id/auth-session/checkpoint', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res,
+    `/api/connections/${encodeURIComponent(req.params.id)}/auth-session/checkpoint`,
+    { method: 'POST', body: {} }));
+
 app.post('/api/integrations/:id/revoke', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res, `/api/connections/${encodeURIComponent(req.params.id)}/revoke`,
     { method: 'POST', body: {} }));
