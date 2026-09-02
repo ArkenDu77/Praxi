@@ -2,1020 +2,652 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Arkiba — L'assistant administratif des médecins libéraux</title>
-<meta name="description" content="Arkiba rédige vos lettres de liaison, comptes-rendus et dossiers MDPH à partir de quelques mots dictés — chaque affirmation clinique reste sourcée. Hébergement HDS en France." />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content="#f7f5f1" />
+
+<title>Arkiba — Le dossier attend le médecin</title>
+<meta name="description" content="Arkiba prépare la consultation avant qu'elle commence : le patient est appelé, l'interrogatoire est structuré, les points à vérifier sont signalés. Le médecin ouvre Arkiba, le dossier est là." />
+
+<link rel="canonical" href="https://www.arkiba.fr/" />
 <meta property="og:type" content="website" />
-<meta property="og:title" content="Arkiba — Vos comptes-rendus rédigés avant la fin de la consultation" />
-<meta property="og:description" content="Lettres de liaison, comptes-rendus, MDPH et ALD générés et sourcés pour les médecins libéraux français." />
+<meta property="og:locale" content="fr_FR" />
+<meta property="og:site_name" content="Arkiba" />
+<meta property="og:url" content="https://www.arkiba.fr/" />
+<meta property="og:title" content="Arkiba — Le dossier attend le médecin" />
+<meta property="og:description" content="La couche de workflow entre le patient, le médecin et le logiciel du cabinet. La consultation est préparée avant qu'elle commence." />
+<meta property="og:image" content="https://www.arkiba.fr/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+<meta name="twitter:title" content="Arkiba — Le dossier attend le médecin" />
+<meta name="twitter:description" content="La couche de workflow entre le patient, le médecin et le logiciel du cabinet." />
+<meta name="twitter:image" content="https://www.arkiba.fr/og.png" />
 
-/* ── « Nuit clinique » — la palette de la refonte. Chaque valeur moderne est
-      précédée de son équivalent hexadécimal : sur un iPad resté sous iPadOS
-      16.4, oklch() et color-mix() ne s'analysent pas, et sans repli toute la
-      page perdrait ses couleurs. ── */
-:root {
-  --night: #070d14;            --night: oklch(0.155 0.018 254);
-  --night-2: #0f161f;          --night-2: oklch(0.198 0.021 253);
-  --night-3: #161f29;          --night-3: oklch(0.235 0.024 252);
-  --night-line: #28313c;       --night-line: oklch(0.31 0.024 252);
-  --night-line-2: #3c4957;     --night-line-2: oklch(0.4 0.028 250);
-  --lumen: #f0f4f9;            --lumen: oklch(0.965 0.008 250);
-  --lumen-soft: #aeb9c5;       --lumen-soft: oklch(0.78 0.021 250);
-  --lumen-dim: #76828e;        --lumen-dim: oklch(0.6 0.024 250);
-  --sky: #35cef1;              --sky: oklch(0.79 0.13 217);
-  --sky-ice: #a8ebfb;          --sky-ice: oklch(0.9 0.07 215);
-  --gold: #ebc070;             --gold: oklch(0.83 0.11 82);
-  --danger: #ff6468;           --danger: oklch(0.704 0.191 22);
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 
-  --bg: var(--night);
-  --text: var(--lumen);
-  --text-muted: var(--lumen-soft);
-  --text-dim: var(--lumen-dim);
-  --accent: var(--sky);
-  --border: var(--night-line);
-  --border2: var(--night-line-2);
-  --accent-dim: rgba(53,206,241,0.12);   --accent-dim: color-mix(in oklab, var(--sky) 12%, transparent);
-  --accent-glow: rgba(53,206,241,0.28);  --accent-glow: color-mix(in oklab, var(--sky) 28%, transparent);
-  --accent-border: rgba(53,206,241,0.4); --accent-border: color-mix(in oklab, var(--sky) 40%, transparent);
-  --danger-dim: rgba(255,100,104,0.12);  --danger-dim: color-mix(in oklab, var(--danger) 12%, transparent);
-  --danger-glow: rgba(255,100,104,0.35); --danger-glow: color-mix(in oklab, var(--danger) 35%, transparent);
-  --gold-dim: rgba(235,192,112,0.12);    --gold-dim: color-mix(in oklab, var(--gold) 12%, transparent);
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/site.css" />
 
-  --r-md: 10px; --r-lg: 12px; --r-xl: 16px; --r-2xl: 20px;
-  --glass-blur: blur(14px) saturate(130%);
-  --font-display: 'DM Serif Display', Georgia, serif;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
-
-  color-scheme: dark;
-}
-
-html { scroll-behavior: smooth; }
-
-body {
-  background: var(--bg);
-  color: var(--text-muted);
-  font-family: var(--font-sans);
-  font-size: 16px; line-height: 1.6;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  position: relative;
-  min-height: 100vh;
-}
-
-/* Grain : la texture de la maquette, purement décorative. */
-body::after {
-  content: ''; position: fixed; inset: 0; z-index: 1; pointer-events: none;
-  opacity: .35; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
-}
-
-h1, h2, h3 { font-family: var(--font-display); font-weight: 400; letter-spacing: -.015em; }
-
-::selection { background: var(--accent); color: var(--night); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
-
-a, button, input, select, textarea, summary, [role="button"] { touch-action: manipulation; }
-
-/* ── Motifs de la maquette ─────────────────────────── */
-.glass-night {
-  background: rgba(15,22,31,0.72);
-  background: color-mix(in oklab, var(--night-2) 72%, transparent);
-  border: 1px solid rgba(40,49,60,0.8);
-  border: 1px solid color-mix(in oklab, var(--night-line) 80%, transparent);
-  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
-  border-radius: var(--r-2xl);
-}
-.hairline-top { border-top: 1px solid rgba(40,49,60,0.7); border-top: 1px solid color-mix(in oklab, var(--night-line) 70%, transparent); }
-.night-grid {
-  background-image:
-    linear-gradient(to right, rgba(53,206,241,.09) 0 1px, transparent 1px 100%),
-    linear-gradient(to bottom, rgba(53,206,241,.09) 0 1px, transparent 1px 100%);
-  background-size: 72px 72px;
-  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
-  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, black 10%, transparent 80%);
-}
-.aurora {
-  background:
-    radial-gradient(ellipse 60% 45% at 50% 0%, rgba(53,206,241,.22), transparent 70%),
-    radial-gradient(ellipse 45% 40% at 12% 22%, rgba(235,192,112,.10), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 88% 30%, rgba(53,206,241,.14), transparent 70%);
-  filter: blur(8px);
-}
-.text-gradient {
-  background: linear-gradient(170deg, #f0f4f9 0%, #b9dced 60%, #8fcfe6 100%);
-  -webkit-background-clip: text; background-clip: text; color: transparent;
-}
-
-@keyframes ark-rise { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: none; } }
-.rise { animation: ark-rise .8s cubic-bezier(.16,1,.3,1) both; }
-@keyframes ark-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-.ecg-draw { stroke-dasharray: 1; animation: ark-draw 2.6s cubic-bezier(.4,0,.2,1) .2s both; }
-@keyframes ark-breathe { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.82); } }
-.breathe { animation: ark-breathe 2.4s ease-in-out infinite; }
-@keyframes ark-sweep { 0% { transform: translateY(-120%); } 100% { transform: translateY(320%); } }
-.sweep { animation: ark-sweep 4.5s ease-in-out infinite; }
-@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-
-/* ── En-tête ───────────────────────────────────────── */
-.nav {
-  position: fixed; inset: 0 0 auto 0; z-index: 50;
-  border-bottom: 1px solid transparent;
-  transition: background-color .5s, border-color .5s, backdrop-filter .5s;
-}
-.nav.open,
-.nav.scrolled {
-  border-bottom-color: rgba(40,49,60,.7);
-  border-bottom-color: color-mix(in oklab, var(--night-line) 70%, transparent);
-  background: rgba(7,13,20,.8);
-  background: color-mix(in oklab, var(--night) 80%, transparent);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-}
-/* Grille 1fr auto 1fr : le menu reste centré dans la page quelle que soit la
-   largeur du logo ou des boutons de droite. */
-.nav-in {
-  margin: 0 auto; max-width: 1152px; min-height: 64px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 0 20px;
-}
-.nav-logo {
-  display: flex; align-items: center; gap: 10px; flex: none;
-  min-width: 0; text-decoration: none; min-height: 44px;
-}
-.nav-logo .word { font-family: var(--font-display); font-size: 1.5rem; line-height: 1; color: var(--lumen); letter-spacing: -.02em; }
-.nav-logo .word span { color: var(--accent); }
-.nav-links { display: none; align-items: center; gap: 32px; }
-.nav-links a {
-  font-size: 14px; color: var(--lumen-soft); text-decoration: none;
-  display: inline-flex; align-items: center; min-height: 44px; transition: color .2s;
-}
-.nav-links a:hover { color: var(--lumen); }
-.nav-cta { display: flex; align-items: center; gap: 8px; flex: none; }
-/* Le bouton d'en-tête n'apparaît qu'à partir de la tablette : sur téléphone il
-   est repris en bas du menu, en pleine largeur. */
-.nav-cta .btn { display: none; }
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 44px; padding: 0 18px; border-radius: var(--r-lg);
-  font-family: inherit; font-size: 14px; font-weight: 600;
-  text-decoration: none; cursor: pointer; border: 1px solid transparent;
-  /* Sans fond explicite, un <button> hérite du gris système du navigateur —
-     le lien et le bouton du héros ne se ressemblaient plus. */
-  background: transparent; color: inherit;
-  transition: transform .2s, box-shadow .2s, border-color .2s, color .2s, background .2s;
-}
-.btn-primary { background: var(--lumen); color: var(--night); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 50px -20px var(--sky); }
-.btn-outline { border-color: var(--border); color: var(--lumen-soft); }
-.btn-outline:hover { border-color: var(--accent-border); color: var(--lumen); }
-.nav-burger {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 44px; height: 44px; flex: none;
-  border-radius: var(--r-md); border: 1px solid var(--border);
-  background: none; color: var(--lumen-soft); cursor: pointer;
-}
-.nav-burger svg { width: 18px; height: 18px; }
-/* Le menu s'ouvrait d'un coup, et sans fond propre : en haut de page, où
-   l'en-tête est encore transparent, le héros se lisait à travers les entrées.
-   Il a maintenant son propre fond, et il se déplie — la grille passe de 0fr à
-   1fr, ce qui anime la hauteur sans la connaître à l'avance. */
-.nav-mobile-wrap {
-  display: grid; grid-template-rows: 0fr;
-  overflow: hidden;
-  background: rgba(7,13,20,.97);
-  background: color-mix(in oklab, var(--night) 97%, transparent);
-  backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
-  transition: grid-template-rows .26s cubic-bezier(.16,1,.3,1);
-}
-.nav.open .nav-mobile-wrap { grid-template-rows: 1fr; }
-.nav-mobile { min-height: 0; padding: 0 20px; display: flex; flex-direction: column; gap: 2px; }
-.nav.open .nav-mobile { padding: 6px 20px 18px; }
-.nav-mobile > a {
-  display: flex; align-items: center; min-height: 52px;
-  color: var(--lumen-soft); text-decoration: none; font-size: 15px;
-  border-bottom: 1px solid rgba(40,49,60,.5);
-  opacity: 0; transform: translateY(-6px);
-  transition: opacity .2s ease var(--d, 0ms), transform .2s cubic-bezier(.16,1,.3,1) var(--d, 0ms), color .2s;
-}
-.nav.open .nav-mobile > a { opacity: 1; transform: none; }
-.nav-mobile > a:hover { color: var(--lumen); }
-.nav-mobile-actions {
-  display: flex; flex-direction: column; gap: 8px;
-  margin-top: 14px;
-  opacity: 0; transform: translateY(-6px);
-  transition: opacity .2s ease 180ms, transform .2s cubic-bezier(.16,1,.3,1) 180ms;
-}
-.nav.open .nav-mobile-actions { opacity: 1; transform: none; }
-.nav-mobile-actions .btn { width: 100%; min-height: 50px; }
-/* Le bouton passe des barres à la croix : le signe dit ce qu'il fait. */
-.nav-burger { position: relative; }
-.nav-burger svg {
-  position: absolute; top: 50%; left: 50%;
-  transition: transform .26s cubic-bezier(.16,1,.3,1), opacity .18s ease;
-}
-.nav-burger .ico-menu  { transform: translate(-50%,-50%) rotate(0deg); opacity: 1; }
-.nav-burger .ico-close { transform: translate(-50%,-50%) rotate(-90deg); opacity: 0; }
-.nav.open .nav-burger { border-color: var(--accent-border); color: var(--lumen); }
-.nav.open .nav-burger .ico-menu  { transform: translate(-50%,-50%) rotate(90deg); opacity: 0; }
-.nav.open .nav-burger .ico-close { transform: translate(-50%,-50%) rotate(0deg); opacity: 1; }
-
-@media (min-width: 1024px) {
-  .nav-links { display: flex; }
-  .nav-cta .btn { display: inline-flex; }
-  .nav-burger { display: none; }
-  .nav-mobile-wrap { display: none; }
-}
-@media (min-width: 768px) { .nav-in { padding: 0 32px; } }
-
-/* ── Structure ─────────────────────────────────────── */
-.section { position: relative; padding: 96px 20px; }
-.wrap { position: relative; margin: 0 auto; max-width: 1152px; }
-.tinted { background: rgba(15,22,31,.3); background: color-mix(in oklab, var(--night-2) 30%, transparent); }
-@media (min-width: 768px) { .section { padding: 128px 32px; } }
-
-.head { margin: 0 auto; max-width: 672px; text-align: center; }
-.eyebrow {
-  font-family: var(--font-mono); font-size: .6875rem;
-  letter-spacing: .18em; text-transform: uppercase; color: var(--accent);
-}
-.head h2 {
-  margin-top: 20px; font-size: 2.1rem; line-height: 1.08;
-  letter-spacing: -.025em; color: var(--lumen); text-wrap: balance;
-}
-.head h2 .it { color: var(--lumen-soft); opacity: .6; font-style: italic; }
-.head p {
-  margin: 24px auto 0; max-width: 576px;
-  font-size: .9375rem; line-height: 1.7; font-weight: 300; color: var(--lumen-soft);
-}
-@media (min-width: 768px) { .head h2 { font-size: 3rem; } }
-
-/* ── Héros ─────────────────────────────────────────── */
-.hero { position: relative; overflow: hidden; padding: 112px 20px 64px; }
-.hero .aurora { position: absolute; inset: -160px 0 auto 0; height: 38rem; opacity: .7; pointer-events: none; }
-.hero .night-grid { position: absolute; inset: 0; pointer-events: none; }
-.hero-ecg { display: block; margin: 0 auto; height: 32px; width: 100%; max-width: 768px; color: var(--sky); opacity: .7; }
-.hero-mid { margin-top: 24px; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.badge {
-  display: inline-flex; align-items: center; gap: 8px;
-  border-radius: 999px; border: 1px solid var(--accent-border);
-  background: rgba(53,206,241,.07); background: color-mix(in oklab, var(--sky) 7%, transparent);
-  padding: 6px 16px; font-family: var(--font-mono); font-size: .6875rem;
-  letter-spacing: .16em; text-transform: uppercase; color: var(--accent);
-}
-.badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
-.hero h1 {
-  margin-top: 28px; max-width: 56rem; font-size: 2.5rem; line-height: 1.03;
-  letter-spacing: -.03em; text-wrap: balance;
-}
-.hero h1 .it { color: var(--lumen-soft); opacity: .7; font-style: italic; }
-.hero-sub {
-  margin-top: 28px; max-width: 42rem; font-size: 1.0625rem; line-height: 1.7;
-  font-weight: 300; color: var(--lumen-soft);
-}
-.hero-cta { margin-top: 36px; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; }
-@media (min-width: 640px) { .hero h1 { font-size: 3.75rem; } }
-@media (min-width: 768px) { .hero { padding: 144px 32px 64px; } .hero h1 { font-size: 4.5rem; } }
-
-.hero-doc { position: relative; margin: 56px auto 0; max-width: 896px; overflow: hidden; }
-.hero-doc-bar {
-  display: flex; align-items: center; gap: 8px;
-  border-bottom: 1px solid rgba(40,49,60,.7); padding: 12px 16px;
-}
-.hero-doc-bar .pip { width: 8px; height: 8px; border-radius: 50%; background: var(--night-line-2); }
-.hero-doc-bar .lbl {
-  margin-left: 8px; font-family: var(--font-mono); font-size: .6875rem;
-  letter-spacing: .08em; text-transform: uppercase; color: var(--lumen-dim);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.hero-doc-bar .chrono {
-  margin-left: auto; display: inline-flex; align-items: center; gap: 6px; flex: none;
-  border-radius: 999px; background: var(--accent-dim); padding: 4px 10px;
-  font-family: var(--font-mono); font-size: .625rem; letter-spacing: .08em;
-  text-transform: uppercase; color: var(--accent);
-}
-.hero-doc-bar .chrono .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--accent); }
-.hero-doc-grid { position: relative; display: grid; }
-.hero-doc-grid .sweep {
-  pointer-events: none; position: absolute; inset: 0 0 auto 0; height: 96px;
-  background: linear-gradient(to bottom, transparent, rgba(53,206,241,.07), transparent);
-}
-.hero-doc-col { padding: 20px; border-bottom: 1px solid rgba(40,49,60,.6); }
-.hero-doc-col:last-child { border-bottom: 0; }
-.hero-doc-col .cap {
-  font-family: var(--font-mono); font-size: .625rem; letter-spacing: .16em;
-  text-transform: uppercase; color: var(--lumen-dim);
-}
-.hero-doc-col .cap.sky { color: var(--accent); }
-.hero-doc-col .dictee { margin-top: 16px; font-family: var(--font-mono); font-size: .8125rem; line-height: 1.7; color: var(--lumen-soft); opacity: .6; }
-.hero-doc-col .signe { margin-top: 16px; font-size: .875rem; line-height: 1.7; color: var(--lumen); }
-.hero-doc-col mark { background: var(--accent-dim); color: var(--sky-ice); border-radius: 4px; padding: 0 4px; }
-.doc-sec {
-  margin-top: 14px; font-family: var(--font-mono);
-  font-size: .5625rem; font-weight: 600; letter-spacing: .16em;
-  text-transform: uppercase; color: var(--accent);
-}
-.doc-sec:first-of-type { margin-top: 0; }
-.hero-doc-col .doc-body { margin-top: 5px; font-size: .8125rem; line-height: 1.6; color: var(--lumen); }
-.doc-suite { margin-top: 14px; font-family: var(--font-mono); font-size: .5625rem; letter-spacing: .14em; text-transform: uppercase; color: var(--lumen-dim); }
-/* Ce que le référentiel de la spécialité attendait et que la dictée ne couvre
-   pas : l'application le signale au médecin avant qu'il signe. */
-.doc-gap {
-  margin-top: 14px; display: flex; align-items: flex-start; gap: 8px;
-  border-left: 2px solid var(--gold); background: var(--gold-dim);
-  border-radius: 0 var(--r-md) var(--r-md) 0; padding: 8px 10px;
-  font-size: .75rem; line-height: 1.5; color: var(--lumen-soft);
-}
-.doc-gap b { color: var(--gold); font-weight: 600; }
-.src-row { margin-top: 20px; display: flex; flex-wrap: wrap; gap: 8px; border-top: 1px solid rgba(40,49,60,.6); padding-top: 16px; }
-.src {
-  display: inline-flex; max-width: 100%; align-items: center; gap: 6px;
-  border-radius: 999px; border: 1px solid rgba(235,192,112,.2);
-  background: rgba(235,192,112,.08); padding: 4px 10px;
-  font-size: .6875rem; color: var(--lumen-soft);
-}
-.src b { font-family: var(--font-mono); font-size: .5625rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); }
-@media (min-width: 768px) {
-  .hero-doc-grid { grid-template-columns: 1fr 1fr; }
-  .hero-doc-col { padding: 24px; border-bottom: 0; }
-  .hero-doc-col:first-child { border-right: 1px solid rgba(40,49,60,.6); }
-}
-
-.trust { margin: 48px auto 0; max-width: 896px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 24px; list-style: none; }
-.trust li { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 8px; text-align: center; font-size: 12px; color: var(--lumen-dim); }
-.trust svg { width: 16px; height: 16px; flex: none; color: var(--accent); opacity: .8; }
-@media (min-width: 768px) { .trust { grid-template-columns: repeat(4, 1fr); } }
-
-/* ── Bandeau de chiffres ───────────────────────────── */
-.stats { border-bottom: 1px solid rgba(40,49,60,.7); background: rgba(15,22,31,.4); }
-.stats-in { margin: 0 auto; max-width: 1152px; display: grid; grid-template-columns: 1fr 1fr; padding: 48px 20px; }
-.stats-in > div { min-width: 0; padding: 16px 8px; text-align: center; }
-.stats-in .v { font-family: var(--font-display); font-size: 2.25rem; line-height: 1; letter-spacing: -.02em; color: var(--lumen); }
-.stats-in .l { margin: 12px auto 0; max-width: 13rem; font-size: .8125rem; line-height: 1.4; color: var(--lumen-dim); text-wrap: balance; }
-@media (min-width: 768px) {
-  .stats-in { grid-template-columns: repeat(4, 1fr); padding: 56px 32px; }
-  .stats-in > div { padding: 0 24px; border-left: 1px solid rgba(40,49,60,.6); }
-  .stats-in > div:first-child { border-left: 0; }
-  .stats-in .v { font-size: 3rem; }
-}
-
-/* ── Cartes ────────────────────────────────────────── */
-.cards { margin-top: 56px; display: grid; gap: 16px; }
-@media (min-width: 640px) { .cards { grid-template-columns: 1fr 1fr; } }
-@media (min-width: 1024px) { .cards.three { grid-template-columns: repeat(3, 1fr); } }
-.card {
-  position: relative; overflow: hidden; padding: 28px; text-align: center;
-  transition: border-color .3s;
-}
-.card:hover { border-color: var(--accent-border); }
-.card .glow {
-  pointer-events: none; position: absolute; top: -96px; left: 50%;
-  height: 192px; width: 192px; transform: translateX(-50%);
-  border-radius: 50%; background: var(--accent-dim); filter: blur(48px);
-  opacity: 0; transition: opacity .5s;
-}
-.card:hover .glow { opacity: 1; }
-.card .ico {
-  position: relative; margin: 0 auto; display: grid; place-items: center;
-  width: 44px; height: 44px; border-radius: var(--r-lg);
-  border: 1px solid var(--accent-border); background: var(--accent-dim); color: var(--accent);
-}
-.card .ico svg { width: 18px; height: 18px; }
-.card h3 { position: relative; margin-top: 20px; font-size: 1.1875rem; line-height: 1.35; color: var(--lumen); }
-.card p { position: relative; margin: 12px auto 0; max-width: 24rem; font-size: .875rem; line-height: 1.7; font-weight: 300; color: var(--lumen-soft); }
-
-.pills { margin: 48px auto 0; max-width: 768px; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; }
-.pills span { border-radius: 999px; border: 1px solid var(--border); padding: 8px 14px; font-size: 12px; color: var(--lumen-soft); }
-
-/* ── Méthode ───────────────────────────────────────── */
-.steps { position: relative; margin-top: 64px; display: grid; gap: 48px; list-style: none; }
-.steps .rule { display: none; }
-.steps li { position: relative; min-width: 0; text-align: center; }
-.steps .num {
-  position: relative; z-index: 1; margin: 0 auto; display: grid; place-items: center;
-  width: 48px; height: 48px; border-radius: 50%;
-  border: 1px solid var(--accent-border); background: var(--night); color: var(--accent);
-  box-shadow: 0 0 40px -12px var(--sky);
-}
-.steps .num svg { width: 18px; height: 18px; }
-.steps .n { margin-top: 20px; font-family: var(--font-mono); font-size: .6875rem; letter-spacing: .18em; color: var(--lumen-dim); }
-.steps h3 { margin-top: 8px; font-size: 1.25rem; color: var(--lumen); }
-.steps p { margin: 12px auto 0; max-width: 20rem; font-size: .875rem; line-height: 1.7; font-weight: 300; color: var(--lumen-soft); }
-@media (min-width: 768px) {
-  .steps { grid-template-columns: repeat(3, 1fr); gap: 32px; }
-  .steps .rule {
-    display: block; pointer-events: none; position: absolute; top: 24px; left: 0; right: 0; height: 1px;
-    background: linear-gradient(to right, transparent, var(--night-line-2), transparent);
-  }
-}
-
-/* ── Témoignages ───────────────────────────────────── */
-.quotes { margin: 56px auto 0; max-width: 1024px; display: grid; gap: 16px; }
-@media (min-width: 640px) { .quotes { grid-template-columns: 1fr 1fr; } }
-.quotes figure { display: flex; flex-direction: column; padding: 28px; text-align: center; }
-.quotes .qm { margin: 0 auto; width: 16px; height: 16px; color: var(--accent); opacity: .6; }
-.quotes blockquote { margin-top: 20px; font-family: var(--font-display); font-size: 1.15rem; line-height: 1.4; font-style: italic; color: var(--lumen); }
-.quotes figcaption { margin-top: 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; border-top: 1px solid rgba(40,49,60,.6); padding-top: 20px; }
-.quotes .ini { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--accent-border); background: var(--accent-dim); font-family: var(--font-mono); font-size: .6875rem; color: var(--accent); }
-.quotes .who { font-size: 14px; color: var(--lumen); }
-.quotes .role { font-size: 12px; color: var(--lumen-dim); }
-
-/* ── Tarifs ────────────────────────────────────────── */
-.plans { margin-top: 56px; display: grid; gap: 16px; }
-@media (min-width: 1024px) { .plans { grid-template-columns: repeat(3, 1fr); } }
-.plan { position: relative; display: flex; flex-direction: column; overflow: hidden; padding: 28px; text-align: center; }
-.plan.featured {
-  border-radius: var(--r-2xl); border: 1px solid var(--accent-border);
-  background: rgba(22,31,41,.6); background: color-mix(in oklab, var(--night-3) 60%, transparent);
-  box-shadow: 0 30px 90px -45px var(--sky);
-}
-.plan.featured .halo { pointer-events: none; position: absolute; top: -112px; left: 50%; height: 224px; width: 288px; transform: translateX(-50%); border-radius: 50%; background: rgba(53,206,241,.15); filter: blur(48px); }
-.plan .tag {
-  position: relative; margin: 0 auto; display: inline-flex; align-items: center; height: 24px;
-  border-radius: 999px; padding: 0 10px; font-family: var(--font-mono);
-  font-size: .5625rem; font-weight: 600; letter-spacing: .16em; text-transform: uppercase;
-  border: 1px solid var(--border); color: var(--lumen-dim);
-}
-.plan.featured .tag { background: var(--accent); color: var(--night); border-color: var(--accent); }
-.plan h3 { position: relative; margin-top: 20px; font-size: 1.25rem; color: var(--lumen); }
-.plan .price { position: relative; margin-top: 20px; display: flex; align-items: baseline; justify-content: center; gap: 4px; }
-.plan .price b { font-family: var(--font-display); font-weight: 400; font-size: 3rem; line-height: 1; letter-spacing: -.03em; color: var(--lumen); }
-.plan .price i { font-family: var(--font-display); font-style: normal; font-size: 1.5rem; color: var(--lumen-soft); }
-.plan .note { position: relative; margin-top: 8px; font-size: 12px; color: var(--lumen-dim); }
-.plan ul { position: relative; margin-top: 28px; flex: 1; list-style: none; border-top: 1px solid rgba(40,49,60,.7); padding-top: 24px; text-align: left; display: grid; gap: 12px; }
-.plan ul li { display: flex; align-items: flex-start; gap: 10px; font-size: .875rem; color: var(--lumen-soft); }
-.plan ul svg { margin-top: 3px; width: 14px; height: 14px; flex: none; color: var(--accent); }
-.plan .btn { position: relative; margin-top: 32px; width: 100%; }
-/* Fonctionnalité annoncée mais pas encore livrée. Elle reste dans la grille —
-   elle est au programme — mais ne doit pas se lire comme disponible le jour de
-   la souscription : la ligne est atténuée et porte sa propre mention. */
-.plan ul li.soon { color: var(--lumen-dim); }
-.plan ul li.soon svg { color: var(--lumen-dim); opacity: .6; }
-.plan .soon-tag {
-  display: inline-flex; align-items: center; height: 18px; margin-left: 2px;
-  border: 1px solid var(--border); border-radius: 999px; padding: 0 8px;
-  font-family: var(--font-mono); font-size: .5rem; font-weight: 600;
-  letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
-  color: var(--lumen-dim);
-}
-
-/* ── Création de compte ────────────────────────────── */
-.acces { position: relative; overflow: hidden; }
-.acces .aurora { position: absolute; inset: auto 0 -208px 0; height: 34rem; opacity: .6; pointer-events: none; }
-.acces-in { position: relative; margin: 0 auto; max-width: 768px; text-align: center; }
-.acces h2 { font-size: 2.2rem; line-height: 1.05; letter-spacing: -.03em; text-wrap: balance; }
-.acces > .acces-in > p { margin: 24px auto 0; max-width: 576px; font-size: .9375rem; line-height: 1.7; font-weight: 300; color: var(--lumen-soft); }
-@media (min-width: 768px) { .acces h2 { font-size: 3.25rem; } }
-
-.form-card { margin: 40px auto 0; max-width: 560px; padding: 24px; text-align: left; display: grid; gap: 14px; }
-@media (min-width: 640px) { .form-card { grid-template-columns: 1fr 1fr; } }
-.field { display: grid; gap: 7px; min-width: 0; }
-.field.wide { grid-column: 1 / -1; }
-.field > span {
-  font-family: var(--font-mono); font-size: .625rem; letter-spacing: .16em;
-  text-transform: uppercase; color: var(--lumen-dim);
-}
-.field input, .field select {
-  height: 48px; width: 100%; border-radius: var(--r-lg);
-  border: 1px solid var(--border);
-  background: rgba(7,13,20,.6); background: color-mix(in oklab, var(--night) 60%, transparent);
-  padding: 0 14px; font-family: inherit; font-size: 15px; color: var(--lumen);
-  outline: none; transition: border-color .18s, box-shadow .18s;
-}
-.field input::placeholder { color: var(--lumen-dim); }
-.field input:focus, .field select:focus { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-dim); }
-.field select { -webkit-appearance: none; appearance: none; cursor: pointer; padding-right: 40px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2399a8bd' stroke-width='2' viewBox='0 0 24 24'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 16px center; }
-.form-card .btn { grid-column: 1 / -1; margin-top: 4px; min-height: 48px; }
-.form-legal { grid-column: 1 / -1; text-align: center; font-size: .6875rem; color: var(--lumen-dim); }
-.form-alert {
-  grid-column: 1 / -1; display: none; align-items: flex-start; gap: 10px;
-  border-radius: var(--r-lg); border: 1px solid var(--danger-glow);
-  background: var(--danger-dim); padding: 12px 14px; font-size: 13.5px; line-height: 1.5; color: var(--danger);
-}
-.form-alert.show { display: flex; }
-.form-alert svg { width: 16px; height: 16px; flex: none; margin-top: 2px; }
-.form-done { display: none; margin: 40px auto 0; max-width: 560px; padding: 32px; text-align: center; }
-.form-done.show { display: block; animation: fade .3s ease; }
-.form-done .ok { margin: 0 auto; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--accent-border); background: var(--accent-dim); color: var(--accent); }
-.form-done .t { margin-top: 20px; font-size: 1.125rem; color: var(--lumen); }
-.form-done .s { margin-top: 8px; font-size: 14px; color: var(--lumen-soft); }
-
-/* ── Démo de dictée ────────────────────────────────── */
-.demo { display: none; margin: 40px auto 0; max-width: 720px; padding: 24px; text-align: left; }
-.demo.show { display: block; animation: fade .3s ease; }
-.demo-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-.demo-head .cap { font-family: var(--font-mono); font-size: .625rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
-.demo-head .close { background: none; border: 0; color: var(--lumen-dim); font-family: inherit; font-size: 13px; cursor: pointer; min-height: 44px; padding: 0 4px; }
-.demo-head .close:hover { color: var(--lumen); }
-.demo > p.demo-sub { margin-top: 10px; font-size: .875rem; line-height: 1.6; font-weight: 300; color: var(--lumen-soft); }
-.with-mic { position: relative; margin-top: 18px; }
-.with-mic textarea {
-  width: 100%; min-height: 168px; resize: vertical;
-  border-radius: var(--r-lg); border: 1px solid var(--border);
-  background: rgba(7,13,20,.6); background: color-mix(in oklab, var(--night) 60%, transparent);
-  padding: 14px 62px 14px 16px; font-family: inherit; font-size: 15px; line-height: 1.7;
-  color: var(--lumen); outline: none; transition: border-color .18s, box-shadow .18s;
-}
-.with-mic textarea::placeholder { color: var(--lumen-dim); }
-.with-mic textarea:focus { border-color: var(--accent-border); box-shadow: 0 0 0 3px var(--accent-dim); }
-.mic-btn {
-  position: absolute; top: 9px; right: 9px; width: 44px; height: 44px;
-  border-radius: var(--r-lg); border: 1px solid var(--border);
-  background: rgba(22,31,41,.6); color: var(--lumen-dim); cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  transition: border-color .18s, color .18s, transform .14s;
-}
-.mic-btn svg { width: 18px; height: 18px; }
-.mic-btn:hover:not(:disabled) { border-color: var(--accent-border); color: var(--accent); }
-.mic-btn:active:not(:disabled) { transform: scale(.94); }
-.mic-btn.listening { background: var(--accent-dim); border-color: var(--accent-border); color: var(--sky-ice); animation: pulseMic 2.4s ease-in-out infinite; }
-@keyframes pulseMic { 0%,100% { opacity: 1; } 50% { opacity: .55; } }
-.mic-status { display: none; align-items: flex-start; gap: 8px; margin-top: 10px; padding: 10px 12px; border-radius: var(--r-md); font-size: 12.5px; line-height: 1.5; }
-.mic-status.show { display: flex; animation: fade .2s ease; }
-.mic-status svg { width: 14px; height: 14px; flex: none; margin-top: 2px; }
-.mic-status.listening { background: var(--accent-dim); border: 1px solid var(--accent-border); color: var(--sky-ice); }
-.mic-status.listening .mic-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; margin-top: 5px; animation: pulseMic 1.6s ease infinite; }
-.mic-status.error { background: var(--gold-dim); border: 1px solid rgba(235,192,112,.4); color: var(--gold); }
-.mic-status .mic-status-body { flex: 1; }
-.mic-status .mic-status-hint { display: block; color: var(--lumen-soft); font-size: 11.5px; margin-top: 3px; }
-.demo-foot { margin-top: 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; justify-content: space-between; }
-.demo-count { font-family: var(--font-mono); font-size: .625rem; letter-spacing: .14em; text-transform: uppercase; color: var(--lumen-dim); }
-
-/* ── Pied de page ──────────────────────────────────── */
-.foot { padding: 56px 20px; }
-.foot-in { margin: 0 auto; max-width: 1152px; }
-.foot-brand { text-align: center; }
-.foot-brand .word { font-family: var(--font-display); font-size: 1.5rem; color: var(--lumen); }
-.foot-brand .word span { color: var(--accent); }
-.foot-brand p { margin: 8px auto 0; max-width: 28rem; font-size: 12px; color: var(--lumen-dim); text-wrap: balance; }
-.foot-cols { margin-top: 48px; display: grid; gap: 32px; text-align: center; }
-@media (min-width: 640px) { .foot-cols { grid-template-columns: repeat(3, 1fr); } }
-.foot-cols .t { font-family: var(--font-mono); font-size: .625rem; letter-spacing: .16em; text-transform: uppercase; color: var(--accent); }
-.foot-cols ul { margin-top: 16px; list-style: none; }
-.foot-cols a {
-  display: inline-flex; align-items: center; justify-content: center;
-  min-height: 44px; font-size: 12px; color: var(--lumen-dim); text-decoration: none; transition: color .2s;
-}
-.foot-cols a:hover { color: var(--lumen); }
-.foot-legal { margin-top: 48px; border-top: 1px solid rgba(40,49,60,.6); padding-top: 24px; text-align: center; font-size: .6875rem; color: var(--lumen-dim); }
-@media (min-width: 768px) { .foot { padding: 56px 32px; } }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation: none !important; transition-duration: 0ms !important; }
-  html { scroll-behavior: auto; }
-}
-</style>
+<!-- Marque la page comme animable AVANT le premier rendu. Sans JavaScript,
+     `.js` n'est jamais posée, les règles de révélation ne s'appliquent pas, et
+     la page s'affiche entière. Aucun contenu ne dépend d'une animation. -->
+<script>document.documentElement.className += ' js';</script>
 </head>
 <body>
 
-<!-- ═══ EN-TÊTE ═══ -->
+<a class="skip" href="#contenu">Aller au contenu</a>
+
 <header class="nav" id="nav">
   <div class="nav-in">
-    <a href="#haut" class="nav-logo"><span class="word">Arkib<span>a</span></span></a>
-    <nav class="nav-links">
-      <a href="#contexte">Le problème</a>
-      <a href="#capacites">Capacités</a>
-      <a href="#methode">Méthode</a>
+    <a href="#haut" class="nav-logo" aria-label="Arkiba — accueil"><b>Arkib</b><i>a</i></a>
+    <nav class="nav-links" aria-label="Navigation principale">
+      <a href="#avant">Le workflow</a>
+      <a href="#logiciel">Interopérabilité</a>
+      <a href="#etat">État du produit</a>
       <a href="#tarifs">Tarifs</a>
     </nav>
     <div class="nav-cta">
-      <a href="/login.html" class="btn btn-outline">Accéder à l'app</a>
-      <button class="nav-burger" id="nav-burger" aria-label="Ouvrir le menu" aria-expanded="false">
-        <svg class="ico-menu" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-        <svg class="ico-close" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <a href="/login.html" class="btn btn-ghost">Accéder à l'app</a>
+      <a href="#acces" class="btn btn-primary">Créer un compte</a>
+      <button class="nav-burger" id="nav-burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-mobile">
+        <svg class="ico-menu" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        <svg class="ico-close" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
   </div>
   <div class="nav-mobile-wrap">
     <div class="nav-mobile" id="nav-mobile">
-      <a href="#contexte" style="--d:40ms">Le problème</a>
-      <a href="#capacites" style="--d:70ms">Capacités</a>
-      <a href="#methode" style="--d:100ms">Méthode</a>
-      <a href="#tarifs" style="--d:130ms">Tarifs</a>
-      <div class="nav-mobile-actions">
-        <a href="/login.html" class="btn btn-outline">Accéder à l'app</a>
+      <div class="nav-mobile-in">
+        <a href="#avant">Le workflow</a>
+        <a href="#logiciel">Interopérabilité</a>
+        <a href="#etat">État du produit</a>
+        <a href="#tarifs">Tarifs</a>
+        <div class="acts">
+          <a href="/login.html" class="btn btn-ghost">Accéder à l'app</a>
+          <a href="#acces" class="btn btn-primary">Créer un compte</a>
+        </div>
       </div>
     </div>
   </div>
 </header>
 
-<main>
+<main id="contenu">
 
-<!-- ═══ HÉROS ═══ -->
+<!-- ════════════════════════════════════════════════════════════════════════
+     HÉROS — le dossier qui attend.
+     L'artefact n'est pas une capture d'écran : c'est le document, composé en
+     vraie typographie. Il se remplit avant l'heure du rendez-vous, puis il
+     attend. L'attente est le sujet de la page.
+     ═══════════════════════════════════════════════════════════════════════ -->
 <section class="hero" id="haut">
-  <div class="aurora"></div>
-  <div class="night-grid"></div>
   <div class="wrap">
-    <svg class="hero-ecg" viewBox="0 0 1200 40" preserveAspectRatio="none" aria-hidden="true">
-      <path class="ecg-draw" pathLength="1" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"
-            d="M0 20 H360 l14 0 l10 -13 l9 26 l10 -20 l12 7 H700 l16 0 l9 -10 l8 18 l9 -14 l11 6 H1200" />
-    </svg>
-
-    <div class="hero-mid">
-      <!-- L'inscription est ouverte : annoncer une « bêta fermée » au-dessus
-           d'un formulaire qui ouvre l'application immédiatement contredisait la
-           page. Le compteur d'inscrits, lui, était une valeur figée et non une
-           donnée du serveur — il a été retiré plutôt que de laisser un chiffre
-           inventé. Voir docs/cablage-refonte.md, partie II. -->
-      <span class="badge rise"><span class="dot breathe"></span>Essai gratuit 15 jours — sans carte bancaire</span>
-
-      <h1 class="rise" style="animation-delay:80ms">
-        <span class="text-gradient">Vous n'avez pas fait douze ans</span><br>
-        <span class="it">d'études</span> <span class="text-gradient">pour taper des comptes-rendus.</span>
-      </h1>
-
-      <p class="hero-sub rise" style="animation-delay:160ms">
-        5 h 30 par semaine de gestion et de coordination, avant même de compter les lettres et
-        les dossiers rédigés le soir. Arkiba les écrit pendant que vous parlez — chaque
-        affirmation clinique rattachée à sa source. Vous relisez, vous signez.
-      </p>
-
-      <div class="hero-cta rise" style="animation-delay:240ms">
-        <a href="#acces" class="btn btn-primary">
-          Créer mon compte — 15 jours gratuits
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </a>
-        <button type="button" class="btn btn-outline" id="demo-open">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="color:var(--accent)"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
-          Essayer une dictée
-        </button>
-      </div>
-    </div>
-
-    <!-- Démo de dictée : le moteur est celui de l'application (Web Speech API,
-         repli sur la saisie manuelle, erreurs visibles). Isolée : rien n'est
-         envoyé au serveur, aucun document n'est généré. -->
-    <section class="demo glass-night" id="demo" aria-live="polite">
-      <div class="demo-head">
-        <p class="cap">Démonstration — dictée</p>
-        <button type="button" class="close" id="demo-close">Fermer</button>
-      </div>
-      <p class="demo-sub">
-        Le moteur de dictée de l'application, en accès libre. Parlez, le texte s'écrit au fur
-        et à mesure ; vous pouvez taper à tout moment, y compris pendant l'écoute. Rien ne
-        quitte cet appareil : cette démonstration n'envoie rien et ne génère aucun document.
-      </p>
-      <div class="with-mic">
-        <textarea id="demo-text" data-mic="demo-text"
-          placeholder="Cliquez sur le micro et dictez comme en fin de consultation — ou tapez directement ici."></textarea>
-        <button type="button" class="mic-btn" data-mic="demo-text" aria-label="Démarrer la dictée" title="Dictée vocale">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
-        </button>
-      </div>
-      <div class="demo-foot">
-        <span class="demo-count" id="demo-count">0 caractère</span>
-        <a href="#acces" class="btn btn-outline">Créer mon compte pour générer le document</a>
-      </div>
-    </section>
-
-    <div class="hero-doc glass-night rise" style="animation-delay:320ms">
-      <div class="hero-doc-bar">
-        <span class="pip"></span><span class="pip"></span><span class="pip"></span>
-        <p class="lbl">Consultation · 09/08 · 14 h 32</p>
-        <span class="chrono"><span class="dot breathe"></span>28 s</span>
-      </div>
-      <div class="hero-doc-grid">
-        <div class="sweep"></div>
-        <div class="hero-doc-col">
-          <p class="cap">Ce que vous dictez</p>
-          <p class="dictee">« Dupont, 68 ans, FA connue sous apixaban. Essoufflé depuis quinze jours,
-            il monte plus son étage. TA 142 sur 88, pouls 96 irrégulier, crépitants aux deux bases,
-            chevilles gonflées. J'augmente le bisoprolol, BNP écho, je le revois dans dix jours. »</p>
+    <div class="hero-grid">
+      <div>
+        <p class="hero-kicker" data-rev>Entre le patient, le médecin et le logiciel du cabinet</p>
+        <h1 class="display" data-rev style="--i:1">Le dossier <span class="it">attend</span> le médecin.</h1>
+        <p class="lead" data-rev style="--i:2">
+          Arkiba appelle le patient avant la consultation, met l'interrogatoire au propre et
+          signale ce qui reste incertain. Vous ouvrez Arkiba&nbsp;: le dossier est déjà là.
+        </p>
+        <div class="hero-acts" data-rev style="--i:3">
+          <a href="#acces" class="btn btn-primary btn-lg">
+            Créer mon compte
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a href="mailto:contact@arkiba.fr?subject=Demande%20de%20d%C3%A9monstration%20Arkiba" class="btn btn-ghost btn-lg">Demander une démonstration</a>
         </div>
-        <div class="hero-doc-col">
-          <p class="cap sky">Le document que vous signez</p>
-          <p class="doc-sec">Motif de consultation</p>
-          <p class="doc-body">Dyspnée d'effort d'aggravation progressive depuis quinze jours chez un
-            patient de 68 ans suivi pour fibrillation atriale permanente.</p>
+        <p class="hero-fine" data-rev style="--i:4">
+          Essai de 15 jours, sans carte bancaire. Arkiba n'établit aucun diagnostic
+          et ne décide rien à votre place.
+        </p>
+      </div>
 
-          <p class="doc-sec">Examen clinique et constantes</p>
-          <p class="doc-body">PA 142/88 mmHg. FC 96/min, irrégulière. Crépitants des deux bases
-            pulmonaires. Œdèmes des membres inférieurs bilatéraux. Dyspnée limitant la montée d'un
-            étage — <mark>stade NYHA II</mark>.</p>
-
-          <p class="doc-sec">Synthèse diagnostique</p>
-          <p class="doc-body">Décompensation cardiaque à fraction d'éjection non documentée, sur
-            fibrillation atriale à cadence ventriculaire insuffisamment contrôlée.</p>
-
-          <p class="doc-suite">+ Antécédents · Examens complémentaires · Conduite à tenir · Surveillance</p>
-
-          <div class="doc-gap">
-            <span><b>Le référentiel attendait aussi :</b> un ECG et son interprétation — absent de
-            votre dictée. Signalé avant signature, jamais inventé.</span>
+      <div class="dossier" data-rev style="--i:2">
+        <div class="dossier-bar">
+          <span class="who">M. R., 61 ans</span>
+          <span class="meta">Exemple</span>
+          <span class="rdv">RDV 09 h 15</span>
+        </div>
+        <div class="dossier-body">
+          <div class="champ" data-rev style="--i:4">
+            <span class="k">Motif</span>
+            <span class="v">Consultation pré-anesthésique — cure de hernie inguinale programmée le 14/03.</span>
+            <span class="src">Déclaré par le patient · appel de 08 h 41</span>
           </div>
-
-          <div class="src-row">
-            <span class="src"><b>HAS</b>Parcours de soins insuffisance cardiaque</span>
-            <span class="src"><b>ESC</b>NYHA · classification fonctionnelle</span>
+          <div class="champ" data-rev style="--i:5">
+            <span class="k">Antécédents</span>
+            <span class="v">Hypertension traitée. Appendicectomie en 1998. Aucune anesthésie générale signalée depuis.</span>
+            <span class="src">Déclaré par le patient · appel de 08 h 41</span>
           </div>
+          <div class="champ" data-rev style="--i:6">
+            <span class="k">Traitements en cours</span>
+            <span class="v">Amlodipine 5 mg, un comprimé le matin. Aucun anticoagulant déclaré.</span>
+            <span class="src">Déclaré par le patient · appel de 08 h 41</span>
+          </div>
+          <div class="champ verif" data-rev style="--i:7">
+            <span class="k">À vérifier</span>
+            <span class="v">Le patient mentionne «&nbsp;un problème au cœur, il y a longtemps&nbsp;» sans pouvoir préciser.
+              Arkiba ne tranche pas&nbsp;: la question vous revient.</span>
+          </div>
+        </div>
+        <div class="dossier-foot" data-rev style="--i:8">
+          <span class="etat pret"><span class="pastille"></span>Dossier prêt · 08 h 52</span>
+          <span class="etat attente"><span class="pastille veille"></span>En attente du médecin</span>
         </div>
       </div>
     </div>
-
-    <ul class="trust rise" style="animation-delay:420ms">
-      <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg><span>Hébergement HDS certifié</span></li>
-      <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg><span>Données hébergées en France</span></li>
-      <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg><span>Chiffrement AES-256 / TLS 1.3</span></li>
-      <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="4" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="6" rx="2"/><path d="M6 8h.01M6 17h.01"/></svg><span>Weda · Doctolib · Crossway</span></li>
-    </ul>
   </div>
 </section>
 
-<!-- ═══ CHIFFRES ═══ -->
-<section class="stats hairline-top">
-  <div class="stats-in">
-    <div><p class="v">54 h</p><p class="l">travaillées par semaine en moyenne par un généraliste libéral (DREES)</p></div>
-    <div><p class="v">5 h 30</p><p class="l">de gestion et de coordination hebdomadaires, hors soins (DREES)</p></div>
-    <div><p class="v">18 min</p><p class="l">la durée moyenne d'une consultation : aucune marge pour rédiger</p></div>
-    <div><p class="v">3 min</p><p class="l">ce qu'Arkiba vous demande, dictée et relecture comprises</p></div>
-  </div>
-</section>
-
-<!-- ═══ CONTEXTE ═══ -->
-<section class="section" id="contexte">
+<!-- ════════════════════════════════════════════════════════════════════════
+     AVANT — le fil du temps.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect rule-top" id="avant">
   <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Le contexte</p>
-      <h2>Le problème n'est pas votre façon de travailler. <span class="it">C'est le volume.</span></h2>
-      <p>Vous n'avez pas besoin d'un logiciel de plus. Vous avez besoin que la rédaction disparaisse — sans jamais perdre la main sur ce qui est écrit à votre nom.</p>
+    <div class="head" data-rev>
+      <span class="label">Avant la consultation</span>
+      <h2>Le travail ne disparaît pas. <span class="it">Il change de place.</span></h2>
+      <p class="lead">
+        Ce qui peut être préparé l'est avant l'arrivée du patient. Ce qui ne se délègue pas —
+        l'examen, le jugement, la décision — attend le médecin, et rien d'autre.
+      </p>
     </div>
-    <div class="cards">
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg></span>
-        <h3>La deuxième journée</h3>
-        <p>Les comptes-rendus attendent la fin des consultations. Vous les rédigez fatigué, tard, sur un temps qui appartenait à votre famille.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/><rect x="2" y="3" width="20" height="18" rx="2"/></svg></span>
-        <h3>Les dossiers sans fin</h3>
-        <p>MDPH, ALD, certificats, prises en charge. Des heures de formulaires qui ne sont ni valorisées, ni médicales, ni transférables.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M16 12h.01"/></svg></span>
-        <h3>Le temps facturable perdu</h3>
-        <p>Chaque heure de paperasse, c'est trois consultations que vous n'avez pas faites — ou trois patients qui n'ont pas eu de rendez-vous.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
-        <h3>La correspondance en retard</h3>
-        <p>La lettre au spécialiste part trois jours plus tard, quand elle part. Le confrère reçoit un dossier incomplet, le patient recommence.</p>
-      </article>
-    </div>
-    <div class="pills">
-      <span>Lettres de liaison</span><span>Comptes-rendus</span><span>MDPH &amp; ALD</span><span>Certificats</span>
-    </div>
-  </div>
-</section>
 
-<!-- ═══ CAPACITÉS ═══ -->
-<section class="section tinted hairline-top" id="capacites">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Capacités</p>
-      <h2>Toute la rédaction du cabinet. <span class="it">Et rien de votre décision.</span></h2>
-      <p>Arkiba ne diagnostique pas et ne prescrit pas. Il rédige, structure et justifie. La signature reste la vôtre, entière.</p>
-    </div>
-    <div class="cards three">
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8M3 8l9-5 9 5"/></svg></span>
-        <h3>Lettres de liaison &amp; adressage</h3>
-        <p>Dictez trois phrases. Arkiba écrit la lettre entière au confrère — motif de recours, antécédents, traitements en cours, question posée.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg></span>
-        <h3>Comptes-rendus de consultation</h3>
-        <p>Parlez comme vous parlez à un interne. Les éléments cliniques sont extraits, structurés et rangés dans votre plan habituel.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h10"/><rect x="2" y="3" width="20" height="18" rx="2"/></svg></span>
-        <h3>Dossiers MDPH &amp; ALD</h3>
-        <p>Les volets médicaux sont pré-remplis depuis le dossier existant. Vous complétez ce qui relève de votre jugement, rien d'autre.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
-        <h3>Chaque phrase est sourcée</h3>
-        <p>HAS, ESC, ANSM, littérature indexée : chaque affirmation est cliquable jusqu'à sa référence. Aucune phrase inventée ne passe.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 2l9 5-9 5-9-5 9-5z"/><path d="M3 12l9 5 9-5M3 17l9 5 9-5"/></svg></span>
-        <h3>Dans votre logiciel, pas à côté</h3>
-        <p>Weda, Doctolib, Crossway. Le document revient dans le dossier patient : aucune ressaisie, aucun copier-coller, aucun onglet de plus.</p>
-      </article>
-      <article class="card glass-night"><div class="glow"></div>
-        <span class="ico"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 20V10M18 20V4M6 20v-4"/></svg></span>
-        <h3>Le temps repris, chiffré</h3>
-        <p>Chaque semaine, les heures récupérées et leur équivalent en consultations. Vous savez exactement ce que ça vous rend.</p>
-      </article>
-    </div>
-  </div>
-</section>
+    <div class="fil-grid">
+      <ol class="fil fil-etapes">
+        <li class="etape" data-rev data-champ="">
+          <span class="rail"><span class="heure">08 h 00</span><span class="qui">Arkiba</span></span>
+          <h3>Le rendez-vous est détecté</h3>
+          <p>Arkiba lit l'agenda raccordé et sait qu'une consultation approche. Le médecin
+             n'ouvre rien, ne lance rien, ne prévient personne.</p>
+        </li>
+        <li class="etape" data-rev data-champ="motif">
+          <span class="rail"><span class="heure">08 h 41</span><span class="qui">Arkiba</span></span>
+          <h3>Le patient est appelé</h3>
+          <p>Un interrogatoire structuré, conduit avant la consultation&nbsp;: motif de venue,
+             antécédents, traitements en cours, allergies.</p>
+        </li>
+        <li class="etape" data-rev data-champ="atcd,traitements">
+          <span class="rail"><span class="heure">08 h 47</span><span class="qui">Arkiba</span></span>
+          <h3>Les réponses sont mises au propre</h3>
+          <p>Chaque information reste rattachée à ce que le patient a réellement dit. Arkiba
+             range, reformule et date — il ne comble aucun trou.</p>
+        </li>
+        <li class="etape" data-rev data-champ="verif">
+          <span class="rail"><span class="heure">08 h 49</span><span class="qui">Arkiba</span></span>
+          <h3>Ce qui est incertain est marqué comme tel</h3>
+          <p>Une réponse floue, une contradiction, une donnée manquante&nbsp;: c'est signalé
+             «&nbsp;à vérifier&nbsp;» au lieu d'être tranché. L'incertitude remonte, elle ne se dissout pas.</p>
+        </li>
+        <li class="etape" data-rev data-champ="pret">
+          <span class="rail"><span class="heure">08 h 52</span><span class="qui">Arkiba</span></span>
+          <h3>Le dossier est prêt — et il attend</h3>
+          <p>Il ne part nulle part, ne déclenche rien, ne notifie personne. Il patiente jusqu'à
+             ce que le médecin l'ouvre.</p>
+        </li>
+        <li class="etape" data-rev data-champ="ouvert">
+          <span class="rail"><span class="heure">09 h 15</span><span class="qui medecin">Médecin</span></span>
+          <h3>La consultation commence</h3>
+          <p>Le médecin arrive avec le contexte déjà réuni. C'est le seul moment de la
+             chaîne qui n'a jamais été automatisé, et il ne le sera pas.</p>
+        </li>
+      </ol>
 
-<!-- ═══ MÉTHODE ═══ -->
-<section class="section" id="methode">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Méthode</p>
-      <h2>Trois étapes. <span class="it">Pas une de plus.</span></h2>
-      <p>Rien à apprendre : si vous savez raconter une consultation à voix haute, vous savez utiliser Arkiba.</p>
-    </div>
-    <ol class="steps">
-      <div class="rule"></div>
-      <li>
-        <span class="num"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg></span>
-        <p class="n">01</p><h3>Vous dictez</h3>
-        <p>Trente secondes en fin de consultation, dans vos mots, avec vos abréviations. Aucun formulaire à remplir.</p>
-      </li>
-      <li>
-        <span class="num"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg></span>
-        <p class="n">02</p><h3>Arkiba rédige</h3>
-        <p>Le document sort dans le format attendu par le destinataire, avec les références rattachées à chaque affirmation.</p>
-      </li>
-      <li>
-        <span class="num"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 13l4 4L19 7"/></svg></span>
-        <p class="n">03</p><h3>Vous signez</h3>
-        <p>Vous relisez en quinze secondes, vous corrigez si besoin, vous envoyez. Le dossier patient est déjà à jour.</p>
-      </li>
-    </ol>
-  </div>
-</section>
-
-<!-- ═══ TÉMOIGNAGES ═══ -->
-<section class="section">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Bêta-testeurs</p>
-      <h2>Ce qu'en disent les médecins <span class="it">qui l'utilisent déjà.</span></h2>
-    </div>
-    <div class="quotes">
-      <figure class="glass-night">
-        <svg class="qm" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h4v4H9v2H7V7zm6 0h4v4h-2v2h-2V7z"/></svg>
-        <blockquote>« Je récupère une heure chaque soir. Les lettres d'adressage partent avant que le patient ait quitté la salle d'attente. »</blockquote>
-        <figcaption><span class="ini">ML</span><span class="who">Dr Marie L.</span><span class="role">Médecine générale — Reims</span></figcaption>
-      </figure>
-      <figure class="glass-night">
-        <svg class="qm" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h4v4H9v2H7V7zm6 0h4v4h-2v2h-2V7z"/></svg>
-        <blockquote>« Le dossier MDPH qui me prenait deux heures, j'en ai fait un en dix-huit minutes. J'ai relu, j'ai signé, c'était juste. »</blockquote>
-        <figcaption><span class="ini">AP</span><span class="who">Dr Antoine P.</span><span class="role">Médecine générale — Strasbourg</span></figcaption>
-      </figure>
-      <figure class="glass-night">
-        <svg class="qm" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h4v4H9v2H7V7zm6 0h4v4h-2v2h-2V7z"/></svg>
-        <blockquote>« La lettre est meilleure que celle que j'écrivais moi-même à 22 h, épuisé. Le constat est brutal, mais il est vrai. »</blockquote>
-        <figcaption><span class="ini">SC</span><span class="who">Dr Sophie C.</span><span class="role">Gériatrie libérale — Nantes</span></figcaption>
-      </figure>
-      <figure class="glass-night">
-        <svg class="qm" fill="currentColor" viewBox="0 0 24 24"><path d="M7 7h4v4H9v2H7V7zm6 0h4v4h-2v2h-2V7z"/></svg>
-        <blockquote>« Ce qui m'a décidé : pouvoir cliquer sur la source de chaque phrase. Je ne signe pas un texte que je ne peux pas vérifier. »</blockquote>
-        <figcaption><span class="ini">JD</span><span class="who">Dr Julien D.</span><span class="role">Médecine interne — Paris</span></figcaption>
-      </figure>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ TARIFS ═══ -->
-<section class="section tinted hairline-top" id="tarifs">
-  <div class="wrap">
-    <div class="head">
-      <p class="eyebrow">Tarifs</p>
-      <h2>Amorti en <span class="it">quatre consultations.</span></h2>
-      <p>À 30 € l'acte, Arkiba Pro est remboursé dès la première demi-journée que vous récupérez. Le reste du mois vous appartient.</p>
-    </div>
-    <div class="plans">
-      <article class="plan glass-night">
-        <span class="tag">&nbsp;</span>
-        <h3>Découverte</h3>
-        <p class="price"><b>0</b><i>€</i></p>
-        <p class="note">15 jours, sans engagement</p>
-        <ul>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>50 documents générés</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Lettres de liaison</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Comptes-rendus &amp; résumés</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Jusqu'à 10 dossiers patients</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Sources cliquables</li>
-        </ul>
-        <a href="#acces" class="btn btn-outline">Commencer gratuitement</a>
-      </article>
-      <article class="plan featured"><div class="halo"></div>
-        <span class="tag">Le plus choisi</span>
-        <h3>Arkiba Pro</h3>
-        <p class="price"><b>89</b><i>€</i></p>
-        <p class="note">par mois, sans engagement</p>
-        <ul>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Documents et dossiers illimités</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>MDPH &amp; ALD pré-remplis</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Certificats &amp; ordonnances</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Avis spécialisé sourcé</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Support par un médecin</li>
-          <li class="soon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Intégration logiciel métier <span class="soon-tag">Bientôt disponible</span></li>
-        </ul>
-        <a href="#acces" class="btn btn-primary">Essai gratuit 15 jours</a>
-      </article>
-      <article class="plan glass-night">
-        <span class="tag">&nbsp;</span>
-        <h3>Arkiba Groupe</h3>
-        <p class="price"><b>69</b><i>€</i></p>
-        <p class="note">par médecin / mois — dès 3</p>
-        <ul>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Tout Arkiba Pro</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Tableau de bord cabinet</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Modèles partagés</li>
-          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M5 13l4 4L19 7"/></svg>Facturation groupée</li>
-        </ul>
-        <a href="mailto:contact@arkiba.fr?subject=Arkiba%20Groupe" class="btn btn-outline">Nous contacter</a>
-      </article>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ CRÉATION DE COMPTE ═══ -->
-<section class="section acces" id="acces">
-  <div class="aurora"></div>
-  <div class="acces-in">
-    <h2><span class="text-gradient">Reprenez vos soirées.</span></h2>
-    <p>Créez votre compte et commencez tout de suite : 15 jours d'essai, sans carte bancaire,
-      sans engagement, sans démarchage — vous testez sur vos propres consultations.</p>
-
-    <!-- Ce formulaire crée un vrai compte : il poste sur POST /api/auth/register
-         puis entre directement dans l'application avec le jeton renvoyé. Il n'y
-         a plus ni liste d'attente ni validation manuelle.
-         Les champs sont donc ceux qu'exige le serveur : prénom, nom, email,
-         mot de passe, spécialité, ville. La spécialité est peuplée par
-         GET /api/specialites — la liste même contre laquelle le serveur valide.
-         Une copie en dur ici avait fini par diverger, et le formulaire refusait
-         alors toutes ses propres options. -->
-    <form class="form-card glass-night" id="register-form" novalidate>
-      <label class="field"><span>Prénom</span>
-        <input name="prenom" required autocomplete="given-name" placeholder="Camille" />
-      </label>
-      <label class="field"><span>Nom</span>
-        <input name="nom" required autocomplete="family-name" placeholder="Rousseau" />
-      </label>
-      <label class="field wide"><span>Email professionnel</span>
-        <input name="email" type="email" required autocomplete="email" placeholder="camille.rousseau@cabinet.fr" />
-      </label>
-      <label class="field wide"><span>Mot de passe</span>
-        <input name="password" type="password" required minlength="8" autocomplete="new-password"
-               placeholder="8 caractères minimum, avec une majuscule ou un chiffre" />
-      </label>
-      <label class="field"><span>Spécialité</span>
-        <select name="specialite" required>
-          <option value="" disabled selected>Chargement…</option>
-        </select>
-      </label>
-      <label class="field"><span>Ville d'exercice</span>
-        <input name="ville" required autocomplete="address-level2" placeholder="Lyon" />
-      </label>
-      <div class="form-alert" id="form-error" role="alert">
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
-        <span id="form-error-text"></span>
+      <!-- Le même dossier que dans le héros, pris plus tôt : ici il se
+           construit, là-haut il est fini. Chaque champ appartient à l'étape
+           qui le produit — rien n'apparaît avant son heure. -->
+      <div class="dossier fil-dossier" id="fil-dossier" aria-hidden="true">
+        <div class="dossier-bar">
+          <span class="who">M. R., 61 ans</span>
+          <span class="meta">Exemple</span>
+          <span class="rdv">RDV 09 h 15</span>
+        </div>
+        <p class="vide">Rien encore. Le rendez-vous est repéré, l'appel n'a pas eu lieu.</p>
+        <div class="dossier-body">
+          <div class="champ" data-c="motif">
+            <span class="k">Motif</span>
+            <span class="v">Consultation pré-anesthésique — cure de hernie inguinale programmée le 14/03.</span>
+            <span class="src">Déclaré par le patient · 08 h 41</span>
+          </div>
+          <div class="champ" data-c="atcd">
+            <span class="k">Antécédents</span>
+            <span class="v">Hypertension traitée. Appendicectomie en 1998.</span>
+            <span class="src">Déclaré par le patient · 08 h 41</span>
+          </div>
+          <div class="champ" data-c="traitements">
+            <span class="k">Traitements en cours</span>
+            <span class="v">Amlodipine 5 mg le matin. Aucun anticoagulant déclaré.</span>
+            <span class="src">Déclaré par le patient · 08 h 41</span>
+          </div>
+          <div class="champ verif" data-c="verif">
+            <span class="k">À vérifier</span>
+            <span class="v">«&nbsp;Un problème au cœur, il y a longtemps&nbsp;» — sans précision possible.</span>
+          </div>
+        </div>
+        <div class="dossier-foot">
+          <span class="etat pret" data-c="pret"><span class="pastille"></span>Dossier prêt · 08 h 52</span>
+          <span class="etat attente" data-c="ouvert"><span class="pastille"></span>Ouvert par le médecin</span>
+        </div>
       </div>
-      <button type="submit" class="btn btn-primary" id="submit-btn">
-        Créer mon compte
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
-      <p class="form-legal">Déjà un compte ? <a href="/login.html">Se connecter</a> · Données hébergées en France · Aucun démarchage · Résiliation à tout moment</p>
-    </form>
+    </div>
+  </div>
+</section>
 
-    <div class="form-done glass-night" id="form-success" role="status">
-      <span class="ok"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path d="M5 13l4 4L19 7"/></svg></span>
-      <p class="t">Compte créé, <strong id="success-name"></strong>.</p>
-      <p class="s">Ouverture de votre espace…</p>
+<!-- ════════════════════════════════════════════════════════════════════════
+     LE MOMENT — la seule section encrée du site.
+     Le site est en papier ; l'application est en nuit. Citer son monde ici,
+     et une seule fois, rend ce moment reconnaissable.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="nuit" id="moment">
+  <div class="wrap">
+    <div class="moment-grid">
+      <div>
+        <span class="label" data-rev>Le moment</span>
+        <h2 data-rev style="--i:1">Vous ouvrez Arkiba. <span class="it">Le dossier est déjà là.</span></h2>
+        <p class="lead" data-rev style="--i:2">
+          Pas de recherche, pas d'import, pas de fenêtre à retrouver. La liste des consultations
+          du jour, et pour chacune l'état réel de sa préparation — y compris quand cet état
+          n'est pas bon.
+        </p>
+        <p class="lead" data-rev style="--i:3">
+          Un appel resté sans réponse s'affiche comme tel. Arkiba ne fabrique pas un dossier
+          qu'il n'a pas pu préparer.
+        </p>
+      </div>
+
+      <div class="ecran" data-rev style="--i:2">
+        <div class="ecran-bar">
+          <span class="t">Pré-consultation — jeudi 12 mars</span>
+        </div>
+        <div class="ecran-liste">
+          <div class="ecran-item actif">
+            <span class="h">09 h 15</span>
+            <span class="n">M. R., 61 ans</span>
+            <span class="s pret">Prêt</span>
+          </div>
+          <div class="ecran-item">
+            <span class="h">09 h 45</span>
+            <span class="n">Mme T., 34 ans</span>
+            <span class="s verif">2 à vérifier</span>
+          </div>
+          <div class="ecran-item">
+            <span class="h">10 h 00</span>
+            <span class="n">M. B., 78 ans</span>
+            <span class="s verif">Appel sans réponse</span>
+          </div>
+        </div>
+        <p class="ecran-pied">Le dossier de 09 h 15 était prêt à 08 h 52. <b>Vingt-trois minutes avant le patient.</b></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     PENDANT — un seul champ de notes, clavier ou voix.
+     La dictée est le vrai moteur de l'application, isolé : rien n'est envoyé.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect" id="pendant">
+  <div class="wrap">
+    <div class="pendant-grid">
+      <div>
+        <span class="label" data-rev>Pendant la consultation</span>
+        <h2 data-rev style="--i:1">Le contexte est là. <span class="it">Vous, vous examinez.</span></h2>
+        <p class="lead" data-rev style="--i:2">
+          Arkiba ne s'interpose pas entre le médecin et le patient. Le dossier préparé reste
+          consultable, et un seul champ recueille les notes de consultation — au clavier, à la
+          voix, ou les deux dans la même phrase.
+        </p>
+        <p class="lead" data-rev style="--i:3">
+          Il n'y a pas deux modes à choisir, ni d'enregistrement à lancer. Un champ, et le micro
+          si vous le voulez.
+        </p>
+        <p class="essai" data-rev style="--i:4">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          Essayez&nbsp;: c'est le moteur de dictée de l'application, en accès libre.
+        </p>
+      </div>
+
+      <div class="notes" data-rev style="--i:2">
+        <div class="notes-head">
+          <span class="t">Notes brutes de consultation</span>
+          <span class="h">Démonstration</span>
+        </div>
+        <div class="with-mic">
+          <textarea id="notes-demo" data-mic="notes-demo"
+            aria-label="Notes brutes de consultation — démonstration"
+            placeholder="Dictez ou tapez, comme en consultation : motif, examen clinique, impression, conduite à tenir…"></textarea>
+          <button type="button" class="mic-btn" data-mic="notes-demo" aria-label="Démarrer la dictée" title="Dictée vocale">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3zM19 11v1a7 7 0 01-14 0v-1M12 19v3M9 22h6"/></svg>
+          </button>
+        </div>
+        <div class="notes-foot">
+          <span class="c" id="notes-count">0 caractère</span>
+          <span class="c fin">Rien ne quitte cet appareil.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     APRÈS — les documents.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect tinted rule-top" id="apres">
+  <div class="wrap">
+    <div class="head" data-rev>
+      <span class="label">Après la consultation</span>
+      <h2>Les documents, <span class="it">quand vous les demandez.</span></h2>
+      <p class="lead">
+        À partir du dossier validé et de vos notes, Arkiba rédige ce que vous sélectionnez.
+        Zéro, un, ou plusieurs. Vous relisez, vous corrigez sur place, vous signez.
+      </p>
+    </div>
+
+    <div class="grille c3">
+      <article data-rev><h3>Compte rendu de consultation</h3><p>Vos notes rangées dans le plan que vous utilisez déjà, sans reformulation de ce que vous n'avez pas dit.</p></article>
+      <article data-rev style="--i:1"><h3>Lettre de liaison et d'adressage</h3><p>Motif de recours, antécédents, traitements en cours et question posée au confrère.</p></article>
+      <article data-rev style="--i:2"><h3>Dossiers MDPH et ALD</h3><p>Les volets médicaux pré-remplis depuis le dossier. Vous complétez ce qui relève de votre jugement.</p></article>
+      <article data-rev style="--i:3"><h3>Certificats</h3><p>Mis en forme à partir de ce que vous dictez, dans le format attendu par le destinataire.</p></article>
+      <article data-rev style="--i:4"><h3>Ordonnances</h3><p>Mises en forme à partir de ce que vous prescrivez. La prescription reste entièrement la vôtre.</p></article>
+      <article data-rev style="--i:5"><h3>Avis spécialisé sourcé</h3><p>Adossé à une base médicale réellement indexée. Sans base disponible, Arkiba renvoie une erreur plutôt qu'un avis qui aurait l'air sourcé.</p></article>
+    </div>
+
+    <p class="lead" data-rev style="margin-top:28px;font-size:.9375rem">
+      Arkiba n'établit aucun diagnostic et ne décide d'aucun traitement. Il rédige, structure et
+      signale ce qui manque — la signature et la responsabilité restent celles du médecin.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     INTEROPÉRABILITÉ — Arkiba au milieu, pas à la place.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect rule-top" id="logiciel">
+  <div class="wrap">
+    <div class="head" data-rev>
+      <span class="label">Interopérabilité</span>
+      <h2>Arkiba se place entre. <span class="it">Il ne remplace rien.</span></h2>
+      <p class="lead">
+        Votre logiciel métier reste votre logiciel métier. Le dossier n'est pas prisonnier
+        d'Arkiba&nbsp;: à la fin, vous cochez ce qui doit partir — et rien d'autre ne part.
+      </p>
+    </div>
+
+    <div class="interop">
+      <div class="noeud" data-rev>
+        <p class="t">En amont</p>
+        <h3>L'agenda du cabinet</h3>
+        <p>Le rendez-vous existe déjà. Arkiba le lit&nbsp;; il ne le crée pas et ne le modifie pas.</p>
+      </div>
+
+      <div class="fleche" data-rev style="--i:1">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4"><path d="M4 12h15M14 7l5 5-5 5"/></svg>
+        <span class="lbl">rendez-vous</span>
+      </div>
+
+      <div class="noeud centre" data-rev style="--i:2">
+        <p class="t">La couche de travail</p>
+        <h3>Arkiba</h3>
+        <p>Ce qui n'existait nulle part avant la consultation, et qui n'a pas à vivre dans le dossier médical tant que le médecin ne l'a pas validé.</p>
+        <ul>
+          <li>Appel de pré-consultation</li>
+          <li>Dossier structuré et daté</li>
+          <li>Points à vérifier</li>
+          <li>Notes de consultation</li>
+          <li>Documents rédigés</li>
+        </ul>
+      </div>
+
+      <div class="fleche" data-rev style="--i:3">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4"><path d="M4 12h15M14 7l5 5-5 5"/></svg>
+        <span class="lbl">ce que vous cochez</span>
+      </div>
+
+      <div class="noeud" data-rev style="--i:4">
+        <p class="t">En aval</p>
+        <h3>Votre logiciel métier</h3>
+        <p>Le médecin choisit le périmètre du transfert, ligne par ligne. Ce qui n'est pas coché ne quitte jamais Arkiba.</p>
+      </div>
+    </div>
+
+    <div class="grille c2" data-rev style="margin-top:34px">
+      <article>
+        <h3>Vous restez seul détenteur de vos accès</h3>
+        <p>Pour le raccordement Doctolib, vous vous connectez vous-même dans une fenêtre dédiée,
+           code de vérification compris. Arkiba ne détient ni votre mot de passe ni votre session&nbsp;:
+           il constate seulement que la connexion a réussi.</p>
+      </article>
+      <article>
+        <h3>Non raccordé, Arkiba le dit</h3>
+        <p>Sans agenda connecté, la pré-consultation se désactive proprement et l'annonce.
+           Elle ne fabrique pas des dossiers vides pour avoir l'air de fonctionner.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     ÉTAT DU PRODUIT — le registre.
+     La section qui doit augmenter la confiance : chaque ligne dit son statut
+     réel, y compris quand ce statut est « pas encore ».
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect tinted rule-top" id="etat">
+  <div class="wrap">
+    <div class="head" data-rev>
+      <span class="label">État du produit</span>
+      <h2>Ce qui fonctionne aujourd'hui, <span class="it">et ce qui n'y est pas encore.</span></h2>
+      <p class="lead">
+        Une page qui promet tout n'apprend rien à personne. Voici l'état réel, ligne par ligne,
+        au 2 septembre 2026.
+      </p>
+    </div>
+
+    <div class="registre" data-rev>
+      <div class="reg-ligne">
+        <span class="quoi">Rédaction des documents</span>
+        <p>Comptes rendus, lettres de liaison, MDPH, ALD, certificats et ordonnances, à partir de vos notes.</p>
+        <span class="statut dispo"><span class="p"></span>Disponible</span>
+      </div>
+      <div class="reg-ligne">
+        <span class="quoi">Dictée vocale</span>
+        <p>Reconnaissance en français, dans le navigateur. Le clavier fonctionne toujours, y compris pendant la dictée.</p>
+        <span class="statut dispo"><span class="p"></span>Disponible</span>
+      </div>
+      <div class="reg-ligne">
+        <span class="quoi">Avis spécialisé sourcé</span>
+        <p>Base médicale indexée en dermatologie. Les autres spécialités ne sont pas indexées&nbsp;: la fonction refuse de répondre plutôt que d'inventer.</p>
+        <span class="statut dispo"><span class="p"></span>Dermatologie</span>
+      </div>
+      <div class="reg-ligne">
+        <span class="quoi">Pré-consultation par appel patient</span>
+        <p>Le moteur d'interrogatoire, le dossier préparé et les points à vérifier. Déployé sur un périmètre restreint, en conditions réelles.</p>
+        <span class="statut pilote"><span class="p"></span>Pilote</span>
+      </div>
+      <div class="reg-ligne">
+        <span class="quoi">Raccordement Doctolib</span>
+        <p>Connecteur pilote, en cours de mise au point. Arkiba n'est pas partenaire officiel de Doctolib et ne s'en réclame pas.</p>
+        <span class="statut pilote"><span class="p"></span>Pilote</span>
+      </div>
+      <div class="reg-ligne">
+        <span class="quoi">Hébergement HDS</span>
+        <p>Prérequis à toute mise en production avec de vraies données de santé. La certification n'est pas obtenue à ce jour, et Arkiba ne l'affiche pas comme acquise.</p>
+        <span class="statut cours"><span class="p"></span>En cours</span>
+      </div>
+      <div class="reg-ligne">
+        <span class="quoi">Autres logiciels métier</span>
+        <p>EMED, Weda, Crossway et les autres&nbsp;: aucun raccordement livré à ce jour.</p>
+        <span class="statut prevu"><span class="p"></span>À venir</span>
+      </div>
+    </div>
+
+    <p class="lead" data-rev style="margin-top:24px;font-size:.9375rem">
+      Les spécialités à préconsultation et à forte charge documentaire sont les premiers terrains
+      d'usage — l'anesthésie en particulier. Arkiba s'adresse aux médecins libéraux, généralistes
+      comme spécialistes, sans prétendre être déjà éprouvé dans chacune des 46 spécialités qu'il
+      sait accueillir.
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     TARIFS
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect rule-top" id="tarifs">
+  <div class="wrap">
+    <div class="head" data-rev>
+      <span class="label">Tarifs</span>
+      <h2>Un essai réel, <span class="it">puis un prix simple.</span></h2>
+      <p class="lead">
+        L'essai n'est pas une démonstration bridée&nbsp;: c'est l'application, avec des plafonds.
+        À son terme, ce que vous avez produit reste consultable.
+      </p>
+    </div>
+
+    <div class="tarifs">
+      <div class="tarif" data-rev>
+        <span class="n">Essai</span>
+        <p class="p">0 <small>€</small></p>
+        <p class="sub">15 jours, sans carte bancaire</p>
+        <ul>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Comptes rendus, lettres, résumés</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Dictée et analyse clinique</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>50 documents, 10 dossiers patients</li>
+        </ul>
+        <a href="#acces" class="btn btn-ghost">Commencer</a>
+      </div>
+
+      <div class="tarif mis" data-rev style="--i:1">
+        <span class="n">Pro</span>
+        <p class="p">89 <small>€ / mois</small></p>
+        <p class="sub">Sans engagement, résiliable en ligne</p>
+        <ul>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Tout l'essai, sans plafond</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>MDPH, ALD, certificats, ordonnances</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Avis spécialisé sourcé</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Dossiers patients illimités</li>
+        </ul>
+        <a href="#acces" class="btn btn-primary">Créer mon compte</a>
+      </div>
+
+      <div class="tarif" data-rev style="--i:2">
+        <span class="n">Groupe</span>
+        <p class="p">69 <small>€ / médecin</small></p>
+        <p class="sub">Cabinets de groupe et MSP</p>
+        <ul>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Les fonctions d'Arkiba Pro</li>
+          <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Facturation unique pour le cabinet</li>
+        </ul>
+        <a href="mailto:contact@arkiba.fr?subject=Arkiba%20Groupe" class="btn btn-ghost">Nous écrire</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════════════════════════════════════
+     ACCÈS — création de compte réelle (POST /api/auth/register)
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect tinted rule-top" id="acces">
+  <div class="wrap">
+    <div class="acces-grid">
+      <div>
+        <span class="label" data-rev>Accès</span>
+        <h2 data-rev style="--i:1">Ouvrez un compte, <span class="it">regardez vous-même.</span></h2>
+        <p class="lead" data-rev style="--i:2">
+          Le compte est créé immédiatement et donne accès à l'application. Aucune carte bancaire
+          n'est demandée pendant l'essai.
+        </p>
+        <p class="lead" data-rev style="--i:3">
+          Vous préférez qu'on vous la montre&nbsp;? Écrivez à
+          <a class="lnk" href="mailto:contact@arkiba.fr?subject=Demande%20de%20d%C3%A9monstration%20Arkiba">contact@arkiba.fr</a>
+          et nous convenons d'une démonstration.
+        </p>
+      </div>
+
+      <div class="form-carte" data-rev style="--i:2">
+        <div class="bandeau err" id="form-error" role="alert">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          <span id="form-error-text"></span>
+        </div>
+
+        <form id="register-form" novalidate>
+          <div class="champs">
+            <div class="f">
+              <label for="f-prenom">Prénom</label>
+              <input id="f-prenom" name="prenom" type="text" autocomplete="given-name" required />
+            </div>
+            <div class="f">
+              <label for="f-nom">Nom</label>
+              <input id="f-nom" name="nom" type="text" autocomplete="family-name" required />
+            </div>
+            <div class="f full">
+              <label for="f-email">Email professionnel</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <div class="f full">
+              <label for="f-specialite">Spécialité</label>
+              <!-- La source est déclarée ici, à côté du champ qu'elle remplit :
+                   les 46 libellés viennent du serveur et ne sont jamais écrits
+                   dans la page. Une copie figée avait divergé de la liste
+                   serveur et faisait échouer toutes les inscriptions. -->
+              <select id="f-specialite" name="specialite" required data-source="/api/specialites">
+                <option value="">Chargement…</option>
+              </select>
+            </div>
+            <div class="f">
+              <label for="f-ville">Ville d'exercice</label>
+              <input id="f-ville" name="ville" type="text" autocomplete="address-level2" required />
+            </div>
+            <div class="f">
+              <label for="f-rpps">RPPS <span style="color:var(--ink-3);font-weight:400">— facultatif</span></label>
+              <input id="f-rpps" name="rpps" type="text" inputmode="numeric" autocomplete="off" />
+            </div>
+            <div class="f full">
+              <label for="f-password">Mot de passe</label>
+              <input id="f-password" name="password" type="password" autocomplete="new-password" minlength="8" required />
+              <p class="aide">8 caractères minimum, avec une majuscule ou un chiffre.</p>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg" id="submit-btn">Créer mon compte</button>
+
+          <p class="form-legal">
+            En créant un compte, vous acceptez les <a class="lnk" href="/cgu.html">CGU</a> et la
+            <a class="lnk" href="/politique-confidentialite.html">politique de confidentialité</a>.
+            N'utilisez pas de données de patients identifiables tant que l'hébergement HDS n'est pas en place.
+          </p>
+        </form>
+      </div>
     </div>
   </div>
 </section>
 
 </main>
 
-<!-- ═══ PIED DE PAGE ═══ -->
-<footer class="foot hairline-top">
-  <div class="foot-in">
-    <div class="foot-brand">
-      <p class="word">Arkib<span>a</span></p>
-      <p>L'assistant administratif des médecins libéraux · Hébergement HDS certifié, France</p>
-    </div>
-    <div class="foot-cols">
+<footer class="foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <p class="marque">Arkib<i>a</i></p>
+        <p class="pitch">La couche de workflow entre le patient, le médecin et le logiciel du cabinet.</p>
+      </div>
       <div>
         <p class="t">Produit</p>
         <ul>
-          <li><a href="#capacites">Capacités</a></li>
-          <li><a href="#methode">Méthode</a></li>
+          <li><a href="#avant">Le workflow</a></li>
+          <li><a href="#logiciel">Interopérabilité</a></li>
+          <li><a href="#etat">État du produit</a></li>
           <li><a href="#tarifs">Tarifs</a></li>
-          <li><a href="#acces">Créer un compte</a></li>
         </ul>
       </div>
       <div>
-        <p class="t">Confiance</p>
+        <p class="t">Accès</p>
         <ul>
-          <li><a href="/politique-confidentialite.html">Hébergement &amp; RGPD</a></li>
-          <li><a href="/politique-confidentialite.html">Sécurité des données</a></li>
-          <li><a href="#capacites">Sources cliniques</a></li>
-          <li><a href="/login.html">Accéder à l'application</a></li>
+          <li><a href="#acces">Créer un compte</a></li>
+          <li><a href="/login.html">Se connecter</a></li>
+          <li><a href="mailto:contact@arkiba.fr?subject=Demande%20de%20d%C3%A9monstration%20Arkiba">Demander une démonstration</a></li>
+          <li><a href="mailto:contact@arkiba.fr">contact@arkiba.fr</a></li>
         </ul>
       </div>
       <div>
@@ -1024,336 +656,16 @@ a, button, input, select, textarea, summary, [role="button"] { touch-action: man
           <li><a href="/mentions-legales.html">Mentions légales</a></li>
           <li><a href="/cgu.html">CGU</a></li>
           <li><a href="/politique-confidentialite.html">Confidentialité</a></li>
-          <li><a href="mailto:contact@arkiba.fr">Contact</a></li>
         </ul>
       </div>
     </div>
-    <p class="foot-legal">© 2026 Arkiba — Arkiba n'établit aucun diagnostic et ne remplace pas la décision médicale.</p>
+    <div class="foot-bas">
+      <span>© 2026 Arkiba</span>
+      <span>Arkiba n'établit aucun diagnostic et ne remplace pas la décision médicale.</span>
+    </div>
   </div>
 </footer>
 
-<script>
-// ═══ En-tête : fond au défilement, menu mobile ═══
-const nav = document.getElementById('nav');
-const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 12);
-onScroll();
-window.addEventListener('scroll', onScroll, { passive: true });
-
-const burger = document.getElementById('nav-burger');
-burger.addEventListener('click', () => {
-  const ouvert = nav.classList.toggle('open');
-  burger.setAttribute('aria-expanded', String(ouvert));
-  burger.setAttribute('aria-label', ouvert ? 'Fermer le menu' : 'Ouvrir le menu');
-});
-function fermerMenu() {
-  if (!nav.classList.contains('open')) return;
-  nav.classList.remove('open');
-  burger.setAttribute('aria-expanded', 'false');
-  burger.setAttribute('aria-label', 'Ouvrir le menu');
-}
-document.getElementById('nav-mobile').addEventListener('click', e => {
-  if (e.target.closest('a')) fermerMenu();
-});
-// Un menu qu'on ne peut refermer qu'en retrouvant le bouton est une impasse.
-document.addEventListener('click', e => {
-  if (!nav.contains(e.target)) fermerMenu();
-});
-document.addEventListener('keydown', e => { if (e.key === 'Escape') fermerMenu(); });
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  DÉMONSTRATION DE DICTÉE (Web Speech API)
-// ═══════════════════════════════════════════════════════════════════════
-// Même moteur que l'application : la saisie manuelle reste active en
-// permanence, y compris pendant l'écoute ; le texte est reconstruit depuis la
-// liste complète des résultats (doublons observés sur Chrome Android) ;
-// l'écoute redémarre seule après les coupures silencieuses du navigateur ; et
-// toute erreur affiche un message clair sous le champ, avec bascule immédiate
-// en saisie manuelle — jamais de blocage silencieux.
-//
-// Démonstration isolée : rien n'est envoyé au serveur, aucun document généré.
-const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-let activeRec = null;
-
-const demo = document.getElementById('demo');
-const demoText = document.getElementById('demo-text');
-const demoCount = document.getElementById('demo-count');
-
-document.getElementById('demo-open').addEventListener('click', () => {
-  demo.classList.add('show');
-  demo.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  demoText.focus({ preventScroll: true });
-});
-document.getElementById('demo-close').addEventListener('click', () => {
-  stopMic();
-  demo.classList.remove('show');
-});
-const majCompteur = () => {
-  const n = demoText.value.length;
-  demoCount.textContent = n + ' caractère' + (n > 1 ? 's' : '');
-};
-demoText.addEventListener('input', majCompteur);
-majCompteur();
-
-document.querySelectorAll('button[data-mic]').forEach(btn => {
-  btn.addEventListener('click', () => toggleMic(btn));
-});
-
-function micStatusEl(btn) {
-  const wrap = btn.closest('.with-mic');
-  if (!wrap) return null;
-  let el = wrap.parentElement.querySelector('.mic-status');
-  if (!el) {
-    el = document.createElement('div');
-    el.className = 'mic-status';
-    wrap.insertAdjacentElement('afterend', el);
-  }
-  return el;
-}
-function micShowListening(btn) {
-  const el = micStatusEl(btn);
-  if (!el) return;
-  el.className = 'mic-status listening show';
-  el.innerHTML = '<span class="mic-dot"></span><span class="mic-status-body">Arkiba vous écoute — parlez naturellement.' +
-    '<span class="mic-status-hint">Le texte s\'ajoute au fur et à mesure. Vous pouvez continuer à taper à tout moment. Cliquez à nouveau sur le micro pour arrêter.</span></span>';
-}
-function micShowError(btn, message, hint) {
-  const el = micStatusEl(btn);
-  if (!el) return;
-  el.className = 'mic-status error show';
-  el.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>' +
-    '<span class="mic-status-body">' + escapeHtml(message) +
-    '<span class="mic-status-hint">' + escapeHtml(hint || 'Votre texte est conservé — continuez simplement à taper dans le champ ci-dessus.') + '</span></span>';
-  setTimeout(() => { if (el.classList.contains('error')) el.classList.remove('show'); }, 9000);
-}
-// N'efface que le bandeau d'écoute : un message d'erreur doit rester lisible
-// après l'arrêt de la reconnaissance, sinon la panne redevient silencieuse.
-function micHideStatus(btn) {
-  const el = micStatusEl(btn);
-  if (el && !el.classList.contains('error')) el.classList.remove('show');
-}
-
-function stopMic() {
-  if (!activeRec) return;
-  activeRec.manualStop = true;
-  try { activeRec.rec.stop(); } catch (_) {}
-}
-
-function toggleMic(btn) {
-  if (!SpeechRec) {
-    micShowError(btn,
-      'La dictée vocale n\'est pas disponible sur ce navigateur.',
-      'Utilisez Chrome, Edge ou Safari — ou tapez votre texte dans le champ ci-dessus, tout fonctionne sans le micro.');
-    return;
-  }
-  if (activeRec && activeRec.btn === btn) { stopMic(); return; }
-  if (activeRec) stopMic();
-
-  const target = document.getElementById(btn.dataset.mic);
-  const state = {
-    btn, target,
-    rec: new SpeechRec(),
-    baseText: target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value,
-    sessionFinal: '',
-    ignoreUntil: 0,
-    manualStop: false,
-    programmatic: false,
-    restarts: 0
-  };
-  const rec = state.rec;
-  rec.lang = 'fr-FR';
-  rec.continuous = true;
-  rec.interimResults = true;
-
-  const setValue = v => {
-    state.programmatic = true;
-    target.value = v;
-    target.dispatchEvent(new Event('input', { bubbles: true }));
-    state.programmatic = false;
-  };
-
-  // Si l'utilisateur tape pendant la dictée, on repart de son texte : la
-  // saisie manuelle a toujours priorité, rien n'est écrasé.
-  const onUserType = () => {
-    if (state.programmatic) return;
-    state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
-    state.sessionFinal = '';
-    state.ignoreUntil = state.resultCount || 0;
-  };
-  target.addEventListener('input', onUserType);
-
-  rec.onresult = e => {
-    let finalT = '', interim = '';
-    for (let i = state.ignoreUntil; i < e.results.length; i++) {
-      const r = e.results[i];
-      if (r.isFinal) finalT += r[0].transcript;
-      else           interim += r[0].transcript;
-    }
-    state.resultCount = e.results.length;
-    state.sessionFinal = finalT;
-    setValue(state.baseText + finalT + interim);
-  };
-
-  rec.onerror = e => {
-    switch (e.error) {
-      case 'not-allowed':
-      case 'service-not-allowed':
-        state.manualStop = true;
-        micShowError(btn,
-          'Arkiba n\'a pas l\'autorisation d\'utiliser le micro.',
-          'Autorisez le micro dans les réglages du navigateur (icône cadenas dans la barre d\'adresse), ou tapez votre texte : rien n\'est perdu.');
-        break;
-      case 'audio-capture':
-        state.manualStop = true;
-        micShowError(btn,
-          'Aucun micro n\'a été détecté sur cet appareil.',
-          'Vérifiez le branchement du micro, ou tapez votre texte dans le champ ci-dessus.');
-        break;
-      case 'network':
-        state.manualStop = true;
-        micShowError(btn,
-          'Le service de reconnaissance vocale est momentanément injoignable.',
-          'Vérifiez la connexion internet et réessayez, ou tapez votre texte : le champ reste actif.');
-        break;
-      // 'no-speech' et 'aborted' : silences normaux, l'écoute redémarre seule.
-    }
-  };
-
-  rec.onend = () => {
-    if (state.sessionFinal) {
-      state.baseText = state.baseText + state.sessionFinal;
-      if (!/\s$/.test(state.baseText)) state.baseText += ' ';
-      state.sessionFinal = '';
-    }
-    setValue(state.baseText.replace(/\s$/, ''));
-    state.ignoreUntil = 0;
-    state.resultCount = 0;
-
-    // Le navigateur coupe l'écoute après quelques secondes de silence :
-    // on la relance tant que l'utilisateur n'a pas arrêté lui-même.
-    if (!state.manualStop && activeRec === state && state.restarts < 60) {
-      state.restarts += 1;
-      state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
-      setTimeout(() => {
-        if (activeRec !== state || state.manualStop) return;
-        try { rec.start(); }
-        catch (_) {
-          micCleanup(state);
-          micShowError(btn, 'La dictée s\'est interrompue.', 'Cliquez sur le micro pour reprendre — le texte déjà dicté est conservé.');
-        }
-      }, 200);
-      return;
-    }
-    micCleanup(state);
-  };
-
-  function micCleanup(s) {
-    s.btn.classList.remove('listening');
-    s.btn.setAttribute('aria-label', 'Démarrer la dictée');
-    s.target.removeEventListener('input', onUserType);
-    micHideStatus(s.btn);
-    if (activeRec === s) activeRec = null;
-  }
-
-  try {
-    rec.start();
-  } catch (_) {
-    micShowError(btn, 'Impossible de démarrer la dictée.', 'Réessayez dans un instant, ou tapez votre texte dans le champ ci-dessus.');
-    return;
-  }
-  btn.classList.add('listening');
-  btn.setAttribute('aria-label', 'Arrêter la dictée');
-  micShowListening(btn);
-  activeRec = state;
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-//  CRÉATION DE COMPTE
-//
-//  Le formulaire crée le compte et entre directement dans l'application : plus
-//  de liste d'attente, plus de page « votre place est réservée », plus de
-//  validation manuelle. Le jeton renvoyé par /api/auth/register est rangé sous
-//  la même clé que celle lue par app.html et login.html.
-// ═══════════════════════════════════════════════════════════════════════
-const form = document.getElementById('register-form');
-const btn = document.getElementById('submit-btn');
-const successEl = document.getElementById('form-success');
-const successName = document.getElementById('success-name');
-const errorEl = document.getElementById('form-error');
-const errorText = document.getElementById('form-error-text');
-const specialiteSelect = form.querySelector('select[name="specialite"]');
-
-// Options servies par /api/specialites, la liste même contre laquelle
-// /api/auth/register valide — une copie en dur ici avait fini par diverger.
-(async () => {
-  try {
-    const res = await fetch('/api/specialites');
-    const data = await res.json();
-    if (!res.ok || !Array.isArray(data.specialites)) throw new Error('liste indisponible');
-    specialiteSelect.querySelector('option').textContent = 'Choisir…';
-    for (const nom of data.specialites) {
-      const opt = document.createElement('option');
-      opt.value = nom; opt.textContent = nom;
-      specialiteSelect.appendChild(opt);
-    }
-  } catch {
-    specialiteSelect.querySelector('option').textContent = 'Spécialités indisponibles — rechargez la page';
-  }
-})();
-
-function montrerErreur(message) {
-  errorText.textContent = message;
-  errorEl.classList.add('show');
-}
-
-form.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  errorEl.classList.remove('show');
-
-  // Validation native avant envoi : un champ vide doit se signaler sur place,
-  // pas revenir du serveur en message global.
-  if (!form.checkValidity()) { form.reportValidity(); return; }
-
-  btn.disabled = true;
-  const libelle = btn.innerHTML;
-  btn.textContent = 'Création du compte…';
-
-  const data = Object.fromEntries(new FormData(form));
-  // Le serveur attend une liste de spécialités ; le menu de cette page n'en
-  // propose qu'une, on l'enveloppe plutôt que de laisser le serveur deviner.
-  const payload = { ...data, specialites: data.specialite ? [data.specialite] : [] };
-
-  try {
-    const res = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const json = await res.json();
-
-    if (res.ok) {
-      // Même clé que login.html et app.html : le compte est connecté d'emblée,
-      // sans repasser par l'écran de connexion.
-      localStorage.setItem('praxi_token', json.token);
-      form.style.display = 'none';
-      successEl.classList.add('show');
-      successName.textContent = data.prenom;
-      location.href = '/app.html';
-    } else {
-      throw new Error(json.error || 'Erreur serveur');
-    }
-  } catch (err) {
-    btn.disabled = false;
-    btn.innerHTML = libelle;
-    // Le message du serveur est actionnable (« Cet email est déjà inscrit. »,
-    // « Trop de tentatives… ») ; le masquer derrière un texte générique
-    // laissait l'inscrit réessayer indéfiniment sans savoir ce qui coince.
-    montrerErreur(err.message || 'Une erreur est survenue. Réessayez dans quelques instants.');
-  }
-});
-</script>
+<script src="/site.js" defer></script>
 </body>
 </html>
