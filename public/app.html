@@ -102,6 +102,13 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
     Mes patients
   </button>
+  <!-- L'agenda du cabinet se raccorde ICI, dans Arkiba. Le medecin n'ouvre
+       jamais d'autre outil : c'est le meme produit qui lui montre l'etat de
+       sa connexion et les dossiers qu'elle a permis de preparer. -->
+  <button class="side-link" data-view="integrations">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.7 1.7M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7l1.7-1.7"/></svg>
+    Intégrations
+  </button>
   <button class="side-link" data-view="profile">
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
     Profil
@@ -1212,6 +1219,45 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
   </section>
 
   <!-- ── PROFIL ── -->
+  <section class="view" id="view-integrations">
+    <div class="page-head">
+      <h1 class="page-title">Intégrations</h1>
+      <p class="page-sub">Raccordez l'agenda de votre cabinet pour qu'Arkiba prépare vos consultations.</p>
+    </div>
+
+    <div class="alert alert-error" id="int-error" hidden></div>
+
+    <div class="card">
+      <div class="card-title">
+        Doctolib
+        <span class="panel-aside" id="int-pilote"></span>
+      </div>
+
+      <div id="int-etat" class="int-etat">Chargement…</div>
+      <p class="muted" id="int-detail"></p>
+
+      <div class="int-actions">
+        <button class="btn btn-primary" id="int-connecter" type="button" hidden></button>
+        <button class="btn btn-ghost" id="int-rafraichir" type="button">Actualiser</button>
+        <button class="btn btn-ghost" id="int-revoquer" type="button" hidden>Déconnecter</button>
+      </div>
+
+      <!-- Ce qui se passe apres le clic, dit AVANT. Un medecin a qui une
+           fenetre s'ouvre sans prevenir la referme. -->
+      <div class="int-mode-emploi" id="int-mode-emploi" hidden>
+        <p><strong>Ce qui va se passer :</strong></p>
+        <ol>
+          <li>une fenêtre de navigateur s'ouvre sur Doctolib Pro&nbsp;;</li>
+          <li><strong>vous</strong> vous y connectez — identifiant, mot de passe, et code de
+              vérification si Doctolib le demande&nbsp;;</li>
+          <li>Arkiba ne voit ni votre mot de passe ni votre code. Il constate seulement
+              que la connexion a réussi.</li>
+        </ol>
+        <p class="muted" id="int-commande"></p>
+      </div>
+    </div>
+  </section>
+
   <section class="view" id="view-profile">
     <header class="screen-head">
       <p class="eyebrow">Mon espace</p>
@@ -1937,6 +1983,7 @@ function switchView(name) {
   if (name === 'avis') initAvis();
   if (name === 'consult') consultOnEnter();
   if (name === 'preconsult') pcCharger();
+  if (name === 'integrations') intCharger();
   placeClinicalSettings(name);
   if (['liaison', 'cr', 'ordonnance'].includes(name)) setTimeout(() => renderQuickTemplates(name), 0);
   if (name === 'history') {
@@ -2134,6 +2181,169 @@ function pcRendreDocs() {
 }
 
 /** Les types que le moteur sait RÉELLEMENT produire, avec leurs exigences. */
+/* ==========================================================================
+ *  INTEGRATIONS — RACCORDER L'AGENDA DU CABINET
+ * ==========================================================================
+ *
+ * Cet ecran ne connecte rien lui-meme. Il montre un ETAT et propose l'action
+ * qui correspond. La connexion se fait dans un navigateur dedie ou le MEDECIN
+ * s'authentifie lui-meme : Arkiba ne voit ni son mot de passe, ni son code de
+ * verification.
+ *
+ * Chaque etat porte une action, et une seule. Un ecran qui affiche « erreur »
+ * sans dire quoi faire laisse le medecin devant un mur.
+ */
+const INT_ETATS = {
+  DISCONNECTED: {
+    puce: 'int-puce-gris',
+    titre: 'Non connecté',
+    detail: "Arkiba ne lit pas encore votre agenda.",
+    action: 'Connecter Doctolib',
+    modeEmploi: true,
+  },
+  AWAITING_OPERATOR: {
+    puce: 'int-puce-attente',
+    titre: 'Connexion en cours…',
+    detail: "Terminez la connexion dans la fenêtre Doctolib qui vient de s'ouvrir.",
+    action: 'Rouvrir la fenêtre',
+    modeEmploi: true,
+  },
+  CONNECTED: {
+    puce: 'int-puce-vert',
+    titre: 'Connecté',
+    detail: null,
+    action: null,
+    revoquer: true,
+  },
+  NEEDS_REAUTH: {
+    puce: 'int-puce-orange',
+    titre: 'Reconnexion nécessaire',
+    // Une session perdue n'est pas une panne : personne d'autre que le medecin
+    // ne peut y remedier, et il faut le lui dire clairement.
+    detail: 'Votre session Doctolib a expiré. Vous seul pouvez la rétablir.',
+    action: 'Reconnecter Doctolib',
+    modeEmploi: true,
+    revoquer: true,
+  },
+  TEMPORARILY_UNAVAILABLE: {
+    puce: 'int-puce-orange',
+    titre: 'Indisponible pour le moment',
+    detail: "Arkiba réessaie tout seul. Votre connexion n'est pas perdue.",
+    action: null,
+    revoquer: true,
+  },
+  REVOKED: {
+    puce: 'int-puce-gris',
+    titre: 'Déconnecté',
+    detail: 'Vous avez retiré l'accès à votre agenda.',
+    action: 'Connecter Doctolib',
+    modeEmploi: true,
+  },
+};
+
+function intErreur(message) {
+  const el = document.getElementById('int-error');
+  el.textContent = message || '';
+  el.hidden = !message;
+}
+
+/** « il y a 3 minutes », plutot qu'un horodatage que personne ne lit. */
+function intDepuis(iso) {
+  if (!iso) return null;
+  const secondes = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (secondes < 60) return "à l'instant";
+  const minutes = Math.round(secondes / 60);
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const heures = Math.round(minutes / 60);
+  if (heures < 24) return `il y a ${heures} h`;
+  return `le ${new Date(iso).toLocaleDateString('fr-FR')}`;
+}
+
+let intCourante = null;
+
+async function intCharger() {
+  intErreur('');
+  const etat = document.getElementById('int-etat');
+  etat.textContent = 'Chargement…';
+  try {
+    const data = await api('/api/integrations');
+    const doctolib = (data.integrations || []).find(i => String(i.kind || '').startsWith('doctolib'));
+    intCourante = doctolib || null;
+    intRendre(doctolib);
+  } catch (e) {
+    etat.textContent = '';
+    intErreur(e.message);
+  }
+}
+
+function intRendre(integration) {
+  const etat = document.getElementById('int-etat');
+  const detail = document.getElementById('int-detail');
+  const connecter = document.getElementById('int-connecter');
+  const revoquer = document.getElementById('int-revoquer');
+  const modeEmploi = document.getElementById('int-mode-emploi');
+  const pilote = document.getElementById('int-pilote');
+
+  const nom = integration ? integration.state : 'DISCONNECTED';
+  const modele = INT_ETATS[nom] || INT_ETATS.DISCONNECTED;
+
+  etat.innerHTML = `<span class="int-puce ${modele.puce}"></span>${pcEchappe(modele.titre)}`;
+
+  // Ce que dit l'ecran est toujours date : « depuis ce matin » et « a
+  // l'instant » n'appellent pas la meme reaction.
+  const morceaux = [];
+  if (modele.detail) morceaux.push(modele.detail);
+  if (integration && integration.last_error) morceaux.push(integration.last_error);
+  if (integration && nom === 'NEEDS_REAUTH' && integration.reauth_required_at) {
+    morceaux.push(`Signalé ${intDepuis(integration.reauth_required_at)}.`);
+  }
+  if (integration && nom === 'CONNECTED' && integration.last_sync_at) {
+    morceaux.push(`Dernière synchronisation ${intDepuis(integration.last_sync_at)}.`);
+  }
+  detail.textContent = morceaux.join(' ');
+
+  connecter.hidden = !modele.action;
+  if (modele.action) connecter.textContent = modele.action;
+  revoquer.hidden = !modele.revoquer;
+  modeEmploi.hidden = !modele.modeEmploi;
+
+  // On ne laisse pas croire a une integration officielle. Elle ne l'est pas.
+  pilote.textContent = integration && integration.pilote === false ? '' : 'raccordement pilote';
+}
+
+async function intConnecter() {
+  intErreur('');
+  const bouton = document.getElementById('int-connecter');
+  bouton.disabled = true;
+  try {
+    const data = await api('/api/integrations/doctolib', { method: 'POST', body: {} });
+    intCourante = data.integration || null;
+    intRendre(intCourante);
+    // La fenetre Doctolib est ouverte par le connecteur du cabinet, sur le
+    // poste ou il tourne. Arkiba ne peut pas l'ouvrir a distance, et pretendre
+    // le contraire laisserait le medecin attendre une fenetre qui ne vient pas.
+    document.getElementById('int-commande').textContent =
+      "Si la fenêtre ne s'ouvre pas, lancez le connecteur du cabinet sur le poste prévu.";
+  } catch (e) {
+    intErreur(e.message);
+  } finally {
+    bouton.disabled = false;
+  }
+}
+
+async function intRevoquer() {
+  if (!intCourante) return;
+  intErreur('');
+  try {
+    const data = await api(`/api/integrations/${encodeURIComponent(intCourante.connector_id)}/revoke`,
+      { method: 'POST', body: {} });
+    intCourante = data.integration || null;
+    intRendre(intCourante);
+  } catch (e) {
+    intErreur(e.message);
+  }
+}
+
 async function pcChargerTypes() {
   try {
     const data = await api('/api/preconsult/document-kinds');
@@ -2231,6 +2441,9 @@ document.getElementById('pc-back').addEventListener('click', () => {
   pcCharger();
 });
 document.getElementById('pc-save-notes').addEventListener('click', pcEnregistrerNotes);
+document.getElementById('int-connecter').addEventListener('click', intConnecter);
+document.getElementById('int-rafraichir').addEventListener('click', intCharger);
+document.getElementById('int-revoquer').addEventListener('click', intRevoquer);
 document.getElementById('pc-validate').addEventListener('click', pcValider);
 document.getElementById('pc-transfer').addEventListener('click', pcTransferer);
 document.getElementById('pc-scope-intake').addEventListener('change', pcRafraichirApercu);
@@ -4162,7 +4375,23 @@ function renderTools(key) {
     const w = window.open('', '_blank');
     w.document.write('<html><head><title>' + (GEN[key].label || 'Document') + '</title>' +
       '<style>body{font-family:Arial,sans-serif;font-size:12pt;line-height:1.6;max-width:800px;margin:40px auto;white-space:pre-wrap}' +
-      '@media print{body{margin:20mm}}</style></head>' +
+      '@media print{body{margin:20mm}}
+/* Etat d'une integration. La couleur ne porte JAMAIS l'information seule :
+   le libelle la dit aussi, pour un medecin daltonien comme pour une capture
+   d'ecran en noir et blanc. */
+.int-etat { display:flex; align-items:center; gap:.55rem; font-size:1.05rem; font-weight:600; margin:.2rem 0 .35rem; }
+.int-puce { width:.6rem; height:.6rem; border-radius:50%; flex:0 0 auto; }
+.int-puce-vert { background:#22c55e; }
+.int-puce-orange { background:#f59e0b; }
+.int-puce-gris { background:#94a3b8; }
+.int-puce-attente { background:#3b82f6; animation:int-pulse 1.4s ease-in-out infinite; }
+@keyframes int-pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+.int-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.9rem; }
+.int-mode-emploi { margin-top:1rem; padding:.9rem 1rem; border-radius:.6rem;
+  background:rgba(148,163,184,.10); font-size:.92rem; line-height:1.5; }
+.int-mode-emploi ol { margin:.4rem 0 .4rem 1.1rem; padding:0; }
+.int-mode-emploi li { margin:.25rem 0; }
+</style></head>' +
       '<body>' + text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') + '</body></html>');
     w.document.close();
     w.focus();

@@ -3087,6 +3087,36 @@ app.post('/api/preconsult/encounters/:id/transfer', authenticateJWT, (req, res) 
   relayerVersMoteur(req, res, `/api/encounters/${encodeURIComponent(req.params.id)}/transfer`,
     { method: 'POST', body: { ...req.body, actor: req.user.email } }));
 
+/**
+ * ============================================================================
+ *  INTEGRATIONS — L'AGENDA DU CABINET
+ * ============================================================================
+ *
+ * Le medecin voit ici l'etat de sa connexion Doctolib, et peut la lancer ou la
+ * revoquer. Arkiba ne detient NI son mot de passe NI sa session : il montre un
+ * etat que le moteur conserve, et que le connecteur rapporte.
+ *
+ * Le medecin s'authentifie LUI-MEME dans le navigateur dedie, MFA compris.
+ * Rien de ce qu'il y saisit ne passe par ici.
+ */
+app.get('/api/integrations', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, '/api/integrations'));
+
+/**
+ * « Connecter Doctolib ». L'identite du medecin vient de la SESSION, jamais du
+ * corps : un client ne doit pas pouvoir preparer une connexion au nom d'un
+ * confrere, meme dans son propre cabinet.
+ */
+app.post('/api/integrations/doctolib', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, '/api/integrations', {
+    method: 'POST',
+    body: { doctor_id: String(req.user.id), kind: 'doctolib_browser' },
+  }));
+
+app.post('/api/integrations/:id/revoke', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, `/api/integrations/${encodeURIComponent(req.params.id)}/revoke`,
+    { method: 'POST', body: {} }));
+
 app.post('/api/internal/intake-results', requireIntakeService, (req, res) => {
   const email = s(req.body.practitioner_email, 200).toLowerCase();
   const intakeId = s(req.body.intake_id, 80);
