@@ -43,8 +43,8 @@
     <a href="#haut" class="nav-logo" aria-label="Arkiba, accueil">Arkib<i>a</i></a>
     <nav class="nav-links" aria-label="Navigation principale">
       <a href="#systeme">Le système</a>
-      <a href="#consultation">La consultation</a>
-      <a href="#transfert">Le transfert</a>
+      <a href="#dossier">Le dossier</a>
+      <a href="#documents">Les documents</a>
       <a href="#tarifs">Tarifs</a>
     </nav>
     <div class="nav-cta">
@@ -60,8 +60,8 @@
     <div class="nav-mob" id="nav-mob">
       <div class="nav-mob-in">
         <a href="#systeme">Le système</a>
-        <a href="#consultation">La consultation</a>
-        <a href="#transfert">Le transfert</a>
+        <a href="#dossier">Le dossier</a>
+        <a href="#documents">Les documents</a>
         <a href="#tarifs">Tarifs</a>
         <div class="acts">
           <a href="/login.html" class="btn btn-2">Se connecter</a>
@@ -92,34 +92,62 @@
     </div>
     <p class="hero-fine" data-h="5"><span class="p"></span>Essai de 15 jours, sans carte bancaire.</p>
 
+    <!-- La scène du héros. Elle joue toute seule au chargement : le rendez-vous
+         entre, l'appel s'active, les réponses arrivent une à une avec leur
+         provenance, ce qui reste flou s'allume en ambre, le dossier passe à
+         « prêt » et attend. Les trois jalons du rail sont cliquables : on peut
+         revenir sur une étape sans attendre le cycle. -->
     <div class="hero-vis" data-h="6">
-      <div class="surface" id="dossier-hero">
-        <div class="surface-bar">
-          <span class="who">M. R., 61 ans</span>
-          <span class="mono">Exemple</span>
-          <span class="mono right">Consultation 09 h 15</span>
+      <div class="scene-h" id="scene-h">
+
+        <div class="rail" role="group" aria-label="Étapes de la préparation">
+          <button class="rail-n" type="button" data-etape="0">
+            <span class="pt"></span><span class="lb">Rendez-vous</span>
+          </button>
+          <span class="rail-s"><i></i></span>
+          <button class="rail-n" type="button" data-etape="1">
+            <span class="pt"></span><span class="lb">Appel</span>
+          </button>
+          <span class="rail-s"><i></i></span>
+          <button class="rail-n" type="button" data-etape="2">
+            <span class="pt"></span><span class="lb">Dossier</span>
+          </button>
+          <span class="rail-etat" id="rail-etat">Lecture de l'agenda</span>
         </div>
-        <div class="champs">
-          <div class="champ" data-hf="1">
-            <span class="k">Motif</span>
-            <span class="v">Consultation pré-anesthésique. Cure de hernie inguinale prévue le 14 mars.</span>
+
+        <div class="surface" id="dossier-hero">
+          <div class="surface-bar">
+            <span class="who" id="h-ident">Mme Martin, 58 ans</span>
+            <span class="mono">Exemple</span>
+            <span class="mono right" id="h-heure">Consultation 14 h 30</span>
           </div>
-          <div class="champ" data-hf="2">
-            <span class="k">Antécédents</span>
-            <span class="v">Hypertension traitée. Appendicectomie en 1998.</span>
+
+          <div class="champs" id="h-champs">
+            <div class="champ" data-hf="1">
+              <span class="k">Motif</span>
+              <span class="v">Arthroscopie du genou droit prévue le 14 mars.</span>
+              <span class="src">Déclaré à l'appel · 13 h 02</span>
+            </div>
+            <div class="champ" data-hf="2">
+              <span class="k">Traitements en cours</span>
+              <span class="v">Aerius 5 mg, en période de pollens.</span>
+              <span class="src">Déclaré à l'appel · 13 h 03</span>
+            </div>
+            <div class="champ" data-hf="3">
+              <span class="k">Mode de vie</span>
+              <span class="v">Tabac, environ vingt cigarettes par jour.</span>
+              <span class="src">Déclaré à l'appel · 13 h 04</span>
+            </div>
+            <div class="champ flag" data-hf="4">
+              <span class="k">À vérifier</span>
+              <span class="v">Évoque un souci cardiaque ancien, sans pouvoir le préciser.</span>
+            </div>
           </div>
-          <div class="champ" data-hf="3">
-            <span class="k">Traitements en cours</span>
-            <span class="v">Amlodipine 5 mg le matin. Aucun anticoagulant déclaré.</span>
+
+          <div class="surface-foot">
+            <span class="etat ok" id="h-pret"><span class="p"></span>Dossier prêt · 13 h 06</span>
+            <span class="etat wait" id="h-attente"><span class="p respire"></span>En attente du médecin</span>
           </div>
-          <div class="champ flag" data-hf="4">
-            <span class="k">À vérifier</span>
-            <span class="v">Le patient évoque «&nbsp;un problème au cœur, il y a longtemps&nbsp;» sans pouvoir préciser.</span>
-          </div>
-        </div>
-        <div class="surface-foot">
-          <span class="etat ok"><span class="p"></span>Dossier prêt · 08 h 52</span>
-          <span class="etat wait"><span class="p respire"></span>En attente du médecin</span>
         </div>
       </div>
     </div>
@@ -150,7 +178,7 @@
         <div class="legende" data-l="2">
           <p class="n">02 / 06</p>
           <h3>L'appel</h3>
-          <p>Le patient est interrogé avant sa venue. Motif, antécédents, traitements en cours.</p>
+          <p>La patiente est interrogée avant sa venue. Motif, traitements, mode de vie.</p>
         </div>
         <div class="legende" data-l="3">
           <p class="n">03 / 06</p>
@@ -165,26 +193,37 @@
         <div class="legende" data-l="5">
           <p class="n">05 / 06</p>
           <h3>Votre espace</h3>
-          <p>À 09 h 15, le dossier est là. Il n'a fallu ouvrir aucune fenêtre.</p>
+          <p>À 14 h 30, le dossier est là. Il n'a fallu ouvrir aucune fenêtre.</p>
         </div>
         <div class="legende" data-l="6">
           <p class="n">06 / 06</p>
           <h3>Les documents</h3>
           <p>Les éléments que vous validez se recomposent en documents prêts à relire.</p>
         </div>
-        <div class="jauge" id="jauge" aria-hidden="true">
-          <i></i><i></i><i></i><i></i><i></i><i></i>
+        <div class="jauge" id="jauge" role="group" aria-label="Aller à une étape">
+          <button type="button" data-j="0" aria-label="Étape 1, le rendez-vous"><i></i></button>
+          <button type="button" data-j="1" aria-label="Étape 2, l'appel"><i></i></button>
+          <button type="button" data-j="2" aria-label="Étape 3, le dossier"><i></i></button>
+          <button type="button" data-j="3" aria-label="Étape 4, les points à vérifier"><i></i></button>
+          <button type="button" data-j="4" aria-label="Étape 5, votre espace"><i></i></button>
+          <button type="button" data-j="5" aria-label="Étape 6, les documents"><i></i></button>
         </div>
       </div>
 
       <div class="scene" id="scene">
 
+        <!-- L identite du dossier. Elle n appartient a aucune couche : elle les
+             traverse, et se pose sur l emplacement que chacune declare. C est
+             ce qui fait sentir que c est le meme flux de donnees. -->
+        <span class="jeton" id="jeton" aria-hidden="true">Mme Martin, 58 ans</span>
+
+
         <!-- 1 · Rendez-vous -->
         <div class="couche" data-c="rdv">
           <div class="carte rdv">
             <div class="ligne">
-              <span class="h">09 h 15</span>
-              <span class="nom">M. R., 61 ans</span>
+              <span class="h">14 h 30</span>
+              <span class="emp" data-emp="rdv"></span>
               <span class="src">Agenda</span>
             </div>
             <div class="barre"></div>
@@ -197,14 +236,15 @@
           <div class="carte appel">
             <div class="appel-tete">
               <span class="pt"></span>
-              <span class="t">Appel de pré-consultation · 08 h 41</span>
+              <span class="emp" data-emp="appel"></span>
+              <span class="t">· appel de 13 h 02</span>
             </div>
             <div class="onde" id="onde" aria-hidden="true"></div>
             <div id="frags">
-              <span class="frag" data-f="1">«&nbsp;C'est pour l'opération de la hernie, le 14.&nbsp;»</span>
-              <span class="frag" data-f="2">«&nbsp;Je suis suivi pour la tension.&nbsp;»</span>
-              <span class="frag" data-f="3">«&nbsp;Je prends de l'amlodipine, le matin.&nbsp;»</span>
-              <span class="frag" data-f="4">«&nbsp;J'ai eu un problème au cœur, il y a longtemps.&nbsp;»</span>
+              <span class="frag" data-f="1">«&nbsp;C'est pour le genou, l'arthroscopie. On m'a dit le 14.&nbsp;»</span>
+              <span class="frag" data-f="2">«&nbsp;Je prends de l'Aerius quand il y a du pollen.&nbsp;»</span>
+              <span class="frag" data-f="3">«&nbsp;Je fume, une vingtaine par jour.&nbsp;»</span>
+              <span class="frag" data-f="4">«&nbsp;J'ai eu un souci au cœur, il y a longtemps.&nbsp;»</span>
             </div>
           </div>
         </div>
@@ -213,21 +253,21 @@
         <div class="couche" data-c="dossier">
           <div class="carte">
             <div class="surface-bar">
-              <span class="who">M. R., 61 ans</span>
-              <span class="mono right">08 h 47</span>
+              <span class="emp" data-emp="dossier"></span>
+              <span class="mono right">13 h 04</span>
             </div>
             <div class="champs">
               <div class="champ" data-df="1">
                 <span class="k">Motif</span>
-                <span class="v">Cure de hernie inguinale prévue le 14 mars.</span>
+                <span class="v">Arthroscopie du genou droit prévue le 14 mars.</span>
               </div>
               <div class="champ" data-df="2">
-                <span class="k">Antécédents</span>
-                <span class="v">Hypertension traitée.</span>
+                <span class="k">Traitements en cours</span>
+                <span class="v">Aerius 5 mg, en période de pollens.</span>
               </div>
               <div class="champ" data-df="3">
-                <span class="k">Traitements en cours</span>
-                <span class="v">Amlodipine 5 mg le matin.</span>
+                <span class="k">Mode de vie</span>
+                <span class="v">Tabagisme actif, environ vingt cigarettes par jour.</span>
               </div>
               <div class="champ flag" data-df="4">
                 <span class="skel">Relecture en cours</span>
@@ -243,15 +283,15 @@
           <div class="carte espace">
             <div class="espace-tete"><span class="t">Pré-consultation · jeudi 12 mars</span></div>
             <div class="rang actif">
-              <span class="h">09 h 15</span><span class="n">M. R., 61 ans</span>
+              <span class="h">14 h 30</span><span class="emp" data-emp="espace"></span>
               <span class="s"><span class="etat ok"><span class="p"></span>Prêt</span></span>
             </div>
             <div class="rang">
-              <span class="h">09 h 45</span><span class="n">Mme T., 34 ans</span>
+              <span class="h">15 h 00</span><span class="n">M. Roux, 41 ans</span>
               <span class="s"><span class="etat ok"><span class="p"></span>Prêt</span></span>
             </div>
             <div class="rang">
-              <span class="h">10 h 00</span><span class="n">M. B., 78 ans</span>
+              <span class="h">15 h 30</span><span class="n">Mme Blanc, 72 ans</span>
               <span class="s"><span class="etat wait" style="margin-left:0"><span class="p"></span>À rappeler</span></span>
             </div>
           </div>
@@ -267,7 +307,7 @@
             </div>
             <div class="doc" data-d="2">
               <span class="ic"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8l-9-5z"/></svg></span>
-              <span class="t">Lettre au chirurgien</span>
+              <span class="t">Lettre à l'orthopédiste</span>
               <span class="st">Prêt à relire</span>
             </div>
             <div class="doc" data-d="3">
@@ -278,6 +318,89 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ LE DOSSIER — exploration au clic ════════════════════════════════════
+     Une démonstration, pas une fonction : on montre le mécanisme réel, à
+     savoir qu'une information préparée reste rattachée à ce que le patient a
+     dit. Le visiteur choisit ce qu'il veut voir.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect hr" id="dossier">
+  <div class="wrap">
+    <div class="duo">
+      <div>
+        <p class="eyebrow" data-rev>Le dossier</p>
+        <h2 class="lg" data-rev style="--i:1">Ce qu'Arkiba a préparé.</h2>
+        <p class="sub" data-rev style="--i:2">
+          Chaque information garde le lien vers ce que la patiente a dit au téléphone.
+          Choisissez une rubrique.
+        </p>
+        <div class="onglets" id="ong-dossier" role="tablist" aria-label="Rubriques du dossier" data-rev style="--i:3">
+          <button class="ong on" type="button" role="tab" aria-selected="true" data-o="motif">Motif</button>
+          <button class="ong" type="button" role="tab" aria-selected="false" data-o="trait">Traitements</button>
+          <button class="ong" type="button" role="tab" aria-selected="false" data-o="vie">Mode de vie</button>
+          <button class="ong" type="button" role="tab" aria-selected="false" data-o="verif">À vérifier</button>
+        </div>
+      </div>
+
+      <div class="surface pointeur" id="explorateur" data-rev style="--i:2">
+        <div class="surface-bar">
+          <span class="who">Mme Martin, 58 ans</span>
+          <span class="mono">Exemple</span>
+          <span class="mono right">Appel du 12 mars</span>
+        </div>
+
+        <div class="vol" data-v="motif">
+          <div class="dit">
+            <span class="k">Ce que la patiente a dit</span>
+            <p>«&nbsp;C'est pour le genou, l'arthroscopie. On m'a dit le 14.&nbsp;»</p>
+          </div>
+          <div class="retenu">
+            <span class="k">Ce qu'Arkiba a retenu</span>
+            <p>Arthroscopie du genou droit prévue le 14 mars.</p>
+            <span class="src">Déclaré à l'appel · 13 h 02</span>
+          </div>
+        </div>
+
+        <div class="vol" data-v="trait" hidden>
+          <div class="dit">
+            <span class="k">Ce que la patiente a dit</span>
+            <p>«&nbsp;Je prends de l'Aerius quand il y a du pollen, sinon rien.&nbsp;»</p>
+          </div>
+          <div class="retenu">
+            <span class="k">Ce qu'Arkiba a retenu</span>
+            <p>Aerius 5 mg, en période de pollens. Aucun autre traitement déclaré.</p>
+            <span class="src">Déclaré à l'appel · 13 h 03</span>
+          </div>
+        </div>
+
+        <div class="vol" data-v="vie" hidden>
+          <div class="dit">
+            <span class="k">Ce que la patiente a dit</span>
+            <p>«&nbsp;Je fume, oui. Une vingtaine par jour, je dirais.&nbsp;»</p>
+          </div>
+          <div class="retenu">
+            <span class="k">Ce qu'Arkiba a retenu</span>
+            <p>Tabagisme actif, environ vingt cigarettes par jour.</p>
+            <span class="src">Déclaré à l'appel · 13 h 04</span>
+          </div>
+        </div>
+
+        <div class="vol vol-verif" data-v="verif" hidden>
+          <div class="dit">
+            <span class="k">Ce que la patiente a dit</span>
+            <p>«&nbsp;J'ai eu un souci au cœur, il y a longtemps. Je ne sais plus quoi exactement.&nbsp;»</p>
+          </div>
+          <div class="retenu">
+            <span class="k alerte">Arkiba ne tranche pas</span>
+            <p>Antécédent cardiaque évoqué, sans précision. La question revient au médecin.</p>
+            <span class="src src-alerte">Signalé à vérifier · 13 h 06</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -317,6 +440,70 @@
           <span class="c" id="notes-count">0 caractère</span>
           <span class="c fin">Rien ne quitte cet appareil.</span>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ═══ LES DOCUMENTS — bascule au clic ═════════════════════════════════════
+     Les trois documents montrés existent réellement dans l'application. On ne
+     met en scène aucun type de document qui ne serait pas supporté.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect tinted hr" id="documents">
+  <div class="wrap">
+    <div class="duo inverse">
+      <div class="apercu pointeur" data-rev>
+        <div class="apercu-bar">
+          <span class="mono" id="doc-titre">Compte rendu de consultation</span>
+          <span class="etat ok" style="margin-left:auto"><span class="p"></span>Prêt à relire</span>
+        </div>
+        <div class="apercu-corps" id="doc-corps">
+          <div class="dv" data-d="cr">
+            <p class="dt">Compte rendu de consultation</p>
+            <p class="dm">Mme Martin, 58 ans · 14 mars</p>
+            <p class="ds">Motif</p>
+            <p class="dp">Consultation pré-anesthésique avant arthroscopie du genou droit.</p>
+            <p class="ds">Éléments recueillis</p>
+            <p class="dp">Traitement par Aerius en période de pollens. Tabagisme actif estimé à vingt cigarettes par jour.</p>
+            <p class="ds">Point à préciser</p>
+            <p class="dp alerte">Antécédent cardiaque ancien évoqué par la patiente, non documenté à ce jour.</p>
+          </div>
+          <div class="dv" data-d="liaison" hidden>
+            <p class="dt">Lettre de liaison</p>
+            <p class="dm">À l'attention du chirurgien orthopédiste</p>
+            <p class="ds">Motif de recours</p>
+            <p class="dp">Je vous adresse Mme Martin, 58 ans, en vue de l'arthroscopie du genou droit prévue le 14 mars.</p>
+            <p class="ds">Éléments utiles</p>
+            <p class="dp">Traitement antihistaminique saisonnier. Tabagisme actif, à prendre en compte pour la cicatrisation.</p>
+            <p class="ds">Question posée</p>
+            <p class="dp alerte">Un antécédent cardiaque ancien reste à documenter avant l'intervention.</p>
+          </div>
+          <div class="dv" data-d="certificat" hidden>
+            <p class="dt">Certificat</p>
+            <p class="dm">Mme Martin, 58 ans</p>
+            <p class="ds">Objet</p>
+            <p class="dp">Certificat établi à la demande de l'intéressée, à partir des éléments constatés en consultation.</p>
+            <p class="ds">Mise en forme</p>
+            <p class="dp">Le texte reprend ce que vous dictez, dans le format attendu par le destinataire. Le contenu reste le vôtre.</p>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p class="eyebrow" data-rev>Après la consultation</p>
+        <h2 class="lg" data-rev style="--i:1">Les documents, <span class="dim">quand vous les demandez.</span></h2>
+        <p class="sub" data-rev style="--i:2">
+          À partir du dossier validé et de vos notes. Vous relisez, vous corrigez, vous signez.
+        </p>
+        <div class="onglets" id="ong-doc" role="tablist" aria-label="Type de document" data-rev style="--i:3">
+          <button class="ong on" type="button" role="tab" aria-selected="true" data-d="cr">Compte rendu</button>
+          <button class="ong" type="button" role="tab" aria-selected="false" data-d="liaison">Lettre de liaison</button>
+          <button class="ong" type="button" role="tab" aria-selected="false" data-d="certificat">Certificat</button>
+        </div>
+        <p class="sub petite" data-rev style="--i:4">
+          MDPH, ALD et ordonnances suivent le même chemin dans l'application.
+        </p>
       </div>
     </div>
   </div>
@@ -494,8 +681,8 @@
         <p class="t">Produit</p>
         <ul>
           <li><a href="#systeme">Le système</a></li>
-          <li><a href="#consultation">La consultation</a></li>
-          <li><a href="#transfert">Le transfert</a></li>
+          <li><a href="#dossier">Le dossier</a></li>
+          <li><a href="#documents">Les documents</a></li>
           <li><a href="#tarifs">Tarifs</a></li>
         </ul>
       </div>
@@ -524,8 +711,12 @@
   </div>
 </footer>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
+<!-- GSAP est servi par ce serveur, pas par un CDN. Une page dont l'animation
+     dépend d'un tiers joignable est une page qui s'affiche morte le jour où il
+     ne l'est pas, sans que rien ne le signale. -->
+<script src="/vendor/gsap.min.js" defer></script>
+<script src="/vendor/ScrollTrigger.min.js" defer></script>
+<script src="/vendor/Flip.min.js" defer></script>
 <script src="/site.js" defer></script>
 </body>
 </html>

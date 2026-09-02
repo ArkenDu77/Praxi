@@ -51,6 +51,11 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Un display explicite bat le display:none implicite de [hidden]. Sans cette
+   regle, un panneau masque en JavaScript reste affiche parce que sa classe lui
+   donne display:grid. */
+[hidden] { display: none !important; }
+
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
 
@@ -250,7 +255,58 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 }
 .hero-fine .p { width: 5px; height: 5px; border-radius: 50%; background: var(--pret); flex: none; }
 
-.hero-vis { margin-top: clamp(38px, 4vw, 58px); }
+.hero-vis { margin-top: clamp(30px, 3.4vw, 48px); }
+
+/* ── Scène du héros ───────────────────────────────────────────────────────── */
+/* Le rail est la ligne de vie de la démonstration : trois jalons, un segment
+   qui se remplit entre eux, et un libellé d'état qui dit ce qui se passe. */
+.rail {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.rail-n {
+  display: inline-flex; align-items: center; gap: 9px;
+  min-height: 44px; padding: 0 15px 0 13px;
+  background: transparent; border: 1px solid var(--line); border-radius: 100px;
+  font-family: var(--mono); font-size: .625rem; font-weight: 500;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--tx-3);
+  cursor: pointer;
+  transition: color 240ms var(--e-soft), border-color 240ms var(--e-soft), background 240ms var(--e-soft);
+}
+.rail-n .pt {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--line-2); flex: none;
+  transition: background 240ms var(--e-soft), box-shadow 240ms var(--e-soft);
+}
+.rail-n:hover { color: var(--tx-2); border-color: var(--line-2); }
+.rail-n.on { color: var(--tx); border-color: #3a434f; background: rgba(255,255,255,.03); }
+.rail-n.on .pt { background: var(--pret); box-shadow: 0 0 0 4px rgba(110,231,168,.16); }
+
+.rail-s { flex: 1 1 24px; min-width: 24px; max-width: 74px; height: 1px; background: var(--line); position: relative; overflow: hidden; }
+.rail-s i {
+  position: absolute; inset: 0; background: var(--pret);
+  transform: scaleX(var(--f, 0)); transform-origin: left;
+}
+.rail-etat {
+  margin-left: auto;
+  font-family: var(--mono); font-size: .625rem; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--tx-3);
+}
+
+/* Le champ « à vérifier » n'est ambré que lorsque la scène l'allume. */
+#dossier-hero .champ.flag { background: transparent; box-shadow: none; }
+
+/* Provenance : ce qui rattache une information à ce que le patient a dit.
+   C'est la seule chose qui distingue un dossier préparé d'un texte inventé. */
+.champ .src {
+  display: block; margin-top: 7px;
+  font-family: var(--mono); font-size: .625rem; letter-spacing: .05em;
+  color: var(--tx-3);
+}
+.champ .src::before {
+  content: ''; display: inline-block; vertical-align: middle;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--pret);
+  margin-right: 8px; transform: translateY(-1px);
+}
 
 /* ── Surface produit ──────────────────────────────────────────────────────── */
 /* Le liseré clair en haut est le détail qui fait qu'une carte sombre a l'air
@@ -328,9 +384,12 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
    médecin, puis se recompose en documents.
    ═══════════════════════════════════════════════════════════════════════════ */
 .systeme { position: relative; background: var(--bg-2); border-top: 1px solid var(--line); }
-.scene-wrap { min-height: 100svh; display: flex; align-items: center; padding: 76px 0; }
+/* La gouttiere horizontale vient de .wrap : la redeclarer a 0 ici la supprime,
+   et le contenu touche le bord des que la fenetre est plus etroite que la
+   largeur maximale. */
+.scene-wrap { min-height: 100svh; display: flex; align-items: center; padding: 76px var(--gut); }
 .scene-grid { display: grid; gap: clamp(30px, 4vw, 60px); width: 100%; align-items: center; }
-@media (min-width: 1100px) { .scene-grid { grid-template-columns: minmax(0,.78fr) minmax(0,1fr); } }
+@media (min-width: 1024px) { .scene-grid { grid-template-columns: minmax(0,.78fr) minmax(0,1fr); } }
 
 /* Colonne de gauche : les légendes se succèdent au même endroit. */
 .legendes { position: relative; min-height: 300px; padding-bottom: 46px; }
@@ -424,8 +483,20 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 .doc .st { margin-left: auto; font-family: var(--mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--pret); }
 
 /* Barre de progression de la séquence */
-.jauge { display: flex; gap: 6px; margin-top: 30px; }
-.jauge i { flex: 1; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; position: relative; }
+/* La jauge dit où on en est ET permet d y aller. Chaque segment est un bouton
+   de 44 px de haut dont seul le trait se voit : la cible tactile existe sans
+   que le dessin s alourdisse. */
+.jauge { display: flex; gap: 6px; margin-top: 22px; }
+.jauge button {
+  flex: 1; height: 44px; padding: 0; display: flex; align-items: center;
+  background: none; border: 0; cursor: pointer;
+}
+.jauge i {
+  display: block; width: 100%; height: 2px; background: var(--line);
+  border-radius: 2px; overflow: hidden; position: relative;
+  transition: background 220ms var(--e-soft);
+}
+.jauge button:hover i { background: var(--line-2); }
 .jauge i::after {
   content: ''; position: absolute; inset: 0; background: var(--tx-2);
   transform: scaleX(var(--v, 0)); transform-origin: left;
@@ -606,25 +677,30 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 }
 @media (min-width: 921px) { .nav-mob-wrap { display: none; } }
 
-/* Mode « à plat » : pas d'épinglage. Appliqué sous 940 px, et posé par le
-   script en mouvement réduit ou quand GSAP n'a pas chargé. La séquence se lit
-   alors en blocs empilés, chacun avec sa légende. Une scène épinglée sur un
-   téléphone vole le défilement sans rien apporter. */
-.systeme.plat .scene-wrap { min-height: 0; padding: clamp(72px,9vw,120px) 0; display: block; }
+/* Mode « à plat » : la séquence se lit en blocs empilés, chacun avec sa
+   légende, et chaque bloc s'anime à son passage. C'est une CHORÉGRAPHIE
+   DIFFÉRENTE, pas une page morte.
+
+   Il n'est plus posé sur un seuil de largeur. Un portable n'a aucune raison de
+   recevoir une page statique : sous 640 px on renonce à l'épinglage parce
+   qu'il volerait le défilement du pouce, pas parce que l'écran est petit.
+   Seul `prefers-reduced-motion` coupe réellement le mouvement. */
+.systeme.plat .scene-wrap { min-height: 0; padding: clamp(72px,9vw,120px) var(--gut); display: block; }
 .systeme.plat .scene-grid { grid-template-columns: minmax(0, 1fr); }
-.systeme.plat .legendes { position: static; min-height: 0; }
+.systeme.plat .legendes { position: static; min-height: 0; padding-bottom: 0; }
 .systeme.plat .legende { position: static; inset: auto; margin-bottom: 20px; }
 .systeme.plat .scene { aspect-ratio: auto; min-height: 0; display: grid; gap: 18px; }
 .systeme.plat .couche { position: static; inset: auto; }
 .systeme.plat .jauge { display: none; }
 
-@media (max-width: 1099px) {
-  .scene-wrap { min-height: 0; padding: clamp(72px,9vw,110px) 0; display: block; }
-  .legendes { position: static; min-height: 0; }
-  .legende { position: static; inset: auto; margin-bottom: 20px; }
-  .scene { aspect-ratio: auto; min-height: 0; display: grid; gap: 18px; }
-  .couche { position: static; inset: auto; }
-  .jauge { display: none; }
+/* Entre 640 et 1024 px, la scène reste épinglée mais passe en colonne :
+   la légende au-dessus, la scène dessous. */
+@media (max-width: 1023px) {
+  .scene-wrap { padding: 64px var(--gut); }
+  .legendes { min-height: 210px; padding-bottom: 38px; }
+  .legende { bottom: 38px; }
+  .legende p { max-width: 46ch; }
+  .scene { aspect-ratio: auto; min-height: 380px; }
 }
 
 @media (max-width: 560px) {
@@ -636,4 +712,133 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
      retrouve seule et décalée : elle revient dans le flux. */
   .surface-bar .right { margin-left: 0; }
   .etat.wait { margin-left: 0; }
+}
+
+/* ══ SECTIONS INTERACTIVES ═══════════════════════════════════════════════════
+   Deux moments où le visiteur ne regarde plus, il choisit. Ce sont des
+   démonstrations : elles ne montrent que des capacités réelles.
+   ═════════════════════════════════════════════════════════════════════════ */
+.duo { display: grid; gap: clamp(34px, 4.5vw, 66px); align-items: center; }
+@media (min-width: 940px) {
+  .duo { grid-template-columns: .85fr 1.15fr; }
+  .duo.inverse { grid-template-columns: 1.15fr .85fr; }
+}
+
+.onglets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 30px; }
+.ong {
+  min-height: 44px; padding: 0 16px;
+  background: transparent; border: 1px solid var(--line); border-radius: 100px;
+  font-family: var(--sans); font-size: .875rem; font-weight: 500; color: var(--tx-2);
+  cursor: pointer;
+  transition: color 200ms var(--e-soft), border-color 200ms var(--e-soft), background 200ms var(--e-soft);
+}
+.ong:hover { color: var(--tx); border-color: var(--line-2); }
+.ong.on { color: var(--bg); background: var(--tx); border-color: var(--tx); font-weight: 600; }
+
+/* Le volet : ce que la patiente a dit, puis ce qu'Arkiba en a fait. Les deux
+   côte à côte, parce que c'est le rapport entre les deux qui est le produit. */
+.vol { padding: 24px 24px 26px; display: grid; gap: 20px; }
+.vol .k {
+  display: block; margin-bottom: 9px;
+  font-family: var(--mono); font-size: .625rem; font-weight: 500;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--tx-3);
+}
+.vol .k.alerte { color: var(--verif); }
+.vol .dit p {
+  font-size: 1.0625rem; line-height: 1.5; color: var(--tx-2);
+  padding-left: 15px; border-left: 2px solid var(--line-2);
+}
+.vol .retenu {
+  padding: 18px 20px; border-radius: 12px;
+  background: var(--surf-2); border: 1px solid var(--line);
+}
+.vol .retenu p { font-size: 1rem; line-height: 1.5; }
+.vol .src {
+  display: block; margin-top: 11px;
+  font-family: var(--mono); font-size: .625rem; letter-spacing: .05em; color: var(--tx-3);
+}
+.vol .src::before {
+  content: ''; display: inline-block; vertical-align: middle;
+  width: 4px; height: 4px; border-radius: 50%; background: var(--pret);
+  margin-right: 8px; transform: translateY(-1px);
+}
+.vol-verif .retenu { background: var(--verif-bg); border-color: rgba(245,185,99,.22); }
+.vol .src-alerte { color: var(--verif); }
+.vol .src-alerte::before { background: var(--verif); }
+
+/* Aperçu de document : du papier, cité dans un monde sombre. */
+.apercu {
+  background: linear-gradient(180deg, var(--surf), var(--bg-2));
+  border: 1px solid var(--line); border-radius: var(--r3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 40px 90px -44px rgba(0,0,0,.9);
+  overflow: hidden;
+}
+.apercu-bar { display: flex; align-items: center; gap: 12px; padding: 15px 22px; border-bottom: 1px solid var(--line); }
+.apercu-bar .mono { font-family: var(--mono); font-size: .625rem; letter-spacing: .12em; text-transform: uppercase; color: var(--tx-3); }
+.apercu-corps { padding: 26px 26px 30px; min-height: 296px; }
+.dv .dt { font-size: 1.0625rem; font-weight: 600; letter-spacing: -.02em; }
+.dv .dm { margin-top: 4px; font-family: var(--mono); font-size: .6875rem; letter-spacing: .05em; color: var(--tx-3); }
+.dv .ds {
+  margin-top: 20px; font-family: var(--mono); font-size: .625rem; font-weight: 500;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--tx-3);
+}
+.dv .dp { margin-top: 6px; font-size: .9375rem; line-height: 1.55; color: var(--tx-2); }
+.dv .dp.alerte { color: var(--verif); }
+.sub.petite { font-size: .875rem; margin-top: 22px; }
+
+/* ══ COUCHE POINTEUR ═════════════════════════════════════════════════════════
+   La lueur suit le curseur sur les surfaces produit. Deux variables mises à
+   jour par le script, aucun recalcul de mise en page : c'est un dégradé qui
+   se déplace, rien d'autre.
+   ═════════════════════════════════════════════════════════════════════════ */
+.pointeur { position: relative; }
+.pointeur::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(340px circle at var(--mx, 50%) var(--my, 0%),
+              rgba(255,255,255,.055), transparent 62%);
+  opacity: 0; transition: opacity 320ms var(--e-soft);
+}
+.pointeur.actif::after { opacity: 1; }
+
+/* Boutons aimantés : quelques pixels, jamais plus. Au-delà, le bouton fuit le
+   curseur au lieu de l'accueillir. */
+.aimant { will-change: transform; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pointeur::after { display: none; }
+}
+
+/* Couture entre deux fonds : un dégradé court en haut et en bas de la bande,
+   pour que le changement de valeur ne se lise pas comme une ligne. */
+.fondu { position: relative; }
+.fondu::before, .fondu::after {
+  content: ''; position: absolute; left: 0; right: 0; height: 90px;
+  pointer-events: none; z-index: 0;
+}
+.fondu::before { top: 0; background: linear-gradient(to bottom, rgba(8,9,11,.55), transparent); }
+.fondu::after { bottom: 0; background: linear-gradient(to top, rgba(8,9,11,.55), transparent); }
+.fondu > * { position: relative; z-index: 1; }
+
+/* ── Le jeton d'identité ──────────────────────────────────────────────────── */
+/* Il ne vit dans aucune couche : il les traverse. Positionné en absolu dans la
+   scène, il se pose sur l'emplacement que chaque couche déclare. */
+.jeton {
+  position: absolute; top: 0; left: 0; z-index: 3;
+  display: inline-flex; align-items: center;
+  font-size: 1rem; font-weight: 600; letter-spacing: -.02em;
+  color: var(--tx); white-space: nowrap; pointer-events: none;
+  will-change: transform;
+}
+/* L'emplacement réserve la place du jeton dans la mise en page de la couche,
+   sans rien afficher : sans lui, le texte voisin se recalerait à chaque
+   étape et le déplacement paraîtrait faux. */
+.emp { display: inline-block; width: 158px; height: 1.2em; flex: none; }
+.appel-tete .emp { width: 152px; }
+.rang .emp { width: 150px; }
+
+.systeme.plat .jeton { display: none; }
+.systeme.plat .emp::after {
+  content: 'Mme Martin, 58 ans';
+  font-size: 1rem; font-weight: 600; letter-spacing: -.02em; color: var(--tx);
 }

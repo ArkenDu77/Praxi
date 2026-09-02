@@ -16,9 +16,10 @@
   'use strict';
 
   var reduit = window.matchMedia('(prefers-reduced-motion: reduce)');
-  // Le seuil doit rester identique a celui de la feuille de style :
-  // en dessous, la sequence se lit a plat.
-  var GRAND = window.matchMedia('(min-width: 1100px)');
+  // La largeur ne décide plus SI la page s'anime, seulement COMMENT. Un
+  // portable n'a aucune raison de recevoir une page statique. Seul
+  // `prefers-reduced-motion` coupe réellement le mouvement.
+  var PETIT = window.matchMedia('(max-width: 639px)');
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -102,6 +103,7 @@
 
     var legendes = document.querySelectorAll('.legende');
     var jauge = document.querySelectorAll('#jauge i');
+    var jaugeBtns = document.querySelectorAll('#jauge button');
     var rdv = couche('rdv'), appel = couche('appel'), dossier = couche('dossier'),
         espace = couche('espace'), docs = couche('docs');
     var frags = document.querySelectorAll('.frag');
@@ -111,6 +113,24 @@
     var cartesDoc = docs.querySelectorAll('.doc');
     var skel = dossier.querySelector('.skel');
     var contenuFlag = dossier.querySelectorAll('.champ.flag .k, .champ.flag .v');
+    var jeton = document.getElementById('jeton');
+
+    // Position d un emplacement, relative a la scene. Mesuree a l execution et
+    // recalculee a chaque refresh : elle survit au redimensionnement et au
+    // chargement des polices.
+    function place(nom, axe) {
+      var e = scene.querySelector('[data-emp="' + nom + '"]');
+      if (!e || !jeton) return 0;
+      var a = scene.getBoundingClientRect(), b = e.getBoundingClientRect();
+      return axe === 'x' ? (b.left - a.left) : (b.top - a.top);
+    }
+    function versEmp(nom, duree) {
+      return {
+        x: function () { return place(nom, 'x'); },
+        y: function () { return place(nom, 'y'); },
+        duration: duree, ease: 'power2.inOut'
+      };
+    }
 
     // Position de départ de chaque élément.
     gsap.set([appel, dossier, espace, docs], { autoAlpha: 0 });
@@ -124,6 +144,7 @@
     gsap.set(barres, { scaleY: 0.06, transformOrigin: 'center' });
     gsap.set(rangs, { autoAlpha: 0, x: 12 });
     gsap.set(cartesDoc, { autoAlpha: 0, y: 16 });
+    if (jeton) gsap.set(jeton, { x: function () { return place('rdv', 'x'); }, y: function () { return place('rdv', 'y'); }, autoAlpha: 1 });
 
     // Le déplacement d'un fragment vers son champ est mesuré à l'exécution :
     // recalculé à chaque refresh, il survit au redimensionnement.
@@ -148,7 +169,10 @@
       scrollTrigger: {
         trigger: section,
         start: 'top top',
-        end: '+=560%',
+        // La course d epinglage suit la place disponible : sur un ecran court
+        // ou etroit, 560 % de hauteur de fenetre demanderait un defilement
+        // interminable pour six etapes.
+        end: function () { return '+=' + (PETIT.matches ? 420 : 560) + '%'; },
         scrub: 0.85,
         pin: '#scene-wrap',
         pinSpacing: true,
@@ -158,27 +182,59 @@
           // La jauge : six segments, un par étape. Les barres sont créées une
           // fois pour toutes ; à chaque image on ne touche qu'une variable CSS,
           // jamais le DOM.
-          var p = self.progress * 6;
+          var b = bornes(), p = self.progress;
           for (var k = 0; k < jauge.length; k++) {
-            jauge[k].style.setProperty('--v', Math.max(0, Math.min(1, p - k)));
+            var largeur = b[k + 1] - b[k];
+            var v = largeur > 0 ? (p - b[k]) / largeur : 0;
+            jauge[k].style.setProperty('--v', Math.max(0, Math.min(1, v)));
           }
         }
       }
     });
 
+    // Les six etapes n ont pas la meme duree : la jauge doit suivre les bornes
+    // reelles de la frise, pas un sixieme chacune. Sinon un segment se remplit
+    // pendant qu une autre etape est a l ecran.
+    function bornes() {
+      var d = tl.duration() || 1;
+      var b = [];
+      for (var i = 0; i < 6; i++) b.push((tl.labels['s' + i] || 0) / d);
+      b.push(1);
+      return b;
+    }
+
+    for (var jb = 0; jb < jaugeBtns.length; jb++) {
+      (function (b, n) {
+        b.addEventListener("click", function () {
+          var st = tl.scrollTrigger;
+          if (!st) return;
+          // Milieu de l etape : on arrive sur un etat stable, jamais sur une
+          // image de transition.
+          var b = bornes();
+          var p = b[n] + (b[n + 1] - b[n]) * 0.72;
+          window.scrollTo({ top: st.start + (st.end - st.start) * p, behavior: reduit.matches ? "auto" : "smooth" });
+        });
+      })(jaugeBtns[jb], jb);
+    }
+
     // ── 1 → 2 : le rendez-vous devient l'appel ───────────────────────────
-    tl.to({}, { duration: .6 })
+    tl.addLabel('s0')
+      .to({}, { duration: .6 })
+      .addLabel('s1')
       .add(versLegende(1), '>-.1')
       .to(rdv, { y: -46, scale: .94, autoAlpha: 0, duration: .5, ease: 'power2.in' }, '<')
       .to(appel, { autoAlpha: 1, duration: .45, ease: 'power2.out' }, '<.15')
+      .to(jeton, versEmp('appel', .62), '<')
       .to(barres, { scaleY: 1, duration: .5, stagger: { each: .006, from: 'start' }, ease: 'power2.out' }, '<.05')
       .to(frags, { autoAlpha: 1, y: 0, duration: .38, stagger: .16, ease: 'power2.out' }, '<.1')
       .to({}, { duration: .5 })
 
     // ── 2 → 3 : les fragments deviennent les champs ──────────────────────
+      .addLabel('s2')
       .to(dossier, { autoAlpha: 1, duration: .4 })
       .add(versLegende(2), '<.3')
       .to(appel, { autoAlpha: 0, duration: .45 }, '<-.2')
+      .to(jeton, versEmp('dossier', .62), '<-.15')
       .to(frags, {
         x: function (i, t) { return delta(t.dataset.f, 'x'); },
         y: function (i, t) { return delta(t.dataset.f, 'y'); },
@@ -198,6 +254,7 @@
     // page en dehors du vert « prêt », et elle veut dire quelque chose.
     // Le squelette s'efface AVANT que le contenu arrive : superposés, les deux
     // textes occupent la même ligne et s'écrasent sur les images de transition.
+      .addLabel('s3')
       .to(skel, { autoAlpha: 0, duration: .28 })
       .add(versLegende(3), '<')
       .to(contenuFlag, { autoAlpha: 1, duration: .42, stagger: .06, ease: 'power2.out' }, '>-.04')
@@ -209,21 +266,140 @@
       .to({}, { duration: .6 })
 
     // ── 5 : le dossier rejoint l'espace du médecin ───────────────────────
+      .addLabel('s4')
       .to(dossier, { y: -34, scale: .93, autoAlpha: 0, duration: .5, ease: 'power2.in' })
       .add(versLegende(4), '<.3')
       .to(frags, { autoAlpha: 0, duration: .1 }, '<')
     // Les lignes arrivent AVEC la carte, pas après : sinon le panneau reste
     // visible et vide pendant un instant, et ça se lit comme un bug.
       .to(espace, { autoAlpha: 1, duration: .45, ease: 'power2.out' }, '<.2')
+      .to(jeton, versEmp('espace', .6), '<-.1')
       .to(rangs, { autoAlpha: 1, x: 0, duration: .38, stagger: .07, ease: 'power2.out' }, '<.04')
       .to({}, { duration: .6 })
 
     // ── 6 : les documents ────────────────────────────────────────────────
+      .addLabel('s5')
       .to(espace, { y: -30, autoAlpha: 0, duration: .45, ease: 'power2.in' })
       .add(versLegende(5), '<.3')
+      .to(jeton, { autoAlpha: 0, duration: .3 }, '<')
       .to(docs, { autoAlpha: 1, duration: .4 }, '<.18')
       .to(cartesDoc, { autoAlpha: 1, y: 0, duration: .42, stagger: .12, ease: 'power2.out' }, '<')
       .to({}, { duration: .8 });
+  }
+
+  /* ══ SCÈNE DU HÉROS ════════════════════════════════════════════════════════
+     Elle joue seule au chargement et raconte le produit avant tout défilement :
+     le rendez-vous est lu, l'appel a lieu, chaque réponse arrive avec sa
+     provenance, ce qui reste flou s'allume en ambre, le dossier passe à
+     « prêt » et attend. Les trois jalons du rail y donnent accès directement.
+     ═════════════════════════════════════════════════════════════════════════ */
+  var scH = null;
+
+  function sceneHeros(gsap) {
+    var scene = document.getElementById('scene-h');
+    if (!scene) return;
+
+    var noeuds = scene.querySelectorAll('.rail-n');
+    var segs = scene.querySelectorAll('.rail-s i');
+    var etat = document.getElementById('rail-etat');
+    var champs = scene.querySelectorAll('#h-champs .champ');
+    var flag = scene.querySelector('#h-champs .champ.flag');
+    var contFlag = scene.querySelectorAll('#h-champs .champ.flag .k, #h-champs .champ.flag .v');
+    var pret = document.getElementById('h-pret');
+    var attente = document.getElementById('h-attente');
+
+    function jalon(n) {
+      for (var i = 0; i < noeuds.length; i++) noeuds[i].classList.toggle('on', i <= n);
+    }
+    function dire(t) { if (etat) etat.textContent = t; }
+
+    // État de départ : le rendez-vous existe, rien d'autre.
+    function zero() {
+      gsap.set(champs, { opacity: 0, y: 10 });
+      gsap.set(contFlag, { opacity: 0 });
+      gsap.set(flag, { backgroundColor: 'rgba(0,0,0,0)', boxShadow: 'inset 2px 0 0 rgba(245,185,99,0)' });
+      gsap.set([pret, attente], { opacity: 0 });
+      gsap.set(segs, { '--f': 0 });
+      jalon(0); dire("Lecture de l'agenda");
+    }
+    zero();
+
+    // En mouvement réduit, l'état final est posé d'emblée : le contenu ne
+    // dépend jamais de l'animation pour exister.
+    if (reduit.matches) {
+      gsap.set(champs, { opacity: 1, y: 0 });
+      gsap.set(contFlag, { opacity: 1 });
+      gsap.set(flag, { backgroundColor: 'rgba(245,185,99,.11)', boxShadow: 'inset 2px 0 0 rgba(245,185,99,1)' });
+      gsap.set([pret, attente], { opacity: 1 });
+      gsap.set(segs, { '--f': 1 });
+      jalon(2); dire('Prêt · en attente');
+      return;
+    }
+
+    var tl = gsap.timeline({ paused: true, defaults: { ease: 'power2.out' } });
+
+    tl.addLabel('e0')
+      .call(function () { jalon(0); dire("Lecture de l'agenda"); })
+      .to({}, { duration: .5 })
+
+      .addLabel('e1')
+      .call(function () { jalon(1); dire('Interrogatoire en cours'); })
+      .to(segs[0], { '--f': 1, duration: .7, ease: 'power1.inOut' })
+      // Chaque réponse arrive à son tour, jamais en bloc : c'est une
+      // conversation qu'on transcrit, pas un formulaire qu'on remplit.
+      .to(champs[0], { opacity: 1, y: 0, duration: .5 }, '-=.35')
+      .to(champs[1], { opacity: 1, y: 0, duration: .5 }, '+=.5')
+      .to(champs[2], { opacity: 1, y: 0, duration: .5 }, '+=.5')
+      .to(champs[3], { opacity: 1, y: 0, duration: .45 }, '+=.45')
+
+      .addLabel('e2')
+      .call(function () { jalon(2); dire('Relecture'); })
+      .to(segs[1], { '--f': 1, duration: .7, ease: 'power1.inOut' })
+      .to(contFlag, { opacity: 1, duration: .45, stagger: .07 }, '-=.3')
+      .to(flag, {
+        backgroundColor: 'rgba(245,185,99,.11)',
+        boxShadow: 'inset 2px 0 0 rgba(245,185,99,1)',
+        duration: .55
+      }, '<')
+      .call(function () { dire('Prêt · en attente'); }, null, '+=.35')
+      .to(pret, { opacity: 1, duration: .45 }, '-=.15')
+      .to(attente, { opacity: 1, duration: .45 }, '-=.25');
+
+    scH = tl;
+
+    // Le cycle : la scène se rejoue au bout d'un moment, une fois, sans
+    // s'imposer. Dès que le visiteur clique un jalon, il prend la main et
+    // le cycle s'arrête : on ne lui reprend pas ce qu'il vient de choisir.
+    var auto = true;
+    function relancer() {
+      if (!auto) return;
+      gsap.delayedCall(13, function () {
+        if (!auto || document.hidden) return;
+        zero();
+        tl.play(0);
+      });
+    }
+    tl.eventCallback('onComplete', relancer);
+    tl.play(0);
+
+    // Cible de chaque jalon sur la frise : la fin de son étape.
+    var cibles = [0, tl.labels.e2, tl.duration()];
+
+    for (var i = 0; i < noeuds.length; i++) {
+      (function (b, n) {
+        b.addEventListener('click', function () {
+          auto = false;
+          gsap.killTweensOf(tl);
+          if (n === 0) { tl.pause(0); zero(); return; }
+          // On rejoue depuis le début jusqu'au jalon demandé : l'ordre
+          // d'apparition des champs reste celui de la conversation, et
+          // revenir en arrière ne laisse jamais un état à moitié construit.
+          tl.pause(0);
+          zero();
+          tl.tweenTo(cibles[n], { duration: n === 1 ? 1.5 : 2.4, ease: 'power1.inOut' });
+        });
+      })(noeuds[i], i);
+    }
   }
 
   /* ── Entrée du héros ───────────────────────────────────────────────────── */
@@ -232,14 +408,12 @@
      qu'il n'a pas été révélé. Un lecteur d'écran ne doit pas dépendre d'une
      animation pour entendre un paragraphe. */
   function entreeHeros(gsap) {
+    // Les champs du dossier ne sont PAS touches ici : la scene du heros les
+    // pilote, et deux timelines sur les memes elements se marchent dessus.
     var els = document.querySelectorAll('[data-h]');
-    var champs = document.querySelectorAll('#dossier-hero .champ');
     gsap.set(els, { opacity: 0, y: 20 });
-    gsap.set(champs, { opacity: 0, y: 10 });
-
-    var tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-    tl.to(els, { opacity: 1, y: 0, duration: .78, stagger: .075 }, .12)
-      .to(champs, { opacity: 1, y: 0, duration: .5, stagger: .09 }, '-=.42');
+    return gsap.timeline({ defaults: { ease: 'power3.out' } })
+      .to(els, { opacity: 1, y: 0, duration: .78, stagger: .075 }, .12);
   }
 
   /* ── Apparition des blocs ──────────────────────────────────────────────── */
@@ -254,21 +428,169 @@
     });
   }
 
+
+  /* ══ INTERACTION AU POINTEUR ═══════════════════════════════════════════════
+     Deux gestes, tous deux au pointeur fin uniquement : la lueur qui suit le
+     curseur sur les surfaces produit, et l aimantation legere des boutons.
+     Sur un ecran tactile il n y a pas de curseur a suivre : ces couches ne
+     sont meme pas branchees.
+     ═════════════════════════════════════════════════════════════════════════ */
+  function couchePointeur(gsap) {
+    if (reduit.matches) return;
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+
+    document.querySelectorAll(".pointeur, .surface").forEach(function (el) {
+      el.classList.add("pointeur");
+      el.addEventListener("pointermove", function (e) {
+        var r = el.getBoundingClientRect();
+        el.style.setProperty("--mx", ((e.clientX - r.left) / r.width * 100) + "%");
+        el.style.setProperty("--my", ((e.clientY - r.top) / r.height * 100) + "%");
+      });
+      el.addEventListener("pointerenter", function () { el.classList.add("actif"); });
+      el.addEventListener("pointerleave", function () { el.classList.remove("actif"); });
+    });
+
+    // Aimantation : le bouton vient un peu vers le curseur, au sixieme de la
+    // distance et plafonne a 6 px. Ce qu on cherche est la sensation que
+    // l interface repond, pas un bouton qui se promene.
+    document.querySelectorAll(".btn-1, .btn-2, .ong, .rail-n").forEach(function (b) {
+      b.classList.add("aimant");
+      var actif = null;
+      b.addEventListener("pointermove", function (e) {
+        var r = b.getBoundingClientRect();
+        var dx = (e.clientX - (r.left + r.width / 2)) / 6;
+        var dy = (e.clientY - (r.top + r.height / 2)) / 6;
+        var m = 6;
+        actif = gsap.to(b, {
+          x: Math.max(-m, Math.min(m, dx)), y: Math.max(-m, Math.min(m, dy)),
+          duration: .4, ease: "power3.out", overwrite: "auto"
+        });
+      });
+      b.addEventListener("pointerleave", function () {
+        gsap.to(b, { x: 0, y: 0, duration: .55, ease: "elastic.out(1,.6)", overwrite: "auto" });
+      });
+    });
+  }
+
+  /* ══ ONGLETS ═══════════════════════════════════════════════════════════════
+     Le dossier et les documents se choisissent. La bascule est une vraie
+     transition, pas un display:none : le panneau sortant s efface pendant que
+     l entrant monte.
+     ═════════════════════════════════════════════════════════════════════════ */
+  function onglets(gsap, conteneurId, attrBouton, selPanneaux, attrPanneau, apres) {
+    var barre = document.getElementById(conteneurId);
+    if (!barre) return;
+    var boutons = barre.querySelectorAll(".ong");
+    var panneaux = document.querySelectorAll(selPanneaux);
+
+    function montrer(cle, anime) {
+      for (var i = 0; i < boutons.length; i++) {
+        var actif = boutons[i].getAttribute(attrBouton) === cle;
+        boutons[i].classList.toggle("on", actif);
+        boutons[i].setAttribute("aria-selected", String(actif));
+      }
+      panneaux.forEach(function (p) {
+        var cible = p.getAttribute(attrPanneau) === cle;
+        if (cible) {
+          p.hidden = false;
+          if (anime && gsap) gsap.fromTo(p, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: .42, ease: "power2.out" });
+        } else if (!p.hidden) {
+          if (anime && gsap) {
+            gsap.to(p, { opacity: 0, duration: .16, onComplete: function () { p.hidden = true; } });
+          } else { p.hidden = true; }
+        }
+      });
+      if (apres) apres(cle);
+    }
+
+    for (var j = 0; j < boutons.length; j++) {
+      (function (b) {
+        b.addEventListener("click", function () { montrer(b.getAttribute(attrBouton), true); });
+      })(boutons[j]);
+    }
+  }
+
+  var TITRES_DOC = {
+    cr: "Compte rendu de consultation",
+    liaison: "Lettre de liaison",
+    certificat: "Certificat"
+  };
+
+  function interactions(gsap) {
+    onglets(gsap, "ong-dossier", "data-o", "#explorateur .vol", "data-v");
+    onglets(gsap, "ong-doc", "data-d", "#doc-corps .dv", "data-d", function (cle) {
+      var t = document.getElementById("doc-titre");
+      if (t) t.textContent = TITRES_DOC[cle] || "";
+    });
+  }
+
+
+  /* ══ TRANSITIONS DE SECTION ════════════════════════════════════════════════
+     Le fond de la page se deplace lentement au fil du parcours au lieu de
+     sauter d une bande a l autre. C est une seule variable CSS animee : rien
+     n est repeint en plus, et les sections ne sont plus des boites posees
+     bout a bout.
+     ═════════════════════════════════════════════════════════════════════════ */
+  function fondEvolutif(gsap, ST) {
+    if (reduit.matches) return;
+    var etapes = [
+      { sel: "#systeme",  bg: "#0a0c0f" },
+      { sel: "#dossier",  bg: "#08090b" },
+      { sel: "#consultation", bg: "#0a0c0f" },
+      { sel: "#documents", bg: "#0c0e11" },
+      { sel: "#transfert", bg: "#0a0c0f" },
+      { sel: "#tarifs",   bg: "#08090b" }
+    ];
+    etapes.forEach(function (e) {
+      var el = document.querySelector(e.sel);
+      if (!el) return;
+      gsap.to(document.body, {
+        backgroundColor: e.bg,
+        ease: "none",
+        scrollTrigger: { trigger: el, start: "top 75%", end: "top 25%", scrub: true }
+      });
+    });
+  }
+
+  /* Le voile de transition : une bande degradee entre deux sections, qui
+     evite la couture nette entre deux fonds differents. */
+  function coutures() {
+    var cibles = document.querySelectorAll(".sect.tinted, .systeme");
+    for (var i = 0; i < cibles.length; i++) cibles[i].classList.add("fondu");
+  }
+
   /* ── Démarrage ─────────────────────────────────────────────────────────── */
   function demarrer() {
     var gsap = window.gsap;
     var ST = window.ScrollTrigger;
 
-    // Mouvement réduit, écran étroit, ou GSAP absent : la page se lit à plat.
-    if (!gsap || !ST || reduit.matches || !GRAND.matches) {
+    // GSAP absent : repli CSS. Mouvement reduit : lecture a plat, sans
+    // epinglage. Dans TOUS les autres cas, quelle que soit la largeur, la page
+    // s anime. La largeur ne decide que de la choregraphie.
+    if (!gsap || !ST) {
       document.getElementById('systeme').classList.add('plat');
       demarrerRepli();
       return;
     }
     gsap.registerPlugin(ST);
+    if (window.Flip) gsap.registerPlugin(window.Flip);
+
+    if (reduit.matches) {
+      document.getElementById('systeme').classList.add('plat');
+      demarrerRepli();
+      sceneHeros(gsap);
+      interactions(null);
+      return;
+    }
+
     entreeHeros(gsap);
+    sceneHeros(gsap);
     blocs(gsap, ST);
     construireSequence(gsap);
+    couchePointeur(gsap);
+    interactions(gsap);
+    fondEvolutif(gsap, ST);
+    coutures();
     // Les polices changent les hauteurs : sans ce recalcul, les positions
     // mesurées pour les fragments seraient celles d'avant leur chargement.
     if (document.fonts && document.fonts.ready) {
