@@ -3409,9 +3409,37 @@ app.use((req, res, next) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+/**
+ * ============================================================================
+ *  ARRET PROPRE
+ * ============================================================================
+ *
+ * Un hebergeur envoie SIGTERM et laisse quelques secondes avant de tuer. Sans
+ * ce traitement, chaque redeploiement coupait les requetes EN VOL : un medecin
+ * qui validait un dossier ou lancait un transfert recevait une connexion
+ * fermee, sans savoir si son geste avait abouti.
+ *
+ * On cesse d'accepter, on laisse finir ce qui est commence, puis on part. Le
+ * delai de grace evite qu'une requete bloquee retienne le processus
+ * indefiniment — l'hebergeur finirait par le tuer de toute facon, en moins
+ * poli.
+ */
+function arretPropre(serveur, signal) {
+  console.log(`  → ${signal} recu : arret propre, on laisse finir les requetes en cours`);
+  const minuteur = setTimeout(() => {
+    console.warn('  → delai de grace depasse : arret force');
+    process.exit(0);
+  }, 10_000);
+  minuteur.unref();
+  serveur.close(() => {
+    clearTimeout(minuteur);
+    process.exit(0);
+  });
+}
+
 // ── START (uniquement si lancé directement, pas via require() en test) ──
 if (require.main === module) {
-  app.listen(PORT, () => {
+  const serveur = app.listen(PORT, () => {
     console.log(`\n  Arkiba backend ✓`);
     console.log(`  → http://localhost:${PORT}`);
     // Le jeton lui-même n'est pas journalisé : les logs d'un PaaS sont lisibles
@@ -3432,6 +3460,9 @@ if (require.main === module) {
       console.log('  → SMTP  : désactivé — SMTP_USER / SMTP_PASS manquants\n');
     }
   });
+
+  process.on('SIGTERM', () => arretPropre(serveur, 'SIGTERM'));
+  process.on('SIGINT', () => arretPropre(serveur, 'SIGINT'));
 }
 
 
