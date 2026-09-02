@@ -16,7 +16,9 @@
   'use strict';
 
   var reduit = window.matchMedia('(prefers-reduced-motion: reduce)');
-  var GRAND = window.matchMedia('(min-width: 940px)');
+  // Le seuil doit rester identique a celui de la feuille de style :
+  // en dessous, la sequence se lit a plat.
+  var GRAND = window.matchMedia('(min-width: 1100px)');
 
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) {
@@ -174,9 +176,9 @@
       .to({}, { duration: .5 })
 
     // ── 2 → 3 : les fragments deviennent les champs ──────────────────────
-      .add(versLegende(2))
-      .to(dossier, { autoAlpha: 1, duration: .4 }, '<')
-      .to(appel, { autoAlpha: 0, duration: .45 }, '<.1')
+      .to(dossier, { autoAlpha: 1, duration: .4 })
+      .add(versLegende(2), '<.3')
+      .to(appel, { autoAlpha: 0, duration: .45 }, '<-.2')
       .to(frags, {
         x: function (i, t) { return delta(t.dataset.f, 'x'); },
         y: function (i, t) { return delta(t.dataset.f, 'y'); },
@@ -194,27 +196,31 @@
     // ── 4 : ce qui reste à vérifier ──────────────────────────────────────
     // L'ambre s'allume ici, et seulement ici. C'est la seule couleur de la
     // page en dehors du vert « prêt », et elle veut dire quelque chose.
-      .add(versLegende(3))
-      .to(skel, { autoAlpha: 0, duration: .3 }, '<')
-      .to(contenuFlag, { autoAlpha: 1, duration: .42, stagger: .06, ease: 'power2.out' }, '<.1')
+    // Le squelette s'efface AVANT que le contenu arrive : superposés, les deux
+    // textes occupent la même ligne et s'écrasent sur les images de transition.
+      .to(skel, { autoAlpha: 0, duration: .28 })
+      .add(versLegende(3), '<')
+      .to(contenuFlag, { autoAlpha: 1, duration: .42, stagger: .06, ease: 'power2.out' }, '>-.04')
       .to(champsD[3], {
         backgroundColor: 'rgba(245,185,99,.11)',
         boxShadow: 'inset 2px 0 0 rgba(245,185,99,1)',
         duration: .5, ease: 'power2.out'
-      }, '<')
+      }, '<.05')
       .to({}, { duration: .6 })
 
     // ── 5 : le dossier rejoint l'espace du médecin ───────────────────────
-      .add(versLegende(4))
-      .to(dossier, { y: -34, scale: .93, autoAlpha: 0, duration: .5, ease: 'power2.in' }, '<')
+      .to(dossier, { y: -34, scale: .93, autoAlpha: 0, duration: .5, ease: 'power2.in' })
+      .add(versLegende(4), '<.3')
       .to(frags, { autoAlpha: 0, duration: .1 }, '<')
+    // Les lignes arrivent AVEC la carte, pas après : sinon le panneau reste
+    // visible et vide pendant un instant, et ça se lit comme un bug.
       .to(espace, { autoAlpha: 1, duration: .45, ease: 'power2.out' }, '<.2')
-      .to(rangs, { autoAlpha: 1, x: 0, duration: .4, stagger: .1, ease: 'power2.out' }, '<.1')
+      .to(rangs, { autoAlpha: 1, x: 0, duration: .38, stagger: .07, ease: 'power2.out' }, '<.04')
       .to({}, { duration: .6 })
 
     // ── 6 : les documents ────────────────────────────────────────────────
-      .add(versLegende(5))
-      .to(espace, { y: -30, autoAlpha: 0, duration: .45, ease: 'power2.in' }, '<')
+      .to(espace, { y: -30, autoAlpha: 0, duration: .45, ease: 'power2.in' })
+      .add(versLegende(5), '<.3')
       .to(docs, { autoAlpha: 1, duration: .4 }, '<.18')
       .to(cartesDoc, { autoAlpha: 1, y: 0, duration: .42, stagger: .12, ease: 'power2.out' }, '<')
       .to({}, { duration: .8 });

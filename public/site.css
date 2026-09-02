@@ -24,7 +24,9 @@
   /* Texte */
   --tx:        #f7f8f8;
   --tx-2:      #9ba3ad;
-  --tx-3:      #6f7883;
+  /* Mesuré sur --surf, le fond le plus clair où il sert : 4,93:1. Le gris plus
+     sombre qu'on pose d'instinct ici tombe à 4,16:1, sous le seuil AA. */
+  --tx-3:      #7b8590;
 
   /* États cliniques : les deux seules couleurs du site. */
   --pret:      #6ee7a8;
@@ -326,9 +328,9 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
    médecin, puis se recompose en documents.
    ═══════════════════════════════════════════════════════════════════════════ */
 .systeme { position: relative; background: var(--bg-2); border-top: 1px solid var(--line); }
-.scene-wrap { min-height: 100svh; display: flex; align-items: center; padding: 96px 0; }
+.scene-wrap { min-height: 100svh; display: flex; align-items: center; padding: 76px 0; }
 .scene-grid { display: grid; gap: clamp(30px, 4vw, 60px); width: 100%; align-items: center; }
-@media (min-width: 940px) { .scene-grid { grid-template-columns: minmax(0,.78fr) minmax(0,1fr); } }
+@media (min-width: 1100px) { .scene-grid { grid-template-columns: minmax(0,.78fr) minmax(0,1fr); } }
 
 /* Colonne de gauche : les légendes se succèdent au même endroit. */
 .legendes { position: relative; min-height: 300px; padding-bottom: 46px; }
@@ -347,10 +349,16 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 .legende p { margin-top: 16px; font-size: 1.0625rem; line-height: 1.5; color: var(--tx-2); max-width: 34ch; }
 
 /* La scène : tout est empilé, GSAP décide de ce qui est visible. */
+/* La hauteur de la scène est celle de sa couche la plus haute, pas davantage :
+   plus grande, elle creuse du vide autour des étapes courtes. */
 .scene {
   position: relative;
-  aspect-ratio: 1 / .82;
-  min-height: 380px;
+  /* La largeur est posée explicitement AVANT le ratio : sans elle, min-height
+     fait dériver la largeur de la hauteur (450 / .72 = 625 px) et la scène
+     déborde de sa colonne de grille. */
+  width: 100%;
+  aspect-ratio: 1 / .72;
+  min-height: 450px;
 }
 .couche { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
 
@@ -366,16 +374,16 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 }
 
 /* Rendez-vous */
-.rdv { padding: 20px 22px; display: grid; gap: 14px; }
+.rdv { padding: 26px 26px; display: grid; gap: 18px; }
 .rdv .ligne { display: flex; align-items: center; gap: 12px; }
-.rdv .h { font-family: var(--mono); font-size: .8125rem; color: var(--tx-2); }
-.rdv .nom { font-size: 1.0625rem; font-weight: 600; letter-spacing: -.02em; }
+.rdv .h { font-family: var(--mono); font-size: .875rem; color: var(--tx-2); }
+.rdv .nom { font-size: 1.2rem; font-weight: 600; letter-spacing: -.02em; }
 .rdv .src { margin-left: auto; font-family: var(--mono); font-size: .625rem; letter-spacing: .1em; text-transform: uppercase; color: var(--tx-3); }
 .rdv .barre { height: 1px; background: var(--line); }
 .rdv .meta { font-size: .875rem; color: var(--tx-2); }
 
 /* Appel */
-.appel { padding: 22px; }
+.appel { padding: 26px; }
 .appel-tete { display: flex; align-items: center; gap: 11px; margin-bottom: 20px; }
 .appel-tete .pt { width: 7px; height: 7px; border-radius: 50%; background: var(--pret); }
 .appel-tete .t { font-family: var(--mono); font-size: .6875rem; letter-spacing: .12em; text-transform: uppercase; color: var(--tx-2); }
@@ -393,9 +401,9 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 
 /* Espace médecin */
 .espace { padding: 8px 0; }
-.espace-tete { padding: 14px 20px; border-bottom: 1px solid var(--line); }
+.espace-tete { padding: 17px 24px; border-bottom: 1px solid var(--line); }
 .espace-tete .t { font-family: var(--mono); font-size: .6875rem; letter-spacing: .12em; text-transform: uppercase; color: var(--tx-3); }
-.rang { display: flex; align-items: center; gap: 14px; padding: 15px 20px; border-bottom: 1px solid rgba(255,255,255,.04); }
+.rang { display: flex; align-items: center; gap: 14px; padding: 18px 24px; border-bottom: 1px solid rgba(255,255,255,.04); }
 .rang:last-child { border-bottom: 0; }
 .rang .h { font-family: var(--mono); font-size: .75rem; color: var(--tx-3); flex: none; }
 .rang .n { font-size: .9375rem; }
@@ -405,7 +413,7 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 /* Documents */
 .docs { display: grid; gap: 12px; width: 100%; }
 .doc {
-  padding: 16px 18px; background: linear-gradient(180deg, var(--surf), var(--bg-2));
+  padding: 20px 22px; background: linear-gradient(180deg, var(--surf), var(--bg-2));
   border: 1px solid var(--line); border-radius: 12px;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
   display: flex; align-items: center; gap: 13px;
@@ -502,6 +510,11 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
   box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
 }
 .plan.mid { border-color: var(--line-2); background: linear-gradient(180deg, var(--surf-2), var(--surf)); }
+/* Survol : la bordure s'éclaire, rien d'autre. Sur un fond sombre, un simple
+   passage de filet suffit à rendre une carte vivante ; la soulever de 4 px
+   ferait bouger toute la grille pour rien. */
+.plan, .noeud, .doc { transition: border-color 220ms var(--e-soft), background 220ms var(--e-soft); }
+.plan:hover, .noeud:hover { border-color: #39414c; }
 .plan .n { font-family: var(--mono); font-size: .625rem; letter-spacing: .14em; text-transform: uppercase; color: var(--tx-3); }
 .plan .p { font-size: 2.9rem; font-weight: 600; letter-spacing: -.045em; margin: 15px 0 3px; }
 .plan .p small { font-size: .9375rem; font-weight: 400; letter-spacing: -.01em; color: var(--tx-3); }
@@ -530,7 +543,7 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 }
 .f select {
   padding-right: 36px; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236f7883' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b8590' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;
 }
 .f option { background: var(--surf); color: var(--tx); }
@@ -605,7 +618,7 @@ h2 + .sub, h1 + .sub { margin-top: 24px; }
 .systeme.plat .couche { position: static; inset: auto; }
 .systeme.plat .jauge { display: none; }
 
-@media (max-width: 939px) {
+@media (max-width: 1099px) {
   .scene-wrap { min-height: 0; padding: clamp(72px,9vw,110px) 0; display: block; }
   .legendes { position: static; min-height: 0; }
   .legende { position: static; inset: auto; margin-bottom: 20px; }
