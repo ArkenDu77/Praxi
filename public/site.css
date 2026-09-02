@@ -56,7 +56,7 @@
 
   /* Typographie */
   --serif: "Newsreader", "Iowan Old Style", Georgia, "Times New Roman", serif;
-  --sans:  "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  --sans:  "IBM Plex Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   --mono:  "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Rayons — volontairement serrés. Le « tout arrondi » est ce qui fait
@@ -399,12 +399,16 @@ h2 + .lead, h1 + .lead { margin-top: 22px; }
   content: ''; position: absolute; left: 4px; top: 30px; bottom: 30px;
   width: 1px; background: var(--rule);
 }
-/* Segment encré : hauteur pilotée par --fil (0 → 1) depuis le script. */
+/* Segment encré : progression pilotée par --fil (0 → 1) depuis le script.
+   Mise à l'échelle plutôt que hauteur animée — sur un trait plein de 1 px le
+   rendu est identique au pixel près, et scaleY se compose sans repasser par
+   la mise en page à chaque image. */
 .fil::after {
-  content: ''; position: absolute; left: 4px; top: 30px;
+  content: ''; position: absolute; left: 4px; top: 30px; bottom: 30px;
   width: 1px; background: var(--bleu);
-  height: calc(var(--fil, 0) * (100% - 60px));
-  transition: height var(--t4) var(--e-out);
+  transform: scaleY(var(--fil, 0));
+  transform-origin: top;
+  transition: transform var(--t4) var(--e-out);
 }
 .etape::before {
   content: ''; position: absolute; left: 0; top: 28px;

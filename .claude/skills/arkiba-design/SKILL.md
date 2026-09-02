@@ -84,12 +84,20 @@ d'éclaircir quoi que ce soit.
 
 ```css
 --serif: "Newsreader", "Iowan Old Style", Georgia, serif;  /* titres, chiffres de prix */
---sans:  "Instrument Sans", ui-sans-serif, system-ui;      /* texte, interface */
+--sans:  "IBM Plex Sans", ui-sans-serif, system-ui;        /* texte, interface */
 --mono:  "IBM Plex Mono", ui-monospace, Menlo;             /* libellés, heures, méta */
 ```
 
 - **Serif pour tout ce qui argumente.** Ce n'est pas un choix décoratif : les
   courriers et comptes rendus médicaux sont composés en serif.
+- **Plex Sans et Plex Mono partagent le même squelette** : le texte courant et
+  les métadonnées machine riment, ce qui fait un système au lieu de trois
+  fontes voisines. C'est la raison du choix — pas un hasard, ne le défaites pas
+  sans en tenir compte.
+- **Fontes bannies** : Inter, Roboto, Geist, Plus Jakarta Sans, Space Grotesk,
+  Fraunces, Instrument Sans. Elles sont devenues le réglage par défaut des
+  interfaces générées ; associées à un serif de titrage, elles produisent
+  exactement la page « landing IA » que le projet refuse.
 - **Mono pour tout ce qui est machine** : heures, provenances, statuts,
   surtitres. Toujours en capitales, `letter-spacing` de `.1em` à `.13em`,
   taille de `.5625rem` à `.75rem`.
@@ -145,6 +153,11 @@ transitions CSS.
   `--fil` (0 → 1) et livre ses champs au dossier collant d'en face. Position
   discrète par étape, pas de scrub lié au défilement : rien à recalculer à
   chaque image, rien qui saccade sur mobile.
+- **N'animez jamais `width`, `height`, `padding` ni `margin`.** Le trait du fil
+  se pilote en `transform: scaleY(var(--fil))` avec `transform-origin: top` :
+  sur un trait plein le rendu est identique au pixel près, sans mise en page.
+  Pour ouvrir un bloc en hauteur, `grid-template-rows: 0fr → 1fr` (le menu
+  mobile s'ouvre comme ça).
 - **`prefers-reduced-motion` coupe tout** et applique les états finaux
   immédiatement. Vérifié : 52/52 éléments visibles, fil complet, respiration
   arrêtée.
