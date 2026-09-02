@@ -3098,9 +3098,14 @@ app.post('/api/preconsult/encounters/:id/transfer', authenticateJWT, (req, res) 
  *
  * Le medecin s'authentifie LUI-MEME dans le navigateur dedie, MFA compris.
  * Rien de ce qu'il y saisit ne passe par ici.
+ *
+ * Le chemin cote moteur s'appelle `/api/connections` : `/api/integrations` y
+ * designe deja les CAPACITES du moteur (quels systemes il sait joindre), pas
+ * les connexions d'un cabinet. Ici le mot « Integrations » est celui du
+ * produit, tel que le medecin le lit dans son menu.
  */
 app.get('/api/integrations', authenticateJWT, (req, res) =>
-  relayerVersMoteur(req, res, '/api/integrations'));
+  relayerVersMoteur(req, res, '/api/connections'));
 
 /**
  * « Connecter Doctolib ». L'identite du medecin vient de la SESSION, jamais du
@@ -3108,13 +3113,13 @@ app.get('/api/integrations', authenticateJWT, (req, res) =>
  * confrere, meme dans son propre cabinet.
  */
 app.post('/api/integrations/doctolib', authenticateJWT, (req, res) =>
-  relayerVersMoteur(req, res, '/api/integrations', {
+  relayerVersMoteur(req, res, '/api/connections', {
     method: 'POST',
     body: { doctor_id: String(req.user.id), kind: 'doctolib_browser' },
   }));
 
 app.post('/api/integrations/:id/revoke', authenticateJWT, (req, res) =>
-  relayerVersMoteur(req, res, `/api/integrations/${encodeURIComponent(req.params.id)}/revoke`,
+  relayerVersMoteur(req, res, `/api/connections/${encodeURIComponent(req.params.id)}/revoke`,
     { method: 'POST', body: {} }));
 
 app.post('/api/internal/intake-results', requireIntakeService, (req, res) => {

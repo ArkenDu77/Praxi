@@ -3975,3 +3975,23 @@ html[data-theme="dark"] .theme-pick-card {
   padding: 0.02rem 0.5rem;
 }
 .pc-warn { color: var(--danger, #b23225); font-size: 0.85rem; margin: 0.55rem 0 0; }
+
+/* ==========================================================================
+ *  INTEGRATIONS — L'ETAT D'UN RACCORDEMENT
+ * ==========================================================================
+ *
+ * La couleur ne porte JAMAIS l'information seule : le libelle la dit aussi,
+ * pour un medecin daltonien comme pour une capture d'ecran en noir et blanc.
+ */
+.int-etat { display:flex; align-items:center; gap:.55rem; font-size:1.05rem; font-weight:600; margin:.2rem 0 .35rem; }
+.int-puce { width:.6rem; height:.6rem; border-radius:50%; flex:0 0 auto; }
+.int-puce-vert { background:#22c55e; }
+.int-puce-orange { background:#f59e0b; }
+.int-puce-gris { background:#94a3b8; }
+.int-puce-attente { background:#3b82f6; animation:int-pulse 1.4s ease-in-out infinite; }
+@keyframes int-pulse { 0%,100% { opacity:1; } 50% { opacity:.35; } }
+.int-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:.9rem; }
+.int-mode-emploi { margin-top:1rem; padding:.9rem 1rem; border-radius:.6rem;
+  background:rgba(148,163,184,.10); font-size:.92rem; line-height:1.5; }
+.int-mode-emploi ol { margin:.4rem 0 .4rem 1.1rem; padding:0; }
+.int-mode-emploi li { margin:.25rem 0; }

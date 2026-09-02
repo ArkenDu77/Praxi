@@ -44,7 +44,7 @@ const moteur = http.createServer((req, res) => {
       res.writeHead(code, { 'content-type': 'application/json' });
       res.end(JSON.stringify(o));
     };
-    if (req.url === '/api/integrations' && req.method === 'GET') {
+    if (req.url === '/api/connections' && req.method === 'GET') {
       return json({
         integrations: [{
           connector_id: 'cnx_1', kind: 'doctolib_browser', state: 'NEEDS_REAUTH',
@@ -53,10 +53,10 @@ const moteur = http.createServer((req, res) => {
         }],
       });
     }
-    if (req.url === '/api/integrations' && req.method === 'POST') {
+    if (req.url === '/api/connections' && req.method === 'POST') {
       return json({ integration: { connector_id: 'cnx_1', state: 'AWAITING_OPERATOR', pilote: true } }, 201);
     }
-    if (req.url === '/api/integrations/cnx_1/revoke') {
+    if (req.url === '/api/connections/cnx_1/revoke') {
       return json({ integration: { connector_id: 'cnx_1', state: 'REVOKED', pilote: true } });
     }
     return json({ error: 'route factice inconnue' }, 404);
@@ -172,6 +172,17 @@ describe('l\'écran existe et dit la vérité', () => {
     // Une fenêtre qui s'ouvre sans prévenir se fait refermer.
     expect(page).toContain('Ce qui va se passer');
     expect(page).toMatch(/Arkiba ne voit ni votre mot de passe/);
+  });
+
+  test('les styles vivent dans app.css, jamais en ligne dans app.html', () => {
+    // INCIDENT : ces règles avaient d'abord été insérées au premier `</style>`
+    // rencontré — qui se trouve DANS une chaîne JavaScript construisant la
+    // fenêtre d'impression. La chaîne s'est retrouvée coupée, tout le script
+    // de l'application est mort, et l'écran restait sur « Chargement… ».
+    // Aucun test de chaîne ne pouvait le voir : seul le navigateur l'a dit.
+    const css = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.css'), 'utf8');
+    expect(css).toContain('.int-puce-vert');
+    expect(page).not.toContain('.int-puce-vert {');
   });
 
   test('la couleur ne porte jamais l\'information toute seule', () => {
