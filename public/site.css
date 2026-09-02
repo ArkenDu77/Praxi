@@ -283,7 +283,7 @@ h2 + .lead, h1 + .lead { margin-top: 22px; }
   align-items: start;
 }
 @media (min-width: 1000px) {
-  .hero-grid { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: clamp(48px, 5vw, 76px); align-items: center; }
+  .hero-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(44px, 4.5vw, 68px); align-items: center; }
 }
 
 /* Surtitre éditorial, pas pilule arrondie : la pilule à bord arrondi au-dessus
