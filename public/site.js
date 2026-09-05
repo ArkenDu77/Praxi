@@ -517,6 +517,8 @@
   };
 
   function interactions(gsap) {
+    modules(gsap);
+    bandeauParcours();
     onglets(gsap, "ong-dossier", "data-o", "#explorateur .vol", "data-v");
     onglets(gsap, "ong-doc", "data-d", "#doc-corps .dv", "data-d", function (cle) {
       var t = document.getElementById("doc-titre");
@@ -557,6 +559,73 @@
   function coutures() {
     var cibles = document.querySelectorAll(".sect.tinted, .systeme");
     for (var i = 0; i < cibles.length; i++) cibles[i].classList.add("fondu");
+  }
+
+
+  /* ══ LES MODULES DE LA PLATEFORME ══════════════════════════════════════════
+     Dix modules, un panneau. La bascule est une vraie transition : le panneau
+     sortant s efface pendant que l entrant monte, et la mini-interface arrive
+     legerement apres son texte, pour que l oeil suive.
+     ═════════════════════════════════════════════════════════════════════════ */
+  function modules(gsap) {
+    var barre = document.getElementById("mods");
+    if (!barre) return;
+    var boutons = barre.querySelectorAll(".mod");
+    var panneaux = document.querySelectorAll(".banc .pan");
+    var courant = null;
+
+    function montrer(cle, anime) {
+      if (cle === courant) return;
+      courant = cle;
+      for (var i = 0; i < boutons.length; i++) {
+        var a = boutons[i].getAttribute("data-m") === cle;
+        boutons[i].classList.toggle("on", a);
+        boutons[i].setAttribute("aria-selected", String(a));
+      }
+      panneaux.forEach(function (p) {
+        var vise = p.getAttribute("data-p") === cle;
+        if (vise) {
+          p.hidden = false;
+          if (anime && gsap) {
+            var txt = p.querySelector(".pan-txt"), ui = p.querySelector(".pan-ui");
+            gsap.fromTo(txt, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: .45, ease: "power2.out" });
+            gsap.fromTo(ui, { opacity: 0, y: 20, scale: .985 }, { opacity: 1, y: 0, scale: 1, duration: .55, ease: "power2.out", delay: .07 });
+          }
+        } else if (!p.hidden) {
+          if (anime && gsap) {
+            gsap.to(p, { opacity: 0, duration: .16, onComplete: function () { p.hidden = true; gsap.set(p, { opacity: 1 }); } });
+          } else { p.hidden = true; }
+        }
+      });
+    }
+
+    for (var j = 0; j < boutons.length; j++) {
+      (function (b) {
+        b.addEventListener("click", function () { montrer(b.getAttribute("data-m"), true); });
+      })(boutons[j]);
+    }
+    montrer("agenda", false);
+  }
+
+
+  /* Les neuf jalons du parcours s allument l un apres l autre, dans l ordre de
+     la chaine : c est ce qui fait lire la rangee comme un flux et non comme
+     neuf cases posees cote a cote. */
+  function bandeauParcours() {
+    // ScrollTrigger est pris sur window : cette fonction est appelee depuis
+    // interactions(), qui ne recoit pas ST en parametre.
+    var ST = window.ScrollTrigger;
+    var n = document.querySelectorAll(".fx-n");
+    if (!n.length || !ST) return;
+    if (reduit.matches) { for (var i = 0; i < n.length; i++) n[i].classList.add("vu"); return; }
+    ST.create({
+      trigger: "#fx", start: "top 82%", once: true,
+      onEnter: function () {
+        for (var k = 0; k < n.length; k++) {
+          (function (el, d) { setTimeout(function () { el.classList.add("vu"); }, d); })(n[k], k * 90);
+        }
+      }
+    });
   }
 
   /* ── Démarrage ─────────────────────────────────────────────────────────── */
