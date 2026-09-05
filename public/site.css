@@ -1283,6 +1283,11 @@ html.cur, html.cur * { cursor: none; }
 html.cur a, html.cur button, html.cur summary, html.cur label,
 html.cur input, html.cur select, html.cur textarea { cursor: none; }
 
+/* La boite garde une taille fixe et c'est sa peau, en `::before`, qui change
+   d'echelle. Le curseur est le seul element de la page redessine a chaque
+   mouvement du pointeur : y animer `width` ou `height` declencherait un calcul
+   de disposition a chaque image, pendant que la boucle rAF ecrit deja un
+   `transform`. Echelle et opacite restent sur le compositeur. */
 .cur-pt, .cur-an {
   position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none;
   opacity: 0; transition: opacity .22s;
@@ -1290,31 +1295,30 @@ html.cur input, html.cur select, html.cur textarea { cursor: none; }
 }
 body.cur-vu .cur-pt, body.cur-vu .cur-an { opacity: 1; }
 
-.cur-pt {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--enc);
-  transition: opacity .22s, background .2s, width .2s, height .2s;
+.cur-pt { width: 6px; height: 6px; }
+.cur-pt::before {
+  content: ""; display: block; width: 100%; height: 100%;
+  border-radius: 50%; background: var(--enc);
+  transition: background .2s, transform .2s cubic-bezier(.16,1,.3,1), border-radius .2s;
 }
-.cur-pt[data-etat="action"] { background: var(--vert); }
-.cur-pt[data-etat="saisie"] { width: 2px; height: 20px; border-radius: 1px; }
+.cur-pt[data-etat="action"]::before { background: var(--vert); }
+/* Une barre de saisie n'est pas une homothetie du point : les deux axes se
+   mettent a l'echelle separement. */
+.cur-pt[data-etat="saisie"]::before { transform: scale(.34, 3.34); border-radius: 1px; }
 
-.cur-an {
-  width: 38px; height: 38px; border-radius: 100px;
-  border: 1.5px solid rgba(11,13,16,.28);
-  display: flex; align-items: center; justify-content: center;
-  transition: opacity .22s, width .28s cubic-bezier(.16,1,.3,1),
-              height .28s cubic-bezier(.16,1,.3,1), border-color .22s, background .22s;
+.cur-an { width: 46px; height: 46px; }
+.cur-an::before {
+  content: ""; display: block; width: 100%; height: 100%;
+  border-radius: 100px; border: 1.5px solid rgba(11,13,16,.28);
+  transform: scale(.826);
+  transition: transform .28s cubic-bezier(.16,1,.3,1), border-color .22s, background .22s;
 }
-.cur-an[data-etat="action"] { border-color: var(--vert); background: var(--vert-bg); }
-.cur-an[data-etat="surface"] { border-color: rgba(11,13,16,.4); width: 46px; height: 46px; }
-.cur-an[data-etat="saisie"] { opacity: 0; }
-.cur-an.presse { width: 30px; height: 30px; }
-.cur-lb {
-  font-family: var(--mono); font-size: 8.5px; font-weight: 500;
-  letter-spacing: .1em; text-transform: uppercase; color: var(--enc);
-  opacity: 0; white-space: nowrap; transition: opacity .2s;
-}
-.cur-an.avec-lb { width: auto; height: 26px; padding: 0 12px; border-radius: 100px; background: var(--pap-2); border-color: var(--fil-2); }
-.cur-an.avec-lb .cur-lb { opacity: 1; }
+.cur-an[data-etat="action"]::before { border-color: var(--vert); background: var(--vert-bg); }
+.cur-an[data-etat="surface"]::before { border-color: rgba(11,13,16,.4); transform: scale(1); }
+/* `body.cur-vu .cur-an` remet l opacite a 1 avec une specificite superieure :
+   sans ce selecteur complet, l anneau ne s effacait jamais sur un champ. */
+body.cur-vu .cur-an[data-etat="saisie"] { opacity: 0; }
+.cur-an.presse::before { transform: scale(.652); }
 
 /* Le curseur est un objet de bureau : au doigt il n'existe pas, et sous
    mouvement réduit il n'est même pas construit. */

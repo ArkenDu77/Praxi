@@ -812,9 +812,7 @@
 
     var pt = document.createElement('span');
     var an = document.createElement('span');
-    var lb = document.createElement('span');
-    pt.className = 'cur-pt'; an.className = 'cur-an'; lb.className = 'cur-lb';
-    an.appendChild(lb);
+    pt.className = 'cur-pt'; an.className = 'cur-an';
     pt.setAttribute('aria-hidden', 'true'); an.setAttribute('aria-hidden', 'true');
     document.body.appendChild(pt); document.body.appendChild(an);
     document.documentElement.classList.add('cur');
@@ -827,7 +825,7 @@
          sensation quelle que soit la vitesse du geste. */
       ax += (x - ax) * .18;
       ay += (y - ay) * .18;
-      an.style.transform = 'translate3d(' + (ax - 19) + 'px,' + (ay - 19) + 'px,0)';
+      an.style.transform = 'translate3d(' + (ax - 23) + 'px,' + (ay - 23) + 'px,0)';
       pt.style.transform = 'translate3d(' + (x - 3) + 'px,' + (y - 3) + 'px,0)';
       tourne = requestAnimationFrame(boucle);
     }
@@ -839,17 +837,15 @@
 
       /* L etat se lit sur la cible, pas sur une liste de selecteurs tenue a
          jour a la main : tout element qui se declare interactif est couvert. */
-      var c = e.target.closest ? e.target.closest('a,button,summary,label,input,select,textarea,.surface,.pointeur,.scene-p,.wt-e,.fx-n,.vg article') : null;
-      var etat = '', texte = '';
+      var c = e.target.closest ? e.target.closest('a,button,summary,label,input,select,textarea,.surface,.pointeur,.scene-p,.wt-e,.vg article') : null;
+      var etat = '';
       if (c) {
         if (c.matches('input,select,textarea')) etat = 'saisie';
         else if (c.matches('a,button,summary,label,.wt-e')) etat = 'action';
-        else { etat = 'surface'; texte = c.getAttribute('data-cur') || ''; }
+        else etat = 'surface';
       }
       an.setAttribute('data-etat', etat);
       pt.setAttribute('data-etat', etat);
-      lb.textContent = texte;
-      an.classList.toggle('avec-lb', !!texte);
     }, { passive: true });
 
     document.addEventListener('pointerdown', function () { an.classList.add('presse'); });
