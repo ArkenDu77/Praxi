@@ -368,3 +368,76 @@ s'allume à l'endroit exact d'où vient chaque élément. Le registre
 - Les captures en navigateur sans tête n'avancent GSAP qu'à chaque peinture.
   Compter ~45 captures jetables avant la capture utile, sinon on photographie
   une animation à mi-course et on « corrige » un défaut qui n'existe pas.
+
+
+---
+
+## V3 — le film, la démonstration jouable, le curseur
+
+La direction « Papier et nuit » ne change pas. Elle gagne trois pièces.
+
+### Le film du héros
+
+Un plan fixe de 6 s, muet, en boucle, 1440 × 810, servi en WebM (59 ko) avec
+repli MP4 (141 ko) et un recadrage carré séparé pour le téléphone (63 ko).
+
+**La boucle est fermée par construction**, pas par un aller-retour : la caméra
+suit un cosinus de période entière, donc la dernière image est exactement la
+première. Un `reverse` ffmpeg garde toutes les images en mémoire et fait tomber
+cette machine ; l'expression périodique coûte une passe et zéro mémoire.
+
+`zoompan` sur une image fixe produit `d` images **par image d'entrée** : avec
+`-loop 1 -t 6` on obtient 150 × 150 images et une vidéo de quinze minutes. La
+forme juste est une seule image en entrée et `-frames:v` en sortie.
+
+Le film porte l'atmosphère, jamais l'interface. **Toute surface Arkiba montrée
+reste construite en HTML et CSS**, et les trois jetons de données posés sur le
+film font le pont : ils sortent de la pièce filmée, puis s'effacent quand la
+carte produit a pris le relais. Sans ce pont, il y aurait une vidéo à gauche et
+un tableau de bord à droite, ce qui n'est pas une composition.
+
+### La démonstration jouable
+
+Douze étapes, six vues, un halo, un pointeur et une bande de commentaire. Le
+visiteur avance lui-même ; la lecture automatique s'arrête au premier geste et
+ne démarre jamais sous mouvement réduit.
+
+Le commentaire est **une bande sous la scène, pas une bulle flottante** : posée
+près de sa cible, elle finissait toujours par recouvrir une ligne du dossier,
+quelle que soit la logique de placement.
+
+Le halo se mesure dans le repère du cadre, et seulement après deux `rAF` quand
+la vue vient de changer : une vue qui vient d'apparaître n'a pas encore ses
+dimensions, et le halo se pose alors sur une boîte vide.
+
+### Le curseur
+
+Un point qui suit exactement, un anneau qui rattrape 18 % de la distance par
+image. `cursor: none` n'est posé que par `html.cur`, une classe ajoutée en
+JavaScript **après** que le curseur a démarré : si le script échoue, le curseur
+natif reste. Jamais au doigt, jamais sous mouvement réduit, jamais d'événement
+reçu.
+
+### Règles de langue confirmées en V3
+
+- **« sans carte bancaire » est banni de la vitrine.** La formule fait petit
+  SaaS en libre-service. « Quinze jours d'accès complet » dit la même chose.
+- L'appel principal est **« Demander une démonstration »** partout, y compris
+  dans le bloc final. « Ouvrir un accès » est le chemin secondaire.
+- La mention « Arkiba n'établit aucun diagnostic » vit dans le panneau
+  « Le médecin garde la main », pas sous le premier bouton de la page. La page
+  vend le produit avant de se défendre, sans rien cacher.
+- **Trois dossiers fictifs récurrents**, jamais un seul : Mme Martin porte le
+  parcours préopératoire, M. Bernard le suivi, Mme Leroy les documents. Un même
+  motif clinique répété dix fois donne l'impression d'une seule capture d'écran
+  déclinée.
+
+### Pièges payés dans cette passe
+
+- Un élément flex sans `min-width: 0` se dimensionne sur son contenu : la carte
+  de la démonstration débordait du cadre au téléphone.
+- La barre collante se rétracte sur `#acces` ; un test qui clique son bouton à
+  cet endroit attend un élément hors de l'écran.
+- Les captures en navigateur sans tête n'avancent GSAP qu'à chaque peinture :
+  compter environ 45 captures jetables avant la capture utile, sinon on
+  photographie une animation à mi-course.

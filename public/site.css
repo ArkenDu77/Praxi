@@ -267,7 +267,7 @@ h1, h2, h3 {
 
 /* ═══ TYPOGRAPHIE DE PAGE ══════════════════════════════════════════════════ */
 
-.xl { font-size: clamp(32px, 4.5vw, 58px); line-height: .98; letter-spacing: -.036em; }
+.xl { font-size: clamp(31px, 4vw, 53px); line-height: 1; letter-spacing: -.034em; }
 .lg { font-size: clamp(29px, 3.9vw, 52px); line-height: .99; letter-spacing: -.035em; }
 h3 { font-size: clamp(20px, 1.7vw, 25px); line-height: 1.12; letter-spacing: -.028em; }
 
@@ -333,8 +333,8 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 .hero { padding: clamp(34px, 4.4vw, 62px) 0 clamp(52px, 6vw, 92px); position: relative; }
 
 .hero-2c {
-  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: clamp(32px, 4vw, 60px); align-items: center;
+  display: grid; grid-template-columns: minmax(0, .93fr) minmax(0, 1.07fr);
+  gap: clamp(32px, 4vw, 58px); align-items: center;
 }
 /* Les coupures du titre sont posées dans le balisage, pas laissées au hasard
    d'une largeur : « déjà répondu » ne doit jamais tomber seul sur sa ligne. */
@@ -375,7 +375,7 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   background: linear-gradient(205deg, rgba(246,247,248,0) 40%, rgba(11,13,16,.3) 100%);
 }
 .hero-carte {
-  position: absolute; right: -5%; bottom: -6%; width: min(370px, 84%); z-index: 2;
+  position: absolute; right: -6%; bottom: -7%; width: min(348px, 78%); z-index: 3;
 }
 @media (max-width: 1099px) { .hero-carte { right: 0; bottom: -6%; } }
 
@@ -1096,4 +1096,340 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   .cadre-in { padding: 14px; }
   .foot-grid { grid-template-columns: 1fr; }
   .barre-c .btn { flex: 1; }
+}
+
+/* ═══ V3 · LE FILM DU HÉROS ════════════════════════════════════════════════
+   Le film porte l'atmosphère, la surface porte le produit, et les jetons font
+   le pont entre les deux : ils sortent de la pièce filmée et entrent dans la
+   carte. Sans ce pont, on aurait une vidéo à gauche et un tableau de bord posé
+   à droite, ce qui n'est pas une composition. */
+
+.hero-film {
+  position: relative; border-radius: var(--r-3); overflow: hidden;
+  aspect-ratio: 4 / 3; width: 100%; background: #24272b;
+  box-shadow: 0 44px 88px -52px rgba(11,13,16,.55);
+}
+/* Le cadrage vise le bureau et la fenêtre. Centré, la moitié gauche de la
+   pièce est un mur de placards et le film n'a plus de sujet. */
+.hero-film .film {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; object-position: 46% 64%;
+}
+.film-voile {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(205deg, rgba(246,247,248,0) 38%, rgba(11,13,16,.34) 100%);
+}
+/* La lueur dérive lentement en travers du cadre : c'est le seul mouvement que
+   la page ajoute au film, et il suffit à faire respirer l'image fixe du
+   `poster` tant que la vidéo n'a pas démarré. */
+.film-lueur {
+  position: absolute; inset: -20%; pointer-events: none; mix-blend-mode: screen;
+  background: radial-gradient(38% 46% at 30% 34%, rgba(255,247,230,.20), transparent 70%);
+  animation: derive 17s ease-in-out infinite alternate;
+}
+@keyframes derive {
+  0%   { transform: translate3d(-4%, 2%, 0) scale(1); }
+  100% { transform: translate3d(10%, -5%, 0) scale(1.14); }
+}
+@media (prefers-reduced-motion: reduce) { .film-lueur { animation: none; } }
+
+.jeton {
+  position: absolute; z-index: 2;
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 7px 13px; border-radius: 100px;
+  background: rgba(11,13,16,.72);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.16); color: var(--nuit-x);
+  font-family: var(--mono); font-size: 9.5px; font-weight: 500;
+  letter-spacing: .11em; text-transform: uppercase; white-space: nowrap;
+}
+.jeton .pt { width: 5px; height: 5px; border-radius: 50%; background: var(--vert-c); flex: none; }
+.jeton .pt.amb { background: var(--verif); }
+.jeton.j1 { left: 6%;  top: 9%; }
+.jeton.j2 { right: 6%; top: 21%; }
+.jeton.j3 { left: 8%;  top: 63%; }
+.js .jeton { opacity: 0; }
+@media (max-width: 639px) { .jeton.j2 { display: none; } }
+
+/* ═══ V3 · LA DÉMONSTRATION JOUABLE ════════════════════════════════════════ */
+
+.tete-d {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  gap: clamp(20px, 3vw, 48px); align-items: end;
+}
+@media (max-width: 819px) { .tete-d { grid-template-columns: 1fr; align-items: start; } }
+.tete-d .lg { max-width: 16ch; }
+.tete-d .sub { margin-top: 0; max-width: 40ch; }
+
+.wt {
+  margin-top: clamp(28px, 3.6vw, 46px);
+  display: grid; grid-template-columns: 268px minmax(0, 1fr);
+  gap: clamp(20px, 2.6vw, 40px); align-items: start;
+}
+@media (max-width: 1023px) { .wt { grid-template-columns: 1fr; } }
+
+.wt-nav { position: relative; padding-left: 15px; }
+.wt-jauge {
+  position: absolute; left: 0; top: 6px; bottom: 6px; width: 2px;
+  background: var(--fil); border-radius: 2px; overflow: hidden;
+}
+.wt-jauge i {
+  display: block; width: 100%; height: 100%; background: var(--vert);
+  transform-origin: top; transform: scaleY(0);
+  transition: transform .45s cubic-bezier(.16,1,.3,1);
+}
+.wt-liste { list-style: none; display: flex; flex-direction: column; }
+.wt-e {
+  width: 100%; display: flex; align-items: center; gap: 11px; min-height: 44px;
+  padding: 5px 11px; border: 0; background: none; border-radius: 9px;
+  font: inherit; font-size: 13.5px; color: var(--enc-3); text-align: left;
+  cursor: pointer; transition: color .18s, background .18s;
+}
+.wt-e:hover { color: var(--enc); background: rgba(11,13,16,.04); }
+.wt-n {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .06em;
+  color: var(--fil-2); flex: none; transition: color .18s;
+}
+.wt-e.faite { color: var(--enc-2); }
+.wt-e.faite .wt-n { color: var(--vert); }
+.wt-e.on { color: var(--enc); background: var(--pap-2); box-shadow: var(--ombre-1); font-weight: 600; }
+.wt-e.on .wt-n { color: var(--vert); }
+.wt-t { min-width: 0; }
+
+/* Défilement horizontal des étapes sous 1024 px : une colonne de douze
+   entrées ne tient pas au-dessus de la scène sans repousser celle-ci hors de
+   l'écran. */
+@media (max-width: 1023px) {
+  .wt-nav { padding-left: 0; padding-bottom: 12px; }
+  .wt-jauge { left: 0; right: 0; top: auto; bottom: 0; width: auto; height: 2px; }
+  .wt-jauge i { transform-origin: left; transform: scaleX(0); }
+  .wt-liste {
+    flex-direction: row; gap: 6px; overflow-x: auto; padding-bottom: 12px;
+    scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch;
+  }
+  .wt-liste::-webkit-scrollbar { height: 0; }
+  .wt-liste li { flex: none; scroll-snap-align: start; }
+  .wt-e { white-space: nowrap; border: 1px solid var(--fil); background: var(--pap-2); }
+}
+
+.wt-scene { min-width: 0; }
+.wt-cadre {
+  position: relative; border-radius: var(--r-3);
+  padding: clamp(16px, 2.2vw, 30px);
+  background: var(--pap-2); border: 1px solid var(--fil);
+  box-shadow: var(--ombre-1); min-height: clamp(300px, 34vw, 396px);
+  display: flex; align-items: center; overflow: hidden;
+}
+/* Sans `min-width: 0`, un element flex se dimensionne sur son contenu et la
+   carte debordait du cadre au telephone. */
+.wt-vue { width: 100%; min-width: 0; flex: 1 1 100%; }
+
+.wt-halo {
+  position: absolute; left: 0; top: 0; width: 0; height: 0; z-index: 4;
+  border-radius: 12px; pointer-events: none; opacity: 0;
+  box-shadow: 0 0 0 1.5px var(--vert), 0 0 0 7px var(--vert-bg);
+  transition: opacity .3s;
+}
+.wt-halo.on { opacity: 1; }
+.wt-pointe {
+  position: absolute; left: 0; top: 0; z-index: 6; width: 20px; height: 22px;
+  color: var(--pap-2); pointer-events: none; opacity: 0;
+  filter: drop-shadow(0 4px 10px rgba(11,13,16,.5));
+  transition: opacity .3s;
+}
+.wt-pointe.on { opacity: 1; }
+.wt-pointe svg { width: 100%; height: 100%; }
+/* Le commentaire est une bande, pas une bulle flottante : posee au-dessus
+   de la scene elle finissait toujours par recouvrir une ligne du dossier. */
+.wt-note {
+  margin-top: 14px; display: flex; align-items: flex-start; gap: 11px;
+  padding: 13px 16px; border-radius: var(--r-2);
+  background: var(--enc); color: var(--pap-2);
+  font-size: 13.5px; line-height: 1.5; min-height: 62px;
+}
+.wt-note .wt-note-n {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em;
+  color: var(--vert-c); flex: none; padding-top: 3px;
+}
+.wt-note p { transition: opacity .25s; }
+.wt-note.change p { opacity: 0; }
+
+.wt-barre { margin-top: 16px; display: flex; align-items: center; gap: 9px; }
+.wt-b {
+  min-width: 44px; height: 44px; padding: 0 12px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  border: 1px solid var(--fil-2); background: var(--pap-2); border-radius: var(--r-1);
+  font: inherit; font-size: 13px; font-weight: 500; color: var(--enc-2); cursor: pointer;
+  transition: color .18s, border-color .18s;
+}
+.wt-b:hover { color: var(--enc); border-color: #aab3bc; }
+.wt-b svg { width: 15px; height: 15px; }
+.wt-rejouer { margin-left: auto; }
+.wt-etat {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--enc-3);
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+@media (max-width: 599px) {
+  .wt-etat { display: none; }
+  .wt-rejouer .lbl { display: none; }
+}
+
+/* ═══ V3 · CURSEUR ARKIBA ══════════════════════════════════════════════════
+   `cursor: none` n'est posé que par `html.cur`, une classe ajoutée en
+   JavaScript après que le curseur a réellement démarré : si le script échoue,
+   le curseur natif reste. */
+html.cur, html.cur * { cursor: none; }
+html.cur a, html.cur button, html.cur summary, html.cur label,
+html.cur input, html.cur select, html.cur textarea { cursor: none; }
+
+.cur-pt, .cur-an {
+  position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none;
+  opacity: 0; transition: opacity .22s;
+  will-change: transform;
+}
+body.cur-vu .cur-pt, body.cur-vu .cur-an { opacity: 1; }
+
+.cur-pt {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--enc);
+  transition: opacity .22s, background .2s, width .2s, height .2s;
+}
+.cur-pt[data-etat="action"] { background: var(--vert); }
+.cur-pt[data-etat="saisie"] { width: 2px; height: 20px; border-radius: 1px; }
+
+.cur-an {
+  width: 38px; height: 38px; border-radius: 100px;
+  border: 1.5px solid rgba(11,13,16,.28);
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity .22s, width .28s cubic-bezier(.16,1,.3,1),
+              height .28s cubic-bezier(.16,1,.3,1), border-color .22s, background .22s;
+}
+.cur-an[data-etat="action"] { border-color: var(--vert); background: var(--vert-bg); }
+.cur-an[data-etat="surface"] { border-color: rgba(11,13,16,.4); width: 46px; height: 46px; }
+.cur-an[data-etat="saisie"] { opacity: 0; }
+.cur-an.presse { width: 30px; height: 30px; }
+.cur-lb {
+  font-family: var(--mono); font-size: 8.5px; font-weight: 500;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--enc);
+  opacity: 0; white-space: nowrap; transition: opacity .2s;
+}
+.cur-an.avec-lb { width: auto; height: 26px; padding: 0 12px; border-radius: 100px; background: var(--pap-2); border-color: var(--fil-2); }
+.cur-an.avec-lb .cur-lb { opacity: 1; }
+
+/* Le curseur est un objet de bureau : au doigt il n'existe pas, et sous
+   mouvement réduit il n'est même pas construit. */
+@media (hover: none), (pointer: coarse) {
+  .cur-pt, .cur-an { display: none; }
+  html.cur, html.cur * { cursor: auto; }
+}
+
+/* ═══ V3 · MODALE ══════════════════════════════════════════════════════════ */
+
+.modal-vue { display: block; }
+.modal-f { margin-top: 22px; display: grid; gap: 13px; }
+.modal-f .f label .opt {
+  font-weight: 400; color: var(--enc-3); font-size: 12px; margin-left: 5px;
+}
+.modal-f input::placeholder { color: var(--fil-2); }
+#form-demo .btn-1 { width: 100%; margin-top: 18px; }
+#form-demo .btn-1.charge .lbl { opacity: .5; }
+.modal-err {
+  margin-top: 12px; font-size: 13px; color: #9c1421;
+  background: rgba(190,30,45,.07); border: 1px solid rgba(190,30,45,.24);
+  border-radius: var(--r-1); padding: 9px 12px;
+}
+.modal-tick {
+  display: grid; place-items: center; width: 46px; height: 46px;
+  border-radius: 50%; background: var(--vert-bg); color: var(--vert);
+  margin-bottom: 18px;
+}
+.modal-tick svg { width: 22px; height: 22px; }
+#modal-ok .modal-a { margin-top: 22px; }
+
+/* ═══ V3 · AJUSTEMENTS DU HÉROS ════════════════════════════════════════════ */
+
+.js .hero-carte { opacity: 0; }
+@media (max-width: 1023px) {
+  .hero-film { aspect-ratio: 16 / 10; }
+}
+@media (max-width: 639px) {
+  .hero-film { aspect-ratio: 1 / 1; }
+  .hero-film .film { object-position: 58% center; }
+}
+
+/* ═══ V3 · LE REGISTRE DES REFUS ═══════════════════════════════════════════
+   La section la plus faible de la page était quatre cartes de texte. Elle
+   porte maintenant l'artefact le plus dense dont nous disposons : les codes
+   que le serveur renvoie vraiment. */
+
+.ver {
+  margin-top: clamp(30px, 4vw, 52px);
+  display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+  gap: clamp(20px, 3vw, 46px); align-items: start;
+}
+@media (max-width: 899px) { .ver { grid-template-columns: 1fr; } }
+
+.ver-log { position: sticky; top: calc(var(--nav-h) + 26px); }
+@media (max-width: 899px) { .ver-log { position: static; } }
+.log { list-style: none; }
+.log li {
+  display: grid; grid-template-columns: 40px 138px minmax(0, 1fr);
+  gap: 12px; align-items: baseline;
+  padding: 13px 16px; border-bottom: 1px solid var(--nuit-l);
+}
+.log li:last-child { border-bottom: 0; }
+.log .co {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  color: var(--verif); letter-spacing: .04em;
+}
+.log .cl {
+  font-family: var(--mono); font-size: 11px; color: var(--vert-c);
+  letter-spacing: .02em; overflow: hidden; text-overflow: ellipsis;
+}
+.log .cd { font-size: 13px; line-height: 1.45; color: var(--nuit-t); }
+.log li.amb { background: var(--verif-bg); box-shadow: inset 2px 0 0 var(--verif); }
+@media (max-width: 559px) {
+  .log li { grid-template-columns: 40px minmax(0, 1fr); }
+  .log .cd { grid-column: 1 / -1; }
+}
+
+.ver-l { list-style: none; counter-reset: v; }
+.ver-l li {
+  counter-increment: v; position: relative;
+  padding: 18px 0 18px 40px; border-bottom: 1px solid var(--fil);
+}
+.ver-l li:last-child { border-bottom: 0; }
+.ver-l li::before {
+  content: counter(v, decimal-leading-zero);
+  position: absolute; left: 0; top: 21px;
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em; color: var(--vert);
+}
+.ver-l h3 { font-size: 17px; line-height: 1.2; }
+.ver-l p { margin-top: 9px; font-size: 14px; line-height: 1.55; color: var(--enc-2); }
+
+/* ═══ V3 · LA FAQ ET LE PANNEAU DE GARDE ═══════════════════════════════════
+   La FAQ occupait une colonne et laissait l'autre vide. Le panneau qui la
+   complète porte la mention que le héros n'a plus à porter : la page vend le
+   produit avant de se défendre, mais elle ne cache rien pour autant. */
+
+.faq {
+  margin-top: clamp(30px, 4vw, 48px);
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr);
+  gap: clamp(24px, 3.4vw, 56px); align-items: start;
+}
+@media (max-width: 899px) { .faq { grid-template-columns: 1fr; } }
+.faq .qas { margin-top: 0; max-width: none; }
+
+.garde { position: sticky; top: calc(var(--nav-h) + 26px); }
+@media (max-width: 899px) { .garde { position: static; } }
+.garde-l { list-style: none; }
+.garde-l li {
+  padding: 13px 16px; border-bottom: 1px solid var(--nuit-l);
+  font-size: 13.5px; line-height: 1.5;
+}
+.garde-l li:last-child { border-bottom: 0; }
+.garde-l .k {
+  display: block; margin-bottom: 5px;
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--nuit-t);
 }

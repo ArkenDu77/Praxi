@@ -101,24 +101,33 @@
   }
 
   /* ── Modale de démonstration ───────────────────────────────────────────── */
-  /* Le focus entre dans la modale et n'en sort pas tant qu'elle est ouverte,
-     puis retourne exactement au bouton qui l'a ouverte. Sans cela, fermer la
-     modale au clavier renvoie en haut du document. */
+  /* Le focus entre dans la modale et n en sort pas tant qu elle est ouverte,
+     puis retourne exactement au bouton qui l a ouverte. Sans cela, fermer la
+     modale au clavier renvoie en haut du document.
+
+     L envoi n invente aucun succes : il n existe pas encore de route serveur
+     pour les demandes de demonstration, donc le formulaire ouvre un courrier
+     prerempli. Afficher « demande envoyee » sans destinataire serait un faux. */
   var modal = document.getElementById('modal-demo');
   if (modal) {
     var carte = modal.querySelector('.modal-carte');
+    var vueForm = document.getElementById('modal-form');
+    var vueOk = document.getElementById('modal-ok');
+    var formD = document.getElementById('form-demo');
+    var errD = document.getElementById('modal-err');
     var rappel = null;
 
     function focusables() {
-      return carte.querySelectorAll('a[href], button:not([disabled])');
+      return carte.querySelectorAll('a[href], button:not([disabled]), input:not([disabled])');
     }
     function ouvrirModal(depuis) {
       rappel = depuis || null;
+      if (vueOk) { vueOk.hidden = true; vueForm.hidden = false; }
       modal.classList.add('on');
       modal.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
-      var f = focusables();
-      if (f.length) f[0].focus();
+      var champ = document.getElementById('d-email');
+      setTimeout(function () { (champ || focusables()[0]).focus(); }, 60);
     }
     function fermerModal() {
       if (!modal.classList.contains('on')) return;
@@ -129,21 +138,57 @@
       rappel = null;
     }
 
-    // Les déclencheurs sont des liens vers le formulaire d'inscription : sans
-    // JavaScript ils y mènent vraiment, au lieu d'être des boutons morts. Le
-    // clic n'est détourné vers la modale que si elle existe.
+    /* Les déclencheurs sont des liens vers le formulaire d inscription : sans
+       JavaScript ils y mènent vraiment, au lieu d être des boutons morts. */
     document.querySelectorAll('[data-demo]').forEach(function (b) {
       b.addEventListener('click', function (e) { e.preventDefault(); ouvrirModal(b); });
     });
+
+    if (formD) {
+      formD.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = document.getElementById('d-email').value.trim();
+        var spec = document.getElementById('d-spec').value.trim();
+        var sujet = document.getElementById('d-mot').value.trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+          errD.textContent = 'Indiquez une adresse professionnelle valide.';
+          errD.hidden = false;
+          document.getElementById('d-email').focus();
+          return;
+        }
+        errD.hidden = true;
+        var corps = 'Bonjour,\n\nJe souhaite voir Arkiba sur un parcours complet.\n\n' +
+                    'Email : ' + email + '\n' +
+                    (spec ? 'Spécialité : ' + spec + '\n' : '') +
+                    (sujet ? 'Ce que je veux voir : ' + sujet + '\n' : '') +
+                    '\nMerci.';
+        var lien = 'mailto:contact@arkiba.fr?subject=' +
+                   encodeURIComponent('Démonstration Arkiba') +
+                   '&body=' + encodeURIComponent(corps);
+        var b = document.getElementById('modal-go');
+        b.classList.add('charge');
+        setTimeout(function () {
+          window.location.href = lien;
+          b.classList.remove('charge');
+          vueForm.hidden = true;
+          vueOk.hidden = false;
+          var s = vueOk.querySelector('a');
+          if (s) s.focus();
+        }, 420);
+      });
+    }
+
     var croix = document.getElementById('modal-x');
     if (croix) croix.addEventListener('click', fermerModal);
     modal.addEventListener('click', function (e) { if (e.target === modal) fermerModal(); });
-    var vers = document.getElementById('modal-go');
-    if (vers) vers.addEventListener('click', fermerModal);
+    ['modal-seul', 'modal-vers-demo'].forEach(function (id) {
+      var a = document.getElementById(id);
+      if (a) a.addEventListener('click', fermerModal);
+    });
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { fermerModal(); return; }
       if (e.key !== 'Tab' || !modal.classList.contains('on')) return;
-      var f = focusables();
+      var f = [].filter.call(focusables(), function (el) { return el.offsetParent !== null; });
       if (!f.length) return;
       var premier = f[0], dernier = f[f.length - 1];
       if (e.shiftKey && document.activeElement === premier) { e.preventDefault(); dernier.focus(); }
@@ -679,6 +724,299 @@
     }
   }
 
+
+
+
+  /* ══ LA CHORÉGRAPHIE DU HÉROS ══════════════════════════════════════════════
+     Deux secondes apres le chargement, quelque chose s est deja passe : les
+     trois jetons sortent du film l un apres l autre, la carte monte, puis ses
+     lignes arrivent. C est le seul endroit de la page ou le film et le produit
+     sont mis en mouvement ensemble, et c est ce qui les fait appartenir a une
+     meme composition plutot qu a deux colonnes voisines.
+
+     Sous mouvement reduit, l etat final est pose d emblee : la composition
+     reste entiere, seule la mise en scene disparait. */
+  function herosAnime(gsap) {
+    var vis = document.querySelector('.hero-vis');
+    if (!vis) return;
+    var jetons = vis.querySelectorAll('.jeton');
+    var carte = vis.querySelector('.hero-carte');
+    var lignes = vis.querySelectorAll('[data-hc]');
+    var film = document.getElementById('film-h');
+
+    if (!gsap || reduit.matches) {
+      gsap && gsap.set([jetons, carte, lignes], { opacity: 1, clearProps: 'transform' });
+      if (!gsap) {
+        for (var i = 0; i < jetons.length; i++) jetons[i].style.opacity = 1;
+        if (carte) carte.style.opacity = 1;
+      }
+      /* Un film qui bouge sous mouvement reduit contredit la demande : on
+         garde l image d affiche, qui reste une composition complete. */
+      if (film && reduit.matches) { try { film.pause(); film.removeAttribute('autoplay'); } catch (e) {} }
+      return;
+    }
+
+    gsap.set(jetons, { opacity: 0, y: 14, scale: .96 });
+    gsap.set(carte, { opacity: 0, y: 26 });
+    gsap.set(lignes, { opacity: 0, y: 10 });
+
+    gsap.timeline({ defaults: { ease: 'power3.out' }, delay: .55 })
+      .to(jetons[0], { opacity: 1, y: 0, scale: 1, duration: .6 })
+      .to(jetons[1], { opacity: 1, y: 0, scale: 1, duration: .6 }, '+=.42')
+      .to(jetons[2], { opacity: 1, y: 0, scale: 1, duration: .6 }, '+=.42')
+      .to(carte, { opacity: 1, y: 0, duration: .85, ease: 'power3.out' }, '-=.2')
+      .to(lignes, { opacity: 1, y: 0, duration: .55, stagger: .13 }, '-=.5')
+      /* Les jetons ne restent pas : leur information est passee dans la carte,
+         et deux copies du meme etat a l ecran diluent les deux. */
+      .to(jetons[1], { opacity: 0, y: -8, duration: .5 }, '+=1.1')
+      .to(jetons[0], { opacity: 0, y: -8, duration: .5 }, '-=.35');
+  }
+
+  /* Le film ne tourne que lorsqu il est a l ecran : un heros qui decode une
+     video pendant qu on lit les tarifs consomme de la batterie pour rien. */
+  function filmVisible() {
+    var film = document.getElementById('film-h');
+    if (!film) return;
+
+    /* Sur un telephone, le cadre est carre : servir le film large revient a en
+       montrer un tiers. Le recadrage 1:1 est un encodage separe, choisi avant
+       le premier octet de video plutot que rogne a l affichage. */
+    if (PETIT.matches) {
+      film.setAttribute('poster', '/media/heros-poster-mob.jpg');
+      film.innerHTML = '<source src="/media/heros-mob.mp4" type="video/mp4">';
+      try { film.load(); } catch (e) {}
+    }
+
+    if (!('IntersectionObserver' in window)) return;
+    if (reduit.matches) return;
+    new IntersectionObserver(function (es) {
+      if (es[0].isIntersecting) { var p = film.play(); if (p && p.catch) p.catch(function () {}); }
+      else film.pause();
+    }, { threshold: .05 }).observe(film);
+  }
+
+  /* ══ CURSEUR ARKIBA ════════════════════════════════════════════════════════
+     Un point precis qui suit exactement le pointeur, et un anneau qui le
+     rattrape avec un peu de retard. Le retard est la seule chose qui donne
+     l impression d une matiere plutot que d un calque.
+
+     Trois garde-fous, tous necessaires :
+       · il n existe qu au pointeur fin, jamais au doigt ;
+       · il ne se substitue au curseur natif que s il a vraiment demarre, sinon
+         un echec de script laisse la page sans aucun curseur visible ;
+       · il ne recoit jamais d evenement, donc il ne peut rien bloquer.
+     ═════════════════════════════════════════════════════════════════════════ */
+  function curseur() {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    if (reduit.matches) return;
+
+    var pt = document.createElement('span');
+    var an = document.createElement('span');
+    var lb = document.createElement('span');
+    pt.className = 'cur-pt'; an.className = 'cur-an'; lb.className = 'cur-lb';
+    an.appendChild(lb);
+    pt.setAttribute('aria-hidden', 'true'); an.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(pt); document.body.appendChild(an);
+    document.documentElement.classList.add('cur');
+
+    var x = innerWidth / 2, y = innerHeight / 2, ax = x, ay = y, vu = false, tourne = false;
+
+    function boucle() {
+      /* Rattrapage exponentiel : l anneau parcourt 18 % de la distance
+         restante a chaque image, ce qui donne un retard constant en
+         sensation quelle que soit la vitesse du geste. */
+      ax += (x - ax) * .18;
+      ay += (y - ay) * .18;
+      an.style.transform = 'translate3d(' + (ax - 19) + 'px,' + (ay - 19) + 'px,0)';
+      pt.style.transform = 'translate3d(' + (x - 3) + 'px,' + (y - 3) + 'px,0)';
+      tourne = requestAnimationFrame(boucle);
+    }
+
+    document.addEventListener('pointermove', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      x = e.clientX; y = e.clientY;
+      if (!vu) { vu = true; ax = x; ay = y; document.body.classList.add('cur-vu'); if (!tourne) boucle(); }
+
+      /* L etat se lit sur la cible, pas sur une liste de selecteurs tenue a
+         jour a la main : tout element qui se declare interactif est couvert. */
+      var c = e.target.closest ? e.target.closest('a,button,summary,label,input,select,textarea,.surface,.pointeur,.scene-p,.wt-e,.fx-n,.vg article') : null;
+      var etat = '', texte = '';
+      if (c) {
+        if (c.matches('input,select,textarea')) etat = 'saisie';
+        else if (c.matches('a,button,summary,label,.wt-e')) etat = 'action';
+        else { etat = 'surface'; texte = c.getAttribute('data-cur') || ''; }
+      }
+      an.setAttribute('data-etat', etat);
+      pt.setAttribute('data-etat', etat);
+      lb.textContent = texte;
+      an.classList.toggle('avec-lb', !!texte);
+    }, { passive: true });
+
+    document.addEventListener('pointerdown', function () { an.classList.add('presse'); });
+    document.addEventListener('pointerup', function () { an.classList.remove('presse'); });
+    /* Sortir de la fenetre doit rendre la main au systeme, sinon le curseur
+       Arkiba reste colle au bord pendant que le vrai pointeur est ailleurs. */
+    document.addEventListener('pointerleave', function () { document.body.classList.remove('cur-vu'); });
+    document.addEventListener('pointerenter', function () { if (vu) document.body.classList.add('cur-vu'); });
+    window.addEventListener('blur', function () { document.body.classList.remove('cur-vu'); });
+  }
+
+  /* ══ LA DÉMONSTRATION JOUABLE ══════════════════════════════════════════════
+     Douze etapes, six vues, un pointeur. Le visiteur avance lui-meme : c est
+     la seule facon de comprendre un parcours de bout en bout en une minute.
+     La lecture automatique s arrete des le premier geste du visiteur, et ne
+     demarre jamais sous mouvement reduit.
+     ═════════════════════════════════════════════════════════════════════════ */
+  var ETAPES = [
+    { t: 'Rendez-vous détecté',        v: 'agenda',       c: 'rdv',    d: "Arkiba lit l'agenda raccordé. Il n'y écrit jamais rien." },
+    { t: "L'appel est préparé",        v: 'agenda',       c: 'prep',   d: "Programmé la veille, à une heure où le patient décroche." },
+    { t: 'Le patient répond',          v: 'appel',        c: 'rep1',   d: "Un interrogatoire structuré, conduit au téléphone." },
+    { t: 'Les réponses se rangent',    v: 'dossier',      c: 'ch1',    d: "Chaque champ garde le lien vers ce qui a été dit, et l'heure." },
+    { t: 'Une incertitude apparaît',   v: 'dossier',      c: 'flag',   d: "Arkiba signale. Il ne tranche pas à la place du médecin." },
+    { t: 'Le dossier attend',          v: 'dossier',      c: 'pied',   d: "Prêt avant la consultation, pas rédigé le soir même." },
+    { t: 'Le médecin valide, corrige', v: 'revue',        c: 'v2',     d: "La correction se fait là où la donnée vit, pas dans une copie." },
+    { t: 'La consultation a lieu',     v: 'consultation', c: 'barre',  d: "Le contexte est sous la main. Arkiba ne s'interpose pas." },
+    { t: 'Notes, clavier ou micro',    v: 'consultation', c: 'notes',  d: "Un seul champ. Pas de mode à choisir, rien à lancer." },
+    { t: 'Les documents demandés',     v: 'documents',    c: 'doc1',   d: "Ceux que vous demandez. Zéro, un, ou plusieurs." },
+    { t: 'Vous cochez ce qui part',    v: 'documents',    c: 'coches', d: "Le périmètre du transfert se choisit ligne par ligne." },
+    { t: 'Prêt pour votre logiciel',   v: 'documents',    c: 'sortie', d: "Ce qui n'est pas coché reste dans Arkiba." }
+  ];
+
+  var NOTE_FRAPPEE = "Genou droit, épanchement modéré, flexion limitée. Pas de signe inflammatoire. Confirme l'indication opératoire.";
+
+  function walkthrough(gsap) {
+    var bloc = document.getElementById('wt');
+    if (!bloc) return;
+    var cadre  = document.getElementById('wt-cadre');
+    var liste  = document.getElementById('wt-liste');
+    var halo   = document.getElementById('wt-halo');
+    var pointe = document.getElementById('wt-pointe');
+    var noteN  = document.getElementById('wt-note-n');
+    var noteT  = document.getElementById('wt-note-t');
+    var note   = document.getElementById('wt-note');
+    var jauge  = document.getElementById('wt-jauge');
+    var etat   = document.getElementById('wt-etat');
+    var frappe = document.getElementById('wt-frappe');
+    var vues   = cadre.querySelectorAll('.wt-vue');
+
+    var courant = -1, auto = null, frappeur = null, mainPrise = false;
+
+    liste.innerHTML = ETAPES.map(function (e, i) {
+      return '<li><button class="wt-e" type="button" data-i="' + i + '">' +
+             '<span class="wt-n">' + (i < 9 ? '0' : '') + (i + 1) + '</span>' +
+             '<span class="wt-t">' + esc(e.t) + '</span></button></li>';
+    }).join('');
+    var boutons = liste.querySelectorAll('.wt-e');
+
+    function taper(texte) {
+      if (!frappe) return;
+      clearInterval(frappeur);
+      if (reduit.matches) { frappe.textContent = texte; return; }
+      var k = 0;
+      frappe.innerHTML = '<span class="curseur"></span>';
+      frappeur = setInterval(function () {
+        k += 2;
+        frappe.innerHTML = esc(texte.slice(0, k)) + '<span class="curseur"></span>';
+        if (k >= texte.length) clearInterval(frappeur);
+      }, 26);
+    }
+
+    /* Le halo et le pointeur se placent sur la boite de la cible, mesuree dans
+       le repere du cadre : toute autre reference se decale des que la page
+       defile ou que la fenetre change de largeur. */
+    function viser(cible, anime) {
+      if (!cible) { halo.classList.remove('on'); pointe.classList.remove('on'); return; }
+      var rc = cadre.getBoundingClientRect(), rt = cible.getBoundingClientRect();
+      var x = rt.left - rc.left, y = rt.top - rc.top;
+      var poser = { left: (x - 6) + 'px', top: (y - 6) + 'px', width: (rt.width + 12) + 'px', height: (rt.height + 12) + 'px' };
+      if (anime && gsap && !reduit.matches) gsap.to(halo, { left: poser.left, top: poser.top, width: poser.width, height: poser.height, duration: .5, ease: 'power3.out' });
+      else { halo.style.left = poser.left; halo.style.top = poser.top; halo.style.width = poser.width; halo.style.height = poser.height; }
+
+      var px = x + Math.min(rt.width - 26, rt.width * .62), py = y + rt.height - 14;
+      if (anime && gsap && !reduit.matches) gsap.to(pointe, { left: px, top: py, duration: .55, ease: 'power3.out' });
+      else { pointe.style.left = px + 'px'; pointe.style.top = py + 'px'; }
+
+      halo.classList.add('on'); pointe.classList.add('on');
+    }
+
+    function aller(i, anime) {
+      i = (i + ETAPES.length) % ETAPES.length;
+      if (i === courant) return;
+      var e = ETAPES[i], precedent = courant;
+      courant = i;
+
+      for (var k = 0; k < boutons.length; k++) {
+        boutons[k].classList.toggle('on', k === i);
+        boutons[k].classList.toggle('faite', k < i);
+      }
+      var vueChange = precedent < 0 || ETAPES[precedent].v !== e.v;
+      vues.forEach(function (v) {
+        var vise = v.getAttribute('data-vue') === e.v;
+        if (vise && v.hidden) {
+          v.hidden = false;
+          if (anime && gsap && !reduit.matches) gsap.fromTo(v, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: .45, ease: 'power2.out' });
+        } else if (!vise) { v.hidden = true; }
+      });
+
+      noteN.textContent = (i < 9 ? '0' : '') + (i + 1);
+      note.classList.add('change');
+      setTimeout(function () { noteT.textContent = e.d; note.classList.remove('change'); }, 130);
+      jauge.style.transform = 'scaleY(' + ((i + 1) / ETAPES.length) + ')';
+      etat.textContent = 'Étape ' + (i + 1) + ' sur ' + ETAPES.length + ' · ' + e.t;
+
+      if (e.c === 'notes') taper(NOTE_FRAPPEE);
+      else if (frappe && vueChange) { clearInterval(frappeur); frappe.textContent = ''; }
+
+      /* Une vue qui vient d apparaitre n a pas encore ses dimensions finales :
+         viser au frame suivant, sinon le halo se pose sur une boite vide. */
+      var lire = function () { return cadre.querySelector('.wt-vue:not([hidden]) [data-c="' + e.c + '"]'); };
+      if (vueChange) requestAnimationFrame(function () { requestAnimationFrame(function () { viser(lire(), false); }); });
+      else viser(lire(), anime);
+    }
+
+    function stopper() { clearInterval(auto); auto = null; }
+    function prendreLaMain() { mainPrise = true; stopper(); }
+
+    function lancerAuto() {
+      if (mainPrise || auto || reduit.matches) return;
+      auto = setInterval(function () {
+        if (document.hidden) return;
+        if (courant >= ETAPES.length - 1) { stopper(); return; }
+        aller(courant + 1, true);
+      }, 4200);
+    }
+
+    for (var j = 0; j < boutons.length; j++) {
+      (function (b) {
+        b.addEventListener('click', function () { prendreLaMain(); aller(+b.getAttribute('data-i'), true); });
+      })(boutons[j]);
+    }
+    document.getElementById('wt-prec').addEventListener('click', function () { prendreLaMain(); aller(courant - 1, true); });
+    document.getElementById('wt-suiv').addEventListener('click', function () { prendreLaMain(); aller(courant + 1, true); });
+    document.getElementById('wt-rejouer').addEventListener('click', function () { prendreLaMain(); courant = -1; aller(0, true); });
+
+    bloc.addEventListener('keydown', function (ev) {
+      if (ev.key === 'ArrowRight') { ev.preventDefault(); prendreLaMain(); aller(courant + 1, true); }
+      if (ev.key === 'ArrowLeft')  { ev.preventDefault(); prendreLaMain(); aller(courant - 1, true); }
+    });
+
+    var replacer;
+    window.addEventListener('resize', function () {
+      clearTimeout(replacer);
+      replacer = setTimeout(function () {
+        var e = ETAPES[courant < 0 ? 0 : courant];
+        viser(cadre.querySelector('.wt-vue:not([hidden]) [data-c="' + e.c + '"]'), false);
+      }, 160);
+    }, { passive: true });
+
+    aller(0, false);
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) {
+        if (es[0].isIntersecting) lancerAuto(); else stopper();
+      }, { threshold: .35 }).observe(bloc);
+    }
+  }
+
   var TITRES_DOC = {
     cr: "Compte rendu de consultation",
     liaison: "Lettre de liaison",
@@ -690,6 +1028,7 @@
     bandeauParcours();
     rejouer();
     refus();
+    walkthrough(gsap);
     onglets(gsap, "ong-dossier", "data-o", "#explorateur .vol", "data-v");
     onglets(gsap, "ong-doc", "data-d", "#doc-corps .dv", "data-d", function (cle) {
       var t = document.getElementById("doc-titre");
@@ -806,6 +1145,8 @@
 
   /* ── Démarrage ─────────────────────────────────────────────────────────── */
   function demarrer() {
+    curseur();
+    filmVisible();
     var gsap = window.gsap;
     var ST = window.ScrollTrigger;
 
@@ -813,6 +1154,7 @@
     // epinglage. Dans TOUS les autres cas, quelle que soit la largeur, la page
     // s anime. La largeur ne decide que de la choregraphie.
     if (!gsap || !ST) {
+      herosAnime(null);
       demarrerRepli();
       // Les onglets, les modules et le refus ne dependent pas de GSAP : sans
       // cet appel, une page privee de GSAP perdait toutes ses interactions.
@@ -823,6 +1165,7 @@
     if (window.Flip) gsap.registerPlugin(window.Flip);
 
     if (reduit.matches) {
+      herosAnime(gsap);
       demarrerRepli();
       sceneHeros(gsap);
       interactions(null);
@@ -830,6 +1173,7 @@
     }
 
     entreeHeros(gsap);
+    herosAnime(gsap);
     sceneHeros(gsap);
     blocs(gsap, ST);
     construireSequence(gsap);
