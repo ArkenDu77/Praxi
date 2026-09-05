@@ -294,6 +294,7 @@
      « prêt » et attend. Les trois jalons du rail y donnent accès directement.
      ═════════════════════════════════════════════════════════════════════════ */
   var scH = null;
+  var relancerScene = null;   // pose par sceneHeros, appele par le bouton Rejouer
 
   function sceneHeros(gsap) {
     var scene = document.getElementById('scene-h');
@@ -366,6 +367,9 @@
       .to(attente, { opacity: 1, duration: .45 }, '-=.25');
 
     scH = tl;
+    // Rejouer : on repart de l etat initial, jamais du milieu, sinon la scene
+    // reprend sur des champs deja arrives et ne raconte plus rien.
+    relancerScene = function () { gsap.killTweensOf(tl); zero(); tl.play(0); };
 
     // Le cycle : la scène se rejoue au bout d'un moment, une fois, sans
     // s'imposer. Dès que le visiteur clique un jalon, il prend la main et
@@ -519,6 +523,7 @@
   function interactions(gsap) {
     modules(gsap);
     bandeauParcours();
+    rejouer();
     onglets(gsap, "ong-dossier", "data-o", "#explorateur .vol", "data-v");
     onglets(gsap, "ong-doc", "data-d", "#doc-corps .dv", "data-d", function (cle) {
       var t = document.getElementById("doc-titre");
@@ -628,6 +633,47 @@
     });
   }
 
+
+  /* ══ LE BOUTON REJOUER ═════════════════════════════════════════════════════
+     La scene joue seule a l arrivee. Le bouton permet de la revoir sans
+     recharger : c est la premiere chose qu on cherche apres l avoir manquee.
+     ═════════════════════════════════════════════════════════════════════════ */
+  function rejouer() {
+    var b = document.getElementById("rejouer");
+    if (!b) return;
+    b.addEventListener("click", function () {
+      if (typeof relancerScene === "function") relancerScene();
+    });
+  }
+
+  /* ══ LES TROIS ACTES ═══════════════════════════════════════════════════════
+     La colonne vertebrale se remplit au fil du defilement et chaque acte
+     allume son point de passage. Pas d epinglage : le recit avance a la
+     vitesse du lecteur, jamais a la place.
+     ═════════════════════════════════════════════════════════════════════════ */
+  function actes(gsap) {
+    var ST = window.ScrollTrigger;
+    var spine = document.getElementById("spine");
+    if (!spine || !ST) return;
+    var trait = spine.querySelector(".spine-l i");
+    var lots = spine.querySelectorAll(".acte");
+
+    if (reduit.matches) {
+      if (trait) trait.style.setProperty("--sp", "1");
+      for (var i = 0; i < lots.length; i++) lots[i].classList.add("on");
+      return;
+    }
+    if (trait) {
+      gsap.to(trait, {
+        "--sp": 1, ease: "none",
+        scrollTrigger: { trigger: spine, start: "top 72%", end: "bottom 62%", scrub: .6 }
+      });
+    }
+    lots.forEach(function (a) {
+      ST.create({ trigger: a, start: "top 62%", once: true, onEnter: function () { a.classList.add("on"); } });
+    });
+  }
+
   /* ── Démarrage ─────────────────────────────────────────────────────────── */
   function demarrer() {
     var gsap = window.gsap;
@@ -637,7 +683,8 @@
     // epinglage. Dans TOUS les autres cas, quelle que soit la largeur, la page
     // s anime. La largeur ne decide que de la choregraphie.
     if (!gsap || !ST) {
-      document.getElementById('systeme').classList.add('plat');
+      var sys = document.getElementById('systeme');
+      if (sys) sys.classList.add('plat');
       demarrerRepli();
       return;
     }
@@ -645,7 +692,8 @@
     if (window.Flip) gsap.registerPlugin(window.Flip);
 
     if (reduit.matches) {
-      document.getElementById('systeme').classList.add('plat');
+      var sys = document.getElementById('systeme');
+      if (sys) sys.classList.add('plat');
       demarrerRepli();
       sceneHeros(gsap);
       interactions(null);
@@ -656,6 +704,7 @@
     sceneHeros(gsap);
     blocs(gsap, ST);
     construireSequence(gsap);
+    actes(gsap);
     couchePointeur(gsap);
     interactions(gsap);
     fondEvolutif(gsap, ST);

@@ -38,18 +38,18 @@
 
 <a class="skip" href="#contenu">Aller au contenu</a>
 
+<!-- ═══ EN-TÊTE ═════════════════════════════════════════════════════════════
+     Barre flottante en pilule, avec un bandeau central. Le bandeau ne dit que
+     des choses vraies : l'essai de quinze jours existe et ne demande pas de
+     carte.
+     ═══════════════════════════════════════════════════════════════════════ -->
 <header class="nav" id="nav">
-  <div class="nav-in">
+  <div class="nav-pill">
     <a href="#haut" class="nav-logo" aria-label="Arkiba, accueil">Arkib<i>a</i></a>
-    <nav class="nav-links" aria-label="Navigation principale">
-      <a href="#plateforme">La plateforme</a>
-      <a href="#systeme">Le parcours</a>
-      <a href="#verifier">Vérifier</a>
-      <a href="#tarifs">Tarifs</a>
-    </nav>
+    <span class="nav-strip"><span class="pt"></span>Essai de 15 jours, sans carte bancaire</span>
     <div class="nav-cta">
-      <a href="/login.html" class="btn btn-2">Se connecter</a>
       <a href="#acces" class="btn btn-1">Créer un compte</a>
+      <a href="/login.html" class="btn btn-2">Se connecter</a>
       <button class="nav-burger" id="nav-burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-mob">
         <svg class="m" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg>
         <svg class="x" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -59,9 +59,9 @@
   <div class="nav-mob-wrap">
     <div class="nav-mob" id="nav-mob">
       <div class="nav-mob-in">
+        <a href="#demo">Voir Arkiba travailler</a>
         <a href="#plateforme">La plateforme</a>
-        <a href="#systeme">Le parcours</a>
-        <a href="#verifier">Vérifier</a>
+        <a href="#actes">Le parcours</a>
         <a href="#tarifs">Tarifs</a>
         <div class="acts">
           <a href="/login.html" class="btn btn-2">Se connecter</a>
@@ -74,11 +74,15 @@
 
 <main id="contenu">
 
-<!-- ═══ HÉROS ═══════════════════════════════════════════════════════════════ -->
+<!-- ═══ 1 · HÉROS ═══════════════════════════════════════════════════════════
+     Composition centrée, titre énorme, une seule ligne dessous, deux appels à
+     l'action. Pas de rangée d'avatars : nous n'avons pas d'utilisateurs à
+     montrer, et on n'en invente pas.
+     ═══════════════════════════════════════════════════════════════════════ -->
 <section class="hero" id="haut">
-  <div class="wrap">
-    <p class="eyebrow" data-h="1">La couche de travail du cabinet</p>
-    <h1 class="xl" data-h="2">Le dossier attend le médecin.<br><span class="dim">Pas l'inverse.</span></h1>
+  <div class="wrap hero-in">
+    <p class="badge" data-h="1"><span class="pt"></span>La couche de travail du cabinet</p>
+    <h1 class="xl" data-h="2">Le dossier attend le médecin.<br><span class="acc">Pas l'inverse.</span></h1>
     <p class="sub" data-h="3">
       Arkiba prépare le parcours clinique avant, pendant et après la consultation.
     </p>
@@ -87,276 +91,99 @@
         Demander une démonstration
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </a>
-      <a href="#plateforme" class="btn btn-2 btn-lg">
+      <a href="#demo" class="btn btn-2 btn-lg">
         Voir Arkiba travailler
         <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
       </a>
     </div>
-    <p class="hero-fine" data-h="5"><span class="p"></span>Essai de 15 jours, sans carte bancaire.</p>
-
-    <!-- La scène du héros. Elle joue toute seule au chargement : le rendez-vous
-         entre, l'appel s'active, les réponses arrivent une à une avec leur
-         provenance, ce qui reste flou s'allume en ambre, le dossier passe à
-         « prêt » et attend. Les trois jalons du rail sont cliquables : on peut
-         revenir sur une étape sans attendre le cycle. -->
-    <div class="hero-vis" data-h="6">
-      <div class="scene-h" id="scene-h">
-
-        <div class="rail" role="group" aria-label="Étapes de la préparation">
-          <button class="rail-n" type="button" data-etape="0">
-            <span class="pt"></span><span class="lb">Rendez-vous</span>
-          </button>
-          <span class="rail-s"><i></i></span>
-          <button class="rail-n" type="button" data-etape="1">
-            <span class="pt"></span><span class="lb">Appel</span>
-          </button>
-          <span class="rail-s"><i></i></span>
-          <button class="rail-n" type="button" data-etape="2">
-            <span class="pt"></span><span class="lb">Dossier</span>
-          </button>
-          <span class="rail-etat" id="rail-etat">Lecture de l'agenda</span>
-        </div>
-
-        <div class="surface" id="dossier-hero">
-          <div class="surface-bar">
-            <span class="who" id="h-ident">Mme Martin, 58 ans</span>
-            <span class="mono">Exemple</span>
-            <span class="mono right" id="h-heure">Consultation 14 h 30</span>
-          </div>
-
-          <div class="champs" id="h-champs">
-            <div class="champ" data-hf="1">
-              <span class="k">Motif</span>
-              <span class="v">Arthroscopie du genou droit prévue le 14 mars.</span>
-              <span class="src">Déclaré à l'appel · 13 h 02</span>
-            </div>
-            <div class="champ" data-hf="2">
-              <span class="k">Traitements en cours</span>
-              <span class="v">Aerius 5 mg, en période de pollens.</span>
-              <span class="src">Déclaré à l'appel · 13 h 03</span>
-            </div>
-            <div class="champ" data-hf="3">
-              <span class="k">Mode de vie</span>
-              <span class="v">Tabac, environ vingt cigarettes par jour.</span>
-              <span class="src">Déclaré à l'appel · 13 h 04</span>
-            </div>
-            <div class="champ flag" data-hf="4">
-              <span class="k">À vérifier</span>
-              <span class="v">Évoque un souci cardiaque ancien, sans pouvoir le préciser.</span>
-            </div>
-          </div>
-
-          <div class="surface-foot">
-            <span class="etat ok" id="h-pret"><span class="p"></span>Dossier prêt · 13 h 06</span>
-            <span class="etat wait" id="h-attente"><span class="p respire"></span>En attente du médecin</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <p class="hero-fine" data-h="5">
+      Arkiba n'établit aucun diagnostic et ne décide rien à votre place.
+    </p>
   </div>
 </section>
 
-
-<!-- ═══ LE PARCOURS ═════════════════════════════════════════════════════════
-     Dit en un écran ce que la page va détailler : Arkiba couvre la chaîne
-     entière, pas un maillon.
+<!-- ═══ 2 · LA DÉMONSTRATION ════════════════════════════════════════════════
+     À la place d'une vidéo : la scène réelle, qui joue toute seule. On peut la
+     rejouer. Deux cartes flottantes débordent du cadre, comme sur la
+     référence, mais elles ne portent que des états vrais du produit.
      ═══════════════════════════════════════════════════════════════════════ -->
-<section class="sect-sm hr" id="parcours">
+<section class="sect-sm" id="demo">
   <div class="wrap">
     <div class="tete-c" data-rev>
-      <p class="eyebrow">Le parcours</p>
-      <h2 class="lg">Du rendez-vous au logiciel métier.</h2>
+      <h2 class="lg">Regardez le dossier <span class="dim">se préparer.</span></h2>
     </div>
-    <ol class="fx" id="fx">
-      <li class="fx-n" data-fx><span class="fx-h">Agenda</span><span class="fx-t">Le rendez-vous existe</span><span class="fx-q">Arkiba le lit</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">J-1</span><span class="fx-t">Le patient est appelé</span><span class="fx-q">Interrogatoire structuré</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">J-1</span><span class="fx-t">Les réponses sont rangées</span><span class="fx-q">Datées et rattachées</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">J-1</span><span class="fx-t">Ce qui est flou est signalé</span><span class="fx-q">Arkiba ne tranche pas</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">Jour J</span><span class="fx-t">Le dossier attend</span><span class="fx-q">Le médecin ouvre Arkiba</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">Jour J</span><span class="fx-t">La consultation</span><span class="fx-q">Notes au clavier ou à la voix</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">Après</span><span class="fx-t">Les documents</span><span class="fx-q">Ceux que vous demandez</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">Après</span><span class="fx-t">Vous validez</span><span class="fx-q">Rien ne part sans vous</span></li>
-      <li class="fx-n" data-fx><span class="fx-h">Après</span><span class="fx-t">Le transfert</span><span class="fx-q">Vers votre logiciel</span></li>
+
+    <div class="cadre" data-rev style="--i:1">
+      <div class="cadre-in">
+        <div class="scene-h" id="scene-h">
+          <div class="rail" role="group" aria-label="Étapes de la préparation">
+            <button class="rail-n" type="button" data-etape="0"><span class="pt"></span><span class="lb">Rendez-vous</span></button>
+            <span class="rail-s"><i></i></span>
+            <button class="rail-n" type="button" data-etape="1"><span class="pt"></span><span class="lb">Appel</span></button>
+            <span class="rail-s"><i></i></span>
+            <button class="rail-n" type="button" data-etape="2"><span class="pt"></span><span class="lb">Dossier</span></button>
+            <span class="rail-etat" id="rail-etat">Lecture de l'agenda</span>
+          </div>
+
+          <div class="surface" id="dossier-hero">
+            <div class="surface-bar">
+              <span class="who" id="h-ident">Mme Martin, 58 ans</span>
+              <span class="mono">Exemple</span>
+              <span class="mono right" id="h-heure">Consultation 14 h 30</span>
+            </div>
+            <div class="champs" id="h-champs">
+              <div class="champ" data-hf="1">
+                <span class="k">Motif</span>
+                <span class="v">Arthroscopie du genou droit prévue le 14 mars.</span>
+                <span class="src">Déclaré à l'appel · 13 h 02</span>
+              </div>
+              <div class="champ" data-hf="2">
+                <span class="k">Traitements en cours</span>
+                <span class="v">Aerius 5 mg, en période de pollens.</span>
+                <span class="src">Déclaré à l'appel · 13 h 03</span>
+              </div>
+              <div class="champ" data-hf="3">
+                <span class="k">Mode de vie</span>
+                <span class="v">Tabagisme actif, environ vingt cigarettes par jour.</span>
+                <span class="src">Déclaré à l'appel · 13 h 04</span>
+              </div>
+              <div class="champ flag" data-hf="4">
+                <span class="k">À vérifier</span>
+                <span class="v">Évoque un souci cardiaque ancien, sans pouvoir le préciser.</span>
+              </div>
+            </div>
+            <div class="surface-foot">
+              <span class="etat ok" id="h-pret"><span class="p"></span>Dossier prêt · 13 h 06</span>
+              <span class="etat wait" id="h-attente"><span class="p respire"></span>En attente du médecin</span>
+            </div>
+          </div>
+        </div>
+
+        <button class="rejouer" id="rejouer" type="button">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 12a9 9 0 109-9M3 4v5h5"/></svg>
+          Rejouer
+        </button>
+      </div>
+
+      <!-- Cartes flottantes : elles débordent du cadre, comme sur la référence. -->
+      <div class="flot f1" aria-hidden="true"><span class="pt"></span><b>Appel terminé</b><span>13 h 06 · 4 réponses</span></div>
+      <div class="flot f2" aria-hidden="true"><span class="pt amb"></span><b>1 point à vérifier</b><span>remonté au médecin</span></div>
+    </div>
+
+    <ol class="fx" id="fx" data-rev style="--i:2">
+      <li class="fx-n"><span class="fx-h">Agenda</span><span class="fx-t">Le rendez-vous existe</span><span class="fx-q">Arkiba le lit</span></li>
+      <li class="fx-n"><span class="fx-h">J-1</span><span class="fx-t">Le patient est appelé</span><span class="fx-q">Interrogatoire structuré</span></li>
+      <li class="fx-n"><span class="fx-h">J-1</span><span class="fx-t">Les réponses sont rangées</span><span class="fx-q">Datées et rattachées</span></li>
+      <li class="fx-n"><span class="fx-h">J-1</span><span class="fx-t">Ce qui est flou est signalé</span><span class="fx-q">Arkiba ne tranche pas</span></li>
+      <li class="fx-n"><span class="fx-h">Jour J</span><span class="fx-t">Le dossier attend</span><span class="fx-q">Le médecin ouvre Arkiba</span></li>
+      <li class="fx-n"><span class="fx-h">Jour J</span><span class="fx-t">La consultation</span><span class="fx-q">Notes clavier ou voix</span></li>
+      <li class="fx-n"><span class="fx-h">Après</span><span class="fx-t">Les documents</span><span class="fx-q">Ceux que vous demandez</span></li>
+      <li class="fx-n"><span class="fx-h">Après</span><span class="fx-t">Vous validez</span><span class="fx-q">Rien ne part sans vous</span></li>
+      <li class="fx-n"><span class="fx-h">Après</span><span class="fx-t">Le transfert</span><span class="fx-q">Vers votre logiciel</span></li>
     </ol>
   </div>
 </section>
 
-<!-- ═══ DÉCLARATION ═════════════════════════════════════════════════════════ -->
-<section class="sect-sm hr">
-  <div class="wrap">
-    <h2 class="lg" data-rev style="max-width:24ch">
-      Le travail administratif ne disparaît pas.<br>
-      <span class="dim">Il change de place.</span>
-    </h2>
-  </div>
-</section>
-
-<!-- ═══ LE SYSTÈME — séquence épinglée ══════════════════════════════════════ -->
-<section class="systeme" id="systeme">
-  <div class="wrap scene-wrap" id="scene-wrap">
-    <div class="scene-grid">
-
-      <div class="legendes" id="legendes">
-        <div class="legende" data-l="1">
-          <p class="n">01 / 06</p>
-          <h3>Le rendez-vous</h3>
-          <p>Arkiba lit l'agenda du cabinet. Le médecin n'ouvre rien et ne lance rien.</p>
-        </div>
-        <div class="legende" data-l="2">
-          <p class="n">02 / 06</p>
-          <h3>L'appel</h3>
-          <p>La patiente est interrogée avant sa venue. Motif, traitements, mode de vie.</p>
-        </div>
-        <div class="legende" data-l="3">
-          <p class="n">03 / 06</p>
-          <h3>Le dossier</h3>
-          <p>Les réponses se rangent en champs datés, rattachés à ce que le patient a dit.</p>
-        </div>
-        <div class="legende" data-l="4">
-          <p class="n">04 / 06</p>
-          <h3>Les points à vérifier</h3>
-          <p>Ce qui reste flou est signalé. Arkiba ne tranche pas à votre place.</p>
-        </div>
-        <div class="legende" data-l="5">
-          <p class="n">05 / 06</p>
-          <h3>Votre espace</h3>
-          <p>À 14 h 30, le dossier est là. Il n'a fallu ouvrir aucune fenêtre.</p>
-        </div>
-        <div class="legende" data-l="6">
-          <p class="n">06 / 06</p>
-          <h3>Les documents</h3>
-          <p>Les éléments que vous validez se recomposent en documents prêts à relire.</p>
-        </div>
-        <div class="jauge" id="jauge" role="group" aria-label="Aller à une étape">
-          <button type="button" data-j="0" aria-label="Étape 1, le rendez-vous"><i></i></button>
-          <button type="button" data-j="1" aria-label="Étape 2, l'appel"><i></i></button>
-          <button type="button" data-j="2" aria-label="Étape 3, le dossier"><i></i></button>
-          <button type="button" data-j="3" aria-label="Étape 4, les points à vérifier"><i></i></button>
-          <button type="button" data-j="4" aria-label="Étape 5, votre espace"><i></i></button>
-          <button type="button" data-j="5" aria-label="Étape 6, les documents"><i></i></button>
-        </div>
-      </div>
-
-      <div class="scene" id="scene">
-
-        <!-- L identite du dossier. Elle n appartient a aucune couche : elle les
-             traverse, et se pose sur l emplacement que chacune declare. C est
-             ce qui fait sentir que c est le meme flux de donnees. -->
-        <span class="jeton" id="jeton" aria-hidden="true">Mme Martin, 58 ans</span>
-
-
-        <!-- 1 · Rendez-vous -->
-        <div class="couche" data-c="rdv">
-          <div class="carte rdv">
-            <div class="ligne">
-              <span class="h">14 h 30</span>
-              <span class="emp" data-emp="rdv"></span>
-              <span class="src">Agenda</span>
-            </div>
-            <div class="barre"></div>
-            <p class="meta">Consultation pré-anesthésique</p>
-          </div>
-        </div>
-
-        <!-- 2 · Appel -->
-        <div class="couche" data-c="appel">
-          <div class="carte appel">
-            <div class="appel-tete">
-              <span class="pt"></span>
-              <span class="emp" data-emp="appel"></span>
-              <span class="t">· appel de 13 h 02</span>
-            </div>
-            <div class="onde" id="onde" aria-hidden="true"></div>
-            <div id="frags">
-              <span class="frag" data-f="1">«&nbsp;C'est pour le genou, l'arthroscopie. On m'a dit le 14.&nbsp;»</span>
-              <span class="frag" data-f="2">«&nbsp;Je prends de l'Aerius quand il y a du pollen.&nbsp;»</span>
-              <span class="frag" data-f="3">«&nbsp;Je fume, une vingtaine par jour.&nbsp;»</span>
-              <span class="frag" data-f="4">«&nbsp;J'ai eu un souci au cœur, il y a longtemps.&nbsp;»</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3 et 4 · Dossier -->
-        <div class="couche" data-c="dossier">
-          <div class="carte">
-            <div class="surface-bar">
-              <span class="emp" data-emp="dossier"></span>
-              <span class="mono right">13 h 04</span>
-            </div>
-            <div class="champs">
-              <div class="champ" data-df="1">
-                <span class="k">Motif</span>
-                <span class="v">Arthroscopie du genou droit prévue le 14 mars.</span>
-              </div>
-              <div class="champ" data-df="2">
-                <span class="k">Traitements en cours</span>
-                <span class="v">Aerius 5 mg, en période de pollens.</span>
-              </div>
-              <div class="champ" data-df="3">
-                <span class="k">Mode de vie</span>
-                <span class="v">Tabagisme actif, environ vingt cigarettes par jour.</span>
-              </div>
-              <div class="champ flag" data-df="4">
-                <span class="skel">Relecture en cours</span>
-                <span class="k">À vérifier</span>
-                <span class="v">Antécédent cardiaque évoqué, sans précision possible.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5 · Espace du médecin -->
-        <div class="couche" data-c="espace">
-          <div class="carte espace">
-            <div class="espace-tete"><span class="t">Pré-consultation · jeudi 12 mars</span></div>
-            <div class="rang actif">
-              <span class="h">14 h 30</span><span class="emp" data-emp="espace"></span>
-              <span class="s"><span class="etat ok"><span class="p"></span>Prêt</span></span>
-            </div>
-            <div class="rang">
-              <span class="h">15 h 00</span><span class="n">M. Roux, 41 ans</span>
-              <span class="s"><span class="etat ok"><span class="p"></span>Prêt</span></span>
-            </div>
-            <div class="rang">
-              <span class="h">15 h 30</span><span class="n">Mme Blanc, 72 ans</span>
-              <span class="s"><span class="etat wait" style="margin-left:0"><span class="p"></span>À rappeler</span></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 6 · Documents -->
-        <div class="couche" data-c="docs">
-          <div class="docs">
-            <div class="doc" data-d="1">
-              <span class="ic"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg></span>
-              <span class="t">Compte rendu de consultation</span>
-              <span class="st">Prêt à relire</span>
-            </div>
-            <div class="doc" data-d="2">
-              <span class="ic"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 8l9 6 9-6M3 8v10a2 2 0 002 2h14a2 2 0 002-2V8l-9-5z"/></svg></span>
-              <span class="t">Lettre à l'orthopédiste</span>
-              <span class="st">Prêt à relire</span>
-            </div>
-            <div class="doc" data-d="3">
-              <span class="ic"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></span>
-              <span class="t">Transfert vers le logiciel</span>
-              <span class="st">Vous décidez</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </div>
-</section>
-
-
-
-<!-- ═══ LA PLATEFORME ═══════════════════════════════════════════════════════
-     Dix modules, tous réels. Le panneau se transforme au clic. C'est cette
-     section qui doit faire comprendre qu'Arkiba n'est pas un générateur de
-     comptes rendus mais un espace qui couvre tout le parcours.
-     ═══════════════════════════════════════════════════════════════════════ -->
 <section class="sect hr" id="plateforme">
   <div class="wrap">
     <div class="tete-c" data-rev>
@@ -600,30 +427,76 @@
   </div>
 </section>
 
-<!-- ═══ LE DOSSIER — exploration au clic ════════════════════════════════════
-     Une démonstration, pas une fonction : on montre le mécanisme réel, à
-     savoir qu'une information préparée reste rattachée à ce que le patient a
-     dit. Le visiteur choisit ce qu'il veut voir.
-     ═══════════════════════════════════════════════════════════════════════ -->
-<section class="sect hr" id="dossier">
+<!-- ═══ 4 · LA COMPARAISON ══════════════════════════════════════════════════ -->
+<section class="sect tinted hr" id="comparaison">
   <div class="wrap">
-    <div class="duo">
-      <div>
-        <p class="eyebrow" data-rev>Le dossier</p>
-        <h2 class="lg" data-rev style="--i:1">Ce qu'Arkiba a préparé.</h2>
-        <p class="sub" data-rev style="--i:2">
-          Chaque information garde le lien vers ce que la patiente a dit au téléphone.
-          Choisissez une rubrique.
-        </p>
-        <div class="onglets" id="ong-dossier" role="tablist" aria-label="Rubriques du dossier" data-rev style="--i:3">
-          <button class="ong on" type="button" role="tab" aria-selected="true" data-o="motif">Motif</button>
-          <button class="ong" type="button" role="tab" aria-selected="false" data-o="trait">Traitements</button>
-          <button class="ong" type="button" role="tab" aria-selected="false" data-o="vie">Mode de vie</button>
-          <button class="ong" type="button" role="tab" aria-selected="false" data-o="verif">À vérifier</button>
-        </div>
+    <div class="tete-c" data-rev>
+      <p class="eyebrow">La différence</p>
+      <h2 class="lg">Le même travail. <span class="dim">Pas la même chaîne.</span></h2>
+      <p class="sub">Aucun chiffre ici : nous n'avons pas de mesure. Regardez la forme.</p>
+    </div>
+    <div class="cmp" data-rev style="--i:1">
+      <div class="cmp-c avant">
+        <p class="cmp-t">Aujourd'hui</p>
+        <ul class="cmp-l">
+          <li>Le rendez-vous est pris</li>
+          <li class="rupture">le patient arrive sans que rien ait été préparé</li>
+          <li>Vous cherchez les antécédents</li>
+          <li>Vous posez les questions de base</li>
+          <li class="rupture">l'examen commence en retard</li>
+          <li>Vous prenez des notes à la volée</li>
+          <li class="rupture">la rédaction attend le soir</li>
+          <li>Vous rédigez le compte rendu</li>
+          <li>Vous rédigez la lettre</li>
+          <li class="rupture">vous ressaisissez dans le logiciel</li>
+        </ul>
+        <p class="cmp-b">Dix étapes, quatre ruptures, deux saisies du même contenu.</p>
       </div>
+      <div class="cmp-c apres">
+        <p class="cmp-t">Avec Arkiba</p>
+        <ul class="cmp-l fil-continu">
+          <li>Le rendez-vous est lu</li>
+          <li>Le patient est appelé</li>
+          <li>Les réponses sont rangées et datées</li>
+          <li>Ce qui reste flou est signalé</li>
+          <li>Le dossier attend le médecin</li>
+          <li>La consultation a lieu avec le contexte</li>
+          <li>Les notes rejoignent le dossier</li>
+          <li>Les documents sont produits</li>
+          <li>Vous cochez ce qui doit partir</li>
+        </ul>
+        <p class="cmp-b">Une seule chaîne. Aucune ressaisie.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <div class="surface pointeur" id="explorateur" data-rev style="--i:2">
+<!-- ═══ 5 · AVANT, PENDANT, APRÈS ═══════════════════════════════════════════
+     Le récit en trois actes, alternés de part et d'autre d'une colonne
+     vertébrale. Chaque acte porte les modules concernés, comme sur la
+     référence : c'est ce qui fait sentir l'étendue pendant qu'on lit.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect hr" id="actes">
+  <div class="wrap">
+    <div class="tete-c" data-rev>
+      <p class="eyebrow">Le parcours</p>
+      <h2 class="lg">Avant, pendant, après. <span class="dim">Arkiba suit.</span></h2>
+    </div>
+
+    <div class="spine" id="spine">
+      <span class="spine-l" aria-hidden="true"><i></i></span>
+
+      <article class="acte" data-acte="1">
+        <div class="acte-txt" data-rev>
+          <p class="acte-n">Acte 1</p>
+          <h3>Avant la consultation</h3>
+          <p>Arkiba lit le rendez-vous, appelle le patient et range ses réponses.
+             Chaque information garde le lien vers ce qu'il a dit. Ce qui reste flou
+             est signalé, jamais tranché.</p>
+          <div class="tags"><span>Agenda</span><span>Préconsultation</span><span>Dossier patient</span><span>Analyse clinique</span></div>
+        </div>
+        <div class="acte-ui" data-rev style="--i:1">
+          <div class="surface pointeur" id="explorateur" data-rev style="--i:2">
         <div class="surface-bar">
           <span class="who">Mme Martin, 58 ans</span>
           <span class="mono">Exemple</span>
@@ -678,78 +551,20 @@
           </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+        </div>
+      </article>
 
-
-<!-- ═══ AUJOURD'HUI / AVEC ARKIBA ═══════════════════════════════════════════
-     La démonstration se fait par la forme : à gauche des blocs séparés avec
-     des ruptures, à droite un seul fil continu. Aucun chiffre, aucune
-     statistique : nous n'en avons pas de mesurée.
-     ═══════════════════════════════════════════════════════════════════════ -->
-<section class="sect tinted hr" id="comparaison">
-  <div class="wrap">
-    <div class="tete-c" data-rev>
-      <p class="eyebrow">La différence</p>
-      <h2 class="lg">Le même travail. <span class="dim">Pas la même chaîne.</span></h2>
-    </div>
-
-    <div class="cmp" data-rev style="--i:1">
-      <div class="cmp-c avant">
-        <p class="cmp-t">Aujourd'hui</p>
-        <ul class="cmp-l">
-          <li>Le rendez-vous est pris</li>
-          <li class="rupture">le patient arrive sans que rien ait été préparé</li>
-          <li>Vous cherchez les antécédents</li>
-          <li>Vous posez les questions de base</li>
-          <li class="rupture">l'examen commence en retard</li>
-          <li>Vous prenez des notes à la volée</li>
-          <li class="rupture">la rédaction attend le soir</li>
-          <li>Vous rédigez le compte rendu</li>
-          <li>Vous rédigez la lettre</li>
-          <li class="rupture">vous ressaisissez dans le logiciel</li>
-        </ul>
-        <p class="cmp-b">Dix étapes, quatre ruptures, deux saisies du même contenu.</p>
-      </div>
-
-      <div class="cmp-c apres">
-        <p class="cmp-t">Avec Arkiba</p>
-        <ul class="cmp-l fil-continu">
-          <li>Le rendez-vous est lu</li>
-          <li>Le patient est appelé</li>
-          <li>Les réponses sont rangées et datées</li>
-          <li>Ce qui reste flou est signalé</li>
-          <li>Le dossier attend le médecin</li>
-          <li>La consultation a lieu avec le contexte</li>
-          <li>Les notes rejoignent le dossier</li>
-          <li>Les documents sont produits</li>
-          <li>Vous cochez ce qui doit partir</li>
-        </ul>
-        <p class="cmp-b">Une seule chaîne. Aucune ressaisie.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ═══ PENDANT LA CONSULTATION ═════════════════════════════════════════════ -->
-<section class="sect hr" id="consultation">
-  <div class="wrap">
-    <div class="acces">
-      <div>
-        <p class="eyebrow" data-rev>Pendant</p>
-        <h2 class="lg" data-rev style="--i:1">Le contexte reste là.<br><span class="dim">Vous examinez.</span></h2>
-        <p class="sub" data-rev style="--i:2">
-          Un seul champ recueille vos notes. Au clavier, à la voix, ou les deux dans la
-          même phrase.
-        </p>
-        <p class="essai" data-rev style="--i:3">
-          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          Essayez : c'est le moteur de dictée de l'application.
-        </p>
-      </div>
-
-      <div class="notes" data-rev style="--i:2">
+      <article class="acte inv" data-acte="2">
+        <div class="acte-txt" data-rev>
+          <p class="acte-n">Acte 2</p>
+          <h3>Pendant la consultation</h3>
+          <p>Le dossier attend, déjà prêt. Le médecin valide ou corrige, et le contexte
+             reste sous la main. Un seul champ recueille les notes, au clavier ou à la
+             voix, dans la même phrase.</p>
+          <div class="tags"><span>Consultation</span><span>Notes</span><span>Validation</span></div>
+        </div>
+        <div class="acte-ui" data-rev style="--i:1">
+          <div class="notes" data-rev style="--i:2">
         <div class="notes-tete">
           <span class="t">Notes de consultation</span>
           <span class="m">Démonstration</span>
@@ -767,57 +582,38 @@
           <span class="c fin">Rien ne quitte cet appareil.</span>
         </div>
       </div>
+        </div>
+      </article>
+
+      <article class="acte" data-acte="3">
+        <div class="acte-txt" data-rev>
+          <p class="acte-n">Acte 3</p>
+          <h3>Après la consultation</h3>
+          <p>À partir du dossier validé et de vos notes, Arkiba rédige ce que vous
+             demandez. Vous relisez, vous cochez ce qui doit partir, et rien d'autre ne
+             quitte Arkiba.</p>
+          <div class="tags"><span>Documents</span><span>Transferts</span><span>Intégrations</span></div>
+        </div>
+        <div class="acte-ui" data-rev style="--i:1">
+          <div class="surface pointeur">
+            <div class="surface-bar"><span class="who">Terminer et transférer</span><span class="mono right">14 mars</span></div>
+            <div class="espace">
+              <div class="rang actif"><span class="n">Compte rendu de consultation</span><span class="s"><span class="etat ok"><span class="p"></span>Relu</span></span></div>
+              <div class="rang"><span class="n">Lettre à l'orthopédiste</span><span class="s"><span class="etat ok"><span class="p"></span>Relu</span></span></div>
+            </div>
+            <div class="coches">
+              <label class="coche"><span class="bx on"></span>Données de pré-consultation<span class="mm">appel + vos corrections</span></label>
+              <label class="coche"><span class="bx on"></span>Notes de consultation</label>
+              <label class="coche"><span class="bx"></span>Certificat<span class="mm">non demandé</span></label>
+              <p class="note-c">Ce qui n'est pas coché ne quitte pas Arkiba.</p>
+            </div>
+          </div>
+        </div>
+      </article>
     </div>
   </div>
 </section>
 
-
-
-
-<!-- ═══ LE TRANSFERT ════════════════════════════════════════════════════════ -->
-<section class="sect tinted hr" id="transfert">
-  <div class="wrap">
-    <div class="head" data-rev>
-      <p class="eyebrow">Le transfert</p>
-      <h2 class="lg">Vous décidez de ce qui repart.</h2>
-    </div>
-    <p class="sub" data-rev style="--i:1;margin-top:24px">
-      Arkiba se place entre l'agenda et votre logiciel. Il ne remplace ni l'un ni l'autre.
-    </p>
-
-    <div class="flux" data-rev style="--i:2;margin-top:clamp(40px,5vw,64px)">
-      <div class="noeud">
-        <p class="t">En amont</p>
-        <h3>L'agenda du cabinet</h3>
-        <p>Le rendez-vous existe déjà. Arkiba le lit.</p>
-        <ul><li>Connexion agenda en pilote privé</li></ul>
-      </div>
-      <div class="fl"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M4 12h15M14 7l5 5-5 5"/></svg><span class="lb">rendez-vous</span></div>
-      <div class="noeud mid">
-        <p class="t">La couche de travail</p>
-        <h3>Arkiba</h3>
-        <p>Tout ce qui se prépare avant la consultation, et qui n'a pas à entrer dans le dossier médical tant que vous ne l'avez pas validé.</p>
-        <ul>
-          <li>Appel de pré-consultation</li>
-          <li>Dossier structuré et daté</li>
-          <li>Notes et documents</li>
-        </ul>
-      </div>
-      <div class="fl"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M4 12h15M14 7l5 5-5 5"/></svg><span class="lb">ce que vous cochez</span></div>
-      <div class="noeud">
-        <p class="t">En aval</p>
-        <h3>Votre logiciel</h3>
-        <p>Vous choisissez le périmètre, ligne par ligne. Le reste ne quitte pas Arkiba.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-
-<!-- ═══ CE QUE VOUS POUVEZ VÉRIFIER ═════════════════════════════════════════
-     À la place de la preuve sociale, que nous n'avons pas. On ne fabrique ni
-     témoignage ni logo client : on donne des choses vérifiables.
-     ═══════════════════════════════════════════════════════════════════════ -->
 <section class="sect hr" id="verifier">
   <div class="wrap">
     <div class="tete-c" data-rev>
@@ -838,7 +634,6 @@
   </div>
 </section>
 
-<!-- ═══ QUESTIONS ═══════════════════════════════════════════════════════════ -->
 <section class="sect tinted hr" id="questions">
   <div class="wrap">
     <div class="tete-c" data-rev>
@@ -856,7 +651,6 @@
   </div>
 </section>
 
-<!-- ═══ TARIFS ══════════════════════════════════════════════════════════════ -->
 <section class="sect hr" id="tarifs">
   <div class="wrap">
     <div class="head" data-rev>
@@ -902,7 +696,41 @@
   </div>
 </section>
 
-<!-- ═══ ACCÈS ═══════════════════════════════════════════════════════════════ -->
+<!-- ═══ 9 · APPEL FINAL ═════════════════════════════════════════════════════
+     Grande carte, badge, titre sur deux lignes, une accroche, deux boutons.
+     Le badge ne porte aucune note ni aucun avis : nous n'en avons pas.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect-sm" id="final">
+  <div class="wrap">
+    <div class="fin" data-rev>
+      <div class="fin-txt">
+        <p class="badge"><span class="pt"></span>Essai de 15 jours · sans carte bancaire</p>
+        <h2 class="lg">Vous avez lu jusqu'ici.<br><span class="dim">Ouvrez-le.</span></h2>
+        <p class="sub">Le compte est créé immédiatement et donne accès à l'application entière.</p>
+        <div class="acts">
+          <a href="#acces" class="btn btn-1 btn-lg">
+            Créer mon compte
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </a>
+          <a href="mailto:contact@arkiba.fr?subject=D%C3%A9monstration%20Arkiba" class="btn btn-2 btn-lg">Demander une démonstration</a>
+        </div>
+      </div>
+      <div class="fin-ui" aria-hidden="true">
+        <div class="surface">
+          <div class="surface-bar"><span class="who">Mme Martin, 58 ans</span><span class="mono right">14 h 30</span></div>
+          <div class="champs">
+            <div class="champ"><span class="k">Motif</span><span class="v">Arthroscopie du genou droit.</span></div>
+          </div>
+          <div class="surface-foot">
+            <span class="etat ok"><span class="p"></span>Dossier prêt</span>
+            <span class="etat wait"><span class="p respire"></span>En attente du médecin</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section class="sect tinted hr" id="acces">
   <div class="wrap">
     <div class="acces">
@@ -1019,9 +847,6 @@
   </div>
 </footer>
 
-<!-- GSAP est servi par ce serveur, pas par un CDN. Une page dont l'animation
-     dépend d'un tiers joignable est une page qui s'affiche morte le jour où il
-     ne l'est pas, sans que rien ne le signale. -->
 <script src="/vendor/gsap.min.js" defer></script>
 <script src="/vendor/ScrollTrigger.min.js" defer></script>
 <script src="/vendor/Flip.min.js" defer></script>
