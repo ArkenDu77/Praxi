@@ -242,3 +242,55 @@ utile, sinon vous critiquerez une image qui n'existe pour personne.
 ⚠️ **Ne jamais toucher** à `public/app.html`, `app.css`, `auth.css`,
 `server.js`, au backend, à l'authentification, à Intake, Doctolib, EMED ou à
 l'infrastructure. Une autre branche travaille le produit en parallèle.
+
+---
+
+## Structure de la vitrine
+
+La page suit le rythme d une vitrine de plateforme, pas d une page produit.
+Treize sections, dans cet ordre :
+
+heros · parcours · declaration · systeme (sequence epinglee) · plateforme ·
+dossier · comparaison · consultation · transfert · verifier · questions ·
+tarifs · acces
+
+**Trois leviers portent le sentiment d etendue.** Ils viennent d une etude
+reelle de metaforma.io ; la direction artistique, elle, n en vient pas.
+
+1. **La rangee de modules** (`#plateforme`). Dix puces lisibles d un coup, et
+   un panneau qui se transforme au clic, avec sa mini-interface. C est le
+   nombre de puces visibles simultanement qui donne la mesure : une grille de
+   dix cartes de fonctionnalites dirait la meme chose et se lirait comme un
+   catalogue. Les dix modules sont reels : ne jamais en ajouter un qui
+   n existe pas dans l application.
+
+2. **La comparaison** (`#comparaison`). La forme porte l argument : a gauche
+   des etapes coupees par des ruptures en ambre, a droite une chaine unique
+   reliee par un fil vert continu. **Aucun chiffre**, aucune duree, aucune
+   statistique : nous n en avons pas de mesuree.
+
+3. **Le bandeau de parcours** (`#parcours`). Neuf jalons sur une ligne qui
+   s allument dans l ordre de la chaine. Il dit en un ecran ce que la page
+   detaille ensuite.
+
+**A la place de la preuve sociale** (`#verifier`) : « Pas de temoignages. Des
+faits verifiables. » Quatre choses qu un visiteur peut controler lui-meme.
+C est la reponse durable a l absence de preuve : on ne fabrique jamais un
+temoignage, on donne du verifiable.
+
+## Livraison de la preview
+
+GSAP, ScrollTrigger et Flip sont servis depuis `public/vendor/`, pas depuis un
+CDN. `package.json` ne porte pas la dependance : les fichiers ont ete copies
+puis le paquet desinstalle.
+
+**Piege verifie en conditions reelles :** le port 3002 de cette machine sert le
+depot principal `Praxi`, pas ce worktree. Avant de conclure qu une modification
+n apparait pas, verifier QUEL serveur repond.
+
+**Windows demande la reduction des animations sur ce poste**
+(`SPI_GETCLIENTAREAANIMATION = 0`). Chrome le traduit fidelement en
+`prefers-reduced-motion: reduce` et la page bascule a plat, ce qui est le
+comportement correct. Pour montrer la version animee sans toucher au reglage
+systeme, lancer Chrome avec `--force-prefers-no-reduced-motion`. Ne jamais
+supprimer le respect de ce reglage dans le code sans accord explicite.
