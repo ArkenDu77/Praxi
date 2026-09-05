@@ -3,23 +3,23 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta name="theme-color" content="#08090b" />
+<meta name="theme-color" content="#f6f7f8" />
 
-<title>Le dossier attend le médecin · Arkiba</title>
-<meta name="description" content="Avant la consultation, Arkiba appelle le patient, structure ses réponses et signale ce qui reste à vérifier. Quand le médecin ouvre Arkiba, le dossier l'attend." />
+<title>Votre prochain patient a déjà répondu · Arkiba</title>
+<meta name="description" content="Arkiba interroge le patient avant la consultation, structure ses réponses et signale ce qui reste à vérifier. Quand le médecin ouvre Arkiba, le dossier l'attend." />
 
 <link rel="canonical" href="https://www.arkiba.fr/" />
 <meta property="og:type" content="website" />
 <meta property="og:locale" content="fr_FR" />
 <meta property="og:site_name" content="Arkiba" />
 <meta property="og:url" content="https://www.arkiba.fr/" />
-<meta property="og:title" content="Le dossier attend le médecin · Arkiba" />
+<meta property="og:title" content="Votre prochain patient a déjà répondu · Arkiba" />
 <meta property="og:description" content="La consultation est préparée avant qu'elle commence. Le patient est interrogé, les réponses sont structurées, les points à vérifier sont signalés." />
 <meta property="og:image" content="https://www.arkiba.fr/og.png" />
 <meta property="og:image:width" content="1200" />
 <meta property="og:image:height" content="630" />
 <meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="Le dossier attend le médecin · Arkiba" />
+<meta name="twitter:title" content="Votre prochain patient a déjà répondu · Arkiba" />
 <meta name="twitter:description" content="La consultation est préparée avant qu'elle commence." />
 <meta name="twitter:image" content="https://www.arkiba.fr/og.png" />
 
@@ -27,7 +27,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="/site.css" />
 
 <!-- Marque la page comme animable avant le premier rendu. Sans JavaScript,
@@ -39,28 +39,73 @@
 <a class="skip" href="#contenu">Aller au contenu</a>
 
 <!-- ═══ EN-TÊTE ═════════════════════════════════════════════════════════════
-     Barre flottante en pilule, avec un bandeau central. Le bandeau ne dit que
-     des choses vraies : l'essai de quinze jours existe et ne demande pas de
-     carte.
+     Barre pleine largeur, avec un menu produit qui déplie les dix modules.
+     Le menu n'est pas décoratif : chaque entrée pointe vers un module qui
+     existe réellement dans l'application.
      ═══════════════════════════════════════════════════════════════════════ -->
 <header class="nav" id="nav">
-  <div class="nav-pill">
+  <div class="nav-in">
     <a href="#haut" class="nav-logo" aria-label="Arkiba, accueil">Arkib<i>a</i></a>
-    <span class="nav-strip"><span class="pt"></span>Essai de 15 jours, sans carte bancaire</span>
+
+    <nav class="nav-links" aria-label="Navigation principale">
+      <div>
+        <button class="nav-item" id="nav-prod" type="button" aria-expanded="false" aria-controls="nav-mega">
+          Produit
+          <svg fill="none" viewBox="0 0 12 8" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M1 2l5 5 5-5"/></svg>
+        </button>
+        <div class="nav-mega" id="nav-mega">
+          <div class="mega-in">
+            <div class="mega-col">
+              <h4>Avant</h4>
+              <a href="#plateforme">Agenda<span>Les rendez-vous du jour</span></a>
+              <a href="#plateforme">Préconsultation<span>L'appel avant la venue</span></a>
+              <a href="#plateforme">Dossier patient<span>Structuré, daté, rattaché</span></a>
+              <a href="#refus">Analyse clinique<span>Ce qui manque est signalé</span></a>
+            </div>
+            <div class="mega-col">
+              <h4>Pendant</h4>
+              <a href="#plateforme">Consultation<span>Le contexte sous la main</span></a>
+              <a href="#actes">Notes<span>Clavier ou voix, un seul champ</span></a>
+              <a href="#plateforme">Validation<span>Rien ne part sans vous</span></a>
+            </div>
+            <div class="mega-col">
+              <h4>Après</h4>
+              <a href="#plateforme">Documents<span>Sept types, à la demande</span></a>
+              <a href="#plateforme">Transferts<span>Périmètre choisi ligne à ligne</span></a>
+              <a href="#plateforme">Intégrations<span>Sans détenir vos identifiants</span></a>
+            </div>
+            <div class="mega-carte">
+              <b>Le refus</b>
+              <p>Ce qui n'est pas dans la source n'entre pas dans le document. Voyez le mécanisme.</p>
+              <a href="#refus">Voir la démonstration
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <a class="nav-item" href="#demo">Démonstration</a>
+      <a class="nav-item" href="#comparaison">La différence</a>
+      <a class="nav-item" href="#tarifs">Tarifs</a>
+    </nav>
+
     <div class="nav-cta">
-      <a href="#acces" class="btn btn-1">Créer un compte</a>
       <a href="/login.html" class="btn btn-2">Se connecter</a>
+      <a href="#acces" class="btn btn-1" data-demo>Demander une démonstration</a>
       <button class="nav-burger" id="nav-burger" type="button" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="nav-mob">
         <svg class="m" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 8h16M4 16h16"/></svg>
         <svg class="x" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
       </button>
     </div>
   </div>
+
   <div class="nav-mob-wrap">
     <div class="nav-mob" id="nav-mob">
       <div class="nav-mob-in">
         <a href="#demo">Voir Arkiba travailler</a>
         <a href="#plateforme">La plateforme</a>
+        <a href="#refus">Le refus</a>
+        <a href="#comparaison">La différence</a>
         <a href="#actes">Le parcours</a>
         <a href="#tarifs">Tarifs</a>
         <div class="acts">
@@ -75,30 +120,68 @@
 <main id="contenu">
 
 <!-- ═══ 1 · HÉROS ═══════════════════════════════════════════════════════════
-     Composition centrée, titre énorme, une seule ligne dessous, deux appels à
-     l'action. Pas de rangée d'avatars : nous n'avons pas d'utilisateurs à
-     montrer, et on n'en invente pas.
+     Deux colonnes. À gauche l'accroche et trois chiffres qui existent tous
+     dans le code. À droite le seul endroit de la page où le monde réel du
+     cabinet et la surface produit se touchent physiquement.
      ═══════════════════════════════════════════════════════════════════════ -->
 <section class="hero" id="haut">
-  <div class="wrap hero-in">
-    <p class="badge" data-h="1"><span class="pt"></span>La couche de travail du cabinet</p>
-    <h1 class="xl" data-h="2">Le dossier attend le médecin.<br><span class="acc">Pas l'inverse.</span></h1>
-    <p class="sub" data-h="3">
-      Arkiba prépare le parcours clinique avant, pendant et après la consultation.
-    </p>
-    <div class="acts" data-h="4">
-      <a href="mailto:contact@arkiba.fr?subject=D%C3%A9monstration%20Arkiba" class="btn btn-1 btn-lg">
-        Demander une démonstration
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
-      <a href="#demo" class="btn btn-2 btn-lg">
-        Voir Arkiba travailler
-        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
-      </a>
+  <div class="wrap hero-2c">
+    <div class="hero-txt">
+      <p class="badge" data-h="1"><span class="pt"></span>La couche de travail du cabinet</p>
+      <h1 class="xl" data-h="2">Votre prochain patient<br>a déjà répondu.<br><span class="acc">Le dossier vous attend.</span></h1>
+      <p class="sub" data-h="3">
+        Arkiba interroge le patient avant la consultation, structure ses réponses
+        dans le vocabulaire du cabinet, et signale ce qui reste à vérifier.
+      </p>
+      <div class="acts" data-h="4">
+        <a href="#acces" class="btn btn-1 btn-lg" data-demo>
+          Demander une démonstration
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+        <a href="#demo" class="btn btn-2 btn-lg">
+          Voir Arkiba travailler
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M12 5v14M6 13l6 6 6-6"/></svg>
+        </a>
+      </div>
+      <p class="hero-fine" data-h="5">
+        <span class="p"></span>Arkiba n'établit aucun diagnostic et ne décide rien à votre place.
+      </p>
+      <div class="chiffres" data-h="6">
+        <div class="chiffre"><b>46</b><span>spécialités au registre d'inscription</span></div>
+        <div class="chiffre"><b>10</b><span>modules d'un seul parcours</span></div>
+        <div class="chiffre"><b>0</b><span>mot de passe détenu par Arkiba</span></div>
+      </div>
     </div>
-    <p class="hero-fine" data-h="5">
-      Arkiba n'établit aucun diagnostic et ne décide rien à votre place.
-    </p>
+
+    <div class="hero-vis" data-h="7">
+      <div class="hero-photo">
+        <img src="/media/cabinet-matin.jpg" width="1800" height="1013"
+             alt="Un cabinet de consultation vide, au petit matin." loading="eager" decoding="async" />
+      </div>
+      <div class="hero-carte">
+        <div class="surface">
+          <div class="surface-bar">
+            <span class="who">Mme Martin, 58 ans</span>
+            <span class="mono right">14 h 30</span>
+          </div>
+          <div class="champs">
+            <div class="champ">
+              <span class="k">Motif</span>
+              <span class="v">Arthroscopie du genou droit prévue le 14 mars.</span>
+              <span class="src">Déclaré à l'appel · 13 h 02</span>
+            </div>
+            <div class="champ flag">
+              <span class="k">À vérifier</span>
+              <span class="v">Souci cardiaque ancien évoqué, sans précision.</span>
+            </div>
+          </div>
+          <div class="surface-foot">
+            <span class="etat ok"><span class="p"></span>Dossier prêt</span>
+            <span class="etat wait"><span class="p respire"></span>En attente du médecin</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -427,15 +510,133 @@
   </div>
 </section>
 
-<!-- ═══ 4 · LA COMPARAISON ══════════════════════════════════════════════════ -->
+<!-- ═══ 4 · LE REFUS ════════════════════════════════════════════════════════
+     Le mécanisme, montré plutôt que déclaré : une seule source, cinq lectures
+     séparées. Le registre « manquantes » n'allume rien dans la source, et
+     c'est exactement ce qu'il doit faire.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<section class="sect hr" id="refus">
+  <div class="wrap">
+    <div class="tete-c" data-rev>
+      <p class="eyebrow">Le mécanisme</p>
+      <h2 class="lg">Ce qui n'est pas dans la source <span class="dim">n'entre pas dans le document.</span></h2>
+      <p class="sub">
+        Avant toute rédaction, Arkiba relit la source et la range en cinq registres
+        séparés. Choisissez-en un : la source s'allume à l'endroit exact d'où il vient.
+      </p>
+    </div>
+
+    <div class="refus" data-rev style="--i:1">
+      <div class="refus-src" id="refus-src">
+        <span class="k">La source · appel du 12 mars</span>
+        <p>Mme Martin, 58 ans. Elle vient pour une <em data-s="faits">arthroscopie du genou droit</em>, prévue <em data-s="faits">le 14 mars</em>. Elle prend <em data-s="faits deductions">de l'Aerius quand il y a du pollen</em>, sinon rien. Elle <em data-s="faits">fume, une vingtaine par jour</em>. Elle dit avoir eu <em class="amb" data-s="incoherences suggestions">un souci au cœur, il y a longtemps</em>, sans pouvoir préciser lequel.</p>
+        <p class="sig">Aucune autre information n'a été recueillie pendant cet appel.</p>
+      </div>
+
+      <div class="refus-out" id="refus-out">
+        <div class="onglets" id="ong-refus" role="tablist" aria-label="Registres de la revue clinique">
+          <button class="ong on" type="button" role="tab" data-r="faits" aria-selected="true">Faits</button>
+          <button class="ong" type="button" role="tab" data-r="deductions" aria-selected="false">Déductions</button>
+          <button class="ong" type="button" role="tab" data-r="manquantes" aria-selected="false">Manquantes</button>
+          <button class="ong" type="button" role="tab" data-r="incoherences" aria-selected="false">Incohérences</button>
+          <button class="ong" type="button" role="tab" data-r="suggestions" aria-selected="false">Suggestions</button>
+        </div>
+
+        <div class="surface pointeur">
+          <div class="surface-bar">
+            <span class="who">Revue avant rédaction</span>
+            <span class="mono right" id="refus-n">3 éléments</span>
+          </div>
+
+          <div class="rv" data-r="faits">
+            <ul class="refus-l">
+              <li><span class="m">Présent dans la source</span>Arthroscopie du genou droit, prévue le 14 mars.</li>
+              <li><span class="m">Présent dans la source</span>Aerius, en période de pollens.</li>
+              <li><span class="m">Présent dans la source</span>Tabagisme actif, environ vingt cigarettes par jour.</li>
+            </ul>
+          </div>
+
+          <div class="rv" data-r="deductions" hidden>
+            <ul class="refus-l">
+              <li><span class="m">Déduction prudente</span>Traitement saisonnier, sans prise continue déclarée.</li>
+              <li><span class="m">Déduction prudente</span>Aucun autre traitement en cours n'a été mentionné.</li>
+            </ul>
+          </div>
+
+          <div class="rv" data-r="manquantes" hidden>
+            <ul class="refus-l">
+              <li><span class="m">Absent de la source</span>Poids et taille.</li>
+              <li><span class="m">Absent de la source</span>Existence d'un bilan pré-opératoire récent.</li>
+              <li><span class="m">Absent de la source</span>Nature exacte de l'antécédent cardiaque.</li>
+            </ul>
+          </div>
+
+          <div class="rv" data-r="incoherences" hidden>
+            <ul class="refus-l">
+              <li class="amb"><span class="m">À vérifier</span>Un antécédent cardiaque est évoqué, sans traitement correspondant déclaré. Arkiba ne tranche pas : la question revient au médecin.</li>
+            </ul>
+          </div>
+
+          <div class="rv" data-r="suggestions" hidden>
+            <ul class="refus-l">
+              <li><span class="m">Question utile</span>Un bilan pré-opératoire récent est-il disponible ?</li>
+              <li><span class="m">Question utile</span>L'antécédent cardiaque peut-il être précisé auprès du traitant ?</li>
+              <li><span class="m">Statut</span>Aucune suggestion n'est intégrée au document tant que vous ne l'avez pas validée.</li>
+            </ul>
+          </div>
+
+          <div class="surface-foot">
+            <span class="etat wait" style="margin-left:0"><span class="p"></span>Arkiba ne rédige qu'après cette revue</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ 5 · LA COMPARAISON ══════════════════════════════════════════════════ -->
 <section class="sect tinted hr" id="comparaison">
   <div class="wrap">
     <div class="tete-c" data-rev>
       <p class="eyebrow">La différence</p>
       <h2 class="lg">Le même travail. <span class="dim">Pas la même chaîne.</span></h2>
-      <p class="sub">Aucun chiffre ici : nous n'avons pas de mesure. Regardez la forme.</p>
+      <p class="sub">Regardez la forme du travail, pas la promesse. Ce sont deux
+        façons d'arriver au même document signé.</p>
     </div>
-    <div class="cmp" data-rev style="--i:1">
+
+    <!-- Deux scènes, avant la liste. La comparaison se voit avant de se lire. -->
+    <div class="duo-p" data-rev style="--i:1">
+      <div class="scene-p">
+        <img src="/media/pile-soir.jpg" width="1400" height="933"
+             alt="Une pile de dossiers papier éclairée par une lampe de bureau, le soir." loading="lazy" decoding="async" />
+        <div class="in">
+          <span class="lb">Sans Arkiba</span>
+          <h3>La rédaction attend la fin de la journée.</h3>
+          <ul>
+            <li>Le patient arrive sans que rien ait été préparé</li>
+            <li>L'interrogatoire de base prend sur le temps d'examen</li>
+            <li>Les notes de la journée attendent la soirée</li>
+            <li>Le même contenu est saisi deux fois</li>
+          </ul>
+        </div>
+      </div>
+      <div class="scene-p bon">
+        <img src="/media/bureau-matin.jpg" width="1400" height="933"
+             alt="Un bureau rangé, un seul dossier fermé, en pleine lumière du matin." loading="lazy" decoding="async" />
+        <div class="in">
+          <span class="lb">Avec Arkiba</span>
+          <h3>Le dossier est prêt avant que la porte s'ouvre.</h3>
+          <ul>
+            <li>Le patient a été appelé et ses réponses sont rangées</li>
+            <li>Ce qui reste flou est signalé, pas tranché</li>
+            <li>Les documents sont rédigés à partir du dossier validé</li>
+            <li>Vous cochez ce qui doit partir, une seule fois</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="cmp" data-rev style="--i:2">
       <div class="cmp-c avant">
         <p class="cmp-t">Aujourd'hui</p>
         <ul class="cmp-l">
@@ -496,6 +697,14 @@
           <div class="tags"><span>Agenda</span><span>Préconsultation</span><span>Dossier patient</span><span>Analyse clinique</span></div>
         </div>
         <div class="acte-ui" data-rev style="--i:1">
+          <!-- Quatre réponses de l'appel, à ouvrir une par une : ce que la
+               patiente a dit, en regard de ce qu'Arkiba en a retenu. -->
+          <div class="onglets" id="ong-dossier" role="tablist" aria-label="Réponses recueillies à l'appel">
+            <button class="ong on" type="button" role="tab" data-o="motif" aria-selected="true">Motif</button>
+            <button class="ong" type="button" role="tab" data-o="trait" aria-selected="false">Traitements</button>
+            <button class="ong" type="button" role="tab" data-o="vie" aria-selected="false">Mode de vie</button>
+            <button class="ong" type="button" role="tab" data-o="verif" aria-selected="false">À vérifier</button>
+          </div>
           <div class="surface pointeur" id="explorateur" data-rev style="--i:2">
         <div class="surface-bar">
           <span class="who">Mme Martin, 58 ans</span>
@@ -617,19 +826,18 @@
 <section class="sect hr" id="verifier">
   <div class="wrap">
     <div class="tete-c" data-rev>
-      <p class="eyebrow">Sans preuve sociale</p>
-      <h2 class="lg">Pas de témoignages. <span class="dim">Des faits vérifiables.</span></h2>
+      <p class="eyebrow">Vérifiable</p>
+      <h2 class="lg">Quatre choses <span class="dim">que vous pouvez tester ce soir.</span></h2>
       <p class="sub">
-        Arkiba est jeune. Plutôt que d'inventer des médecins satisfaits, voici ce que
-        vous pouvez vérifier par vous-même, aujourd'hui.
+        Chacune se vérifie depuis votre navigateur, sans nous croire sur parole.
       </p>
     </div>
 
     <div class="vg" data-rev style="--i:1">
-      <article><h3>L'essai est l'application entière</h3><p>Quinze jours, sans carte bancaire. Ce n'est pas une démonstration bridée : ce sont les mêmes écrans, avec des plafonds.</p></article>
-      <article><h3>Les sources de l'avis spécialisé sont cliquables</h3><p>La base de dermatologie est réellement indexée. Sans base disponible, la fonction refuse de répondre au lieu d'inventer.</p></article>
-      <article><h3>Ce qui n'est pas prêt est dit</h3><p>Un appel sans réponse s'affiche comme tel. Un agenda non raccordé désactive la préconsultation et l'annonce.</p></article>
-      <article><h3>Les droits sont vérifiés côté serveur</h3><p>Retirer un verrou depuis la console du navigateur ne débloque rien. L'interface ne fait que refléter l'état du compte.</p></article>
+      <article><h3>L'essai est l'application entière</h3><p>Quinze jours, sans carte bancaire. Ce ne sont pas des écrans de démonstration : ce sont les vôtres, avec des plafonds.</p></article>
+      <article><h3>Les sources de l'avis spécialisé sont cliquables</h3><p>La base de dermatologie est réellement indexée. Sans base disponible, la fonction répond une erreur au lieu d'un avis qui aurait l'air sourcé.</p></article>
+      <article><h3>L'état réel est toujours affiché</h3><p>Un appel sans réponse s'affiche comme tel, et le dossier n'est pas fabriqué à sa place. Rien n'est présenté comme prêt tant que ça ne l'est pas.</p></article>
+      <article><h3>Les droits sont décidés côté serveur</h3><p>Retirer un verrou depuis la console du navigateur ne débloque rien. L'interface ne fait que refléter l'état du compte.</p></article>
     </div>
   </div>
 </section>
@@ -712,7 +920,7 @@
             Créer mon compte
             <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
           </a>
-          <a href="mailto:contact@arkiba.fr?subject=D%C3%A9monstration%20Arkiba" class="btn btn-2 btn-lg">Demander une démonstration</a>
+          <a href="#acces" class="btn btn-2 btn-lg" data-demo>Demander une démonstration</a>
         </div>
       </div>
       <div class="fin-ui" aria-hidden="true">
@@ -817,7 +1025,8 @@
         <p class="t">Produit</p>
         <ul>
           <li><a href="#plateforme">La plateforme</a></li>
-          <li><a href="#systeme">Le parcours</a></li>
+          <li><a href="#refus">Le refus</a></li>
+          <li><a href="#actes">Le parcours</a></li>
           <li><a href="#verifier">Vérifier</a></li>
           <li><a href="#tarifs">Tarifs</a></li>
         </ul>
@@ -846,6 +1055,51 @@
     </div>
   </div>
 </footer>
+
+<!-- ═══ BARRE COLLANTE ══════════════════════════════════════════════════════
+     Elle apparaît une fois le héros passé et disparaît sur le bloc d'accès :
+     proposer de créer un compte au-dessus du formulaire de création serait du
+     bruit.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div class="barre-c" id="barre-c">
+  <p>Essai de 15 jours, sans carte bancaire.</p>
+  <a href="#acces" class="btn btn-1" data-demo>Demander une démonstration</a>
+</div>
+
+<!-- ═══ MODALE ══════════════════════════════════════════════════════════════
+     Aucun formulaire fantôme : les deux chemins proposés existent réellement
+     et sont ceux qu'un visiteur peut emprunter aujourd'hui.
+     ═══════════════════════════════════════════════════════════════════════ -->
+<div class="modal" id="modal-demo" role="dialog" aria-modal="true" aria-labelledby="modal-t" aria-hidden="true">
+  <div class="modal-carte">
+    <button class="modal-x" type="button" id="modal-x" aria-label="Fermer">
+      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <p class="badge"><span class="pt"></span>Deux façons de voir Arkiba</p>
+    <h2 id="modal-t">Voyez-le sur vos propres dossiers.</h2>
+    <p class="sub">
+      La démonstration la plus honnête que nous puissions offrir, c'est l'application
+      elle-même. Le compte est créé immédiatement, sans carte bancaire.
+    </p>
+    <ul class="modal-l">
+      <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Les mêmes écrans que les comptes payants, avec des plafonds</li>
+      <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Comptes rendus, lettres, résumés, dictée, analyse clinique</li>
+      <li><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>Vos documents et vos dossiers vous restent, même après l'essai</li>
+    </ul>
+    <div class="modal-a">
+      <a href="#acces" class="btn btn-1 btn-lg" id="modal-go">
+        Ouvrir un compte d'essai
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+      <a href="mailto:contact@arkiba.fr?subject=D%C3%A9monstration%20Arkiba" class="btn btn-2 btn-lg">Préférer une démonstration accompagnée</a>
+    </div>
+    <p class="modal-fine">
+      Cabinet de groupe ou MSP ? Écrivez à
+      <a class="lnk" href="mailto:contact@arkiba.fr?subject=Arkiba%20Groupe">contact@arkiba.fr</a>,
+      nous répondons nous-mêmes.
+    </p>
+  </div>
+</div>
 
 <script src="/vendor/gsap.min.js" defer></script>
 <script src="/vendor/ScrollTrigger.min.js" defer></script>

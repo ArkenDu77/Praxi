@@ -52,6 +52,171 @@
   document.addEventListener('click', function (e) { if (!nav.contains(e.target)) fermerMenu(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fermerMenu(); });
 
+  /* ── Méga-menu produit ─────────────────────────────────────────────────── */
+  /* Il s'ouvre au survol comme au clic : au survol parce que c'est ce qu'on
+     attend d'une barre de navigation, au clic parce que c'est le seul geste
+     disponible au clavier et au doigt. */
+  var megaBtn = document.getElementById('nav-prod');
+  var mega = document.getElementById('nav-mega');
+  if (megaBtn && mega) {
+    var enveloppe = megaBtn.parentNode;
+    var minuteur = null;
+
+    function poserMega(ouvert) {
+      mega.classList.toggle('on', ouvert);
+      megaBtn.setAttribute('aria-expanded', String(ouvert));
+    }
+    function ouvrirMega() { clearTimeout(minuteur); poserMega(true); }
+    function fermerMega(delai) {
+      clearTimeout(minuteur);
+      minuteur = setTimeout(function () { poserMega(false); }, delai || 0);
+    }
+
+    var survolable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+    // Au pointeur fin, le survol a deja ouvert le menu quand le clic arrive :
+    // un bouton qui bascule le refermerait aussitot sous le curseur. Le clic
+    // ne fait donc qu ouvrir, et la fermeture passe par Echap, un lien, ou un
+    // clic au dehors. Au doigt, ou aucun survol n existe, il bascule.
+    megaBtn.addEventListener('click', function () {
+      if (survolable) ouvrirMega();
+      else poserMega(megaBtn.getAttribute('aria-expanded') !== 'true');
+    });
+    if (survolable) {
+      enveloppe.addEventListener('pointerenter', ouvrirMega);
+      enveloppe.addEventListener('pointerleave', function () { fermerMega(160); });
+    }
+    // Au clavier, entrer dans le menu l ouvre et en sortir le referme : sans
+    // cela, tabuler depuis le bouton envoyait le focus dans un panneau
+    // invisible.
+    enveloppe.addEventListener('focusin', ouvrirMega);
+    enveloppe.addEventListener('focusout', function (e) {
+      if (!enveloppe.contains(e.relatedTarget)) fermerMega(0);
+    });
+    mega.addEventListener('click', function (e) { if (e.target.closest('a')) poserMega(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') poserMega(false); });
+    document.addEventListener('click', function (e) {
+      if (!enveloppe.contains(e.target)) poserMega(false);
+    });
+  }
+
+  /* ── Modale de démonstration ───────────────────────────────────────────── */
+  /* Le focus entre dans la modale et n'en sort pas tant qu'elle est ouverte,
+     puis retourne exactement au bouton qui l'a ouverte. Sans cela, fermer la
+     modale au clavier renvoie en haut du document. */
+  var modal = document.getElementById('modal-demo');
+  if (modal) {
+    var carte = modal.querySelector('.modal-carte');
+    var rappel = null;
+
+    function focusables() {
+      return carte.querySelectorAll('a[href], button:not([disabled])');
+    }
+    function ouvrirModal(depuis) {
+      rappel = depuis || null;
+      modal.classList.add('on');
+      modal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      var f = focusables();
+      if (f.length) f[0].focus();
+    }
+    function fermerModal() {
+      if (!modal.classList.contains('on')) return;
+      modal.classList.remove('on');
+      modal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+      if (rappel && rappel.focus) rappel.focus();
+      rappel = null;
+    }
+
+    // Les déclencheurs sont des liens vers le formulaire d'inscription : sans
+    // JavaScript ils y mènent vraiment, au lieu d'être des boutons morts. Le
+    // clic n'est détourné vers la modale que si elle existe.
+    document.querySelectorAll('[data-demo]').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.preventDefault(); ouvrirModal(b); });
+    });
+    var croix = document.getElementById('modal-x');
+    if (croix) croix.addEventListener('click', fermerModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) fermerModal(); });
+    var vers = document.getElementById('modal-go');
+    if (vers) vers.addEventListener('click', fermerModal);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { fermerModal(); return; }
+      if (e.key !== 'Tab' || !modal.classList.contains('on')) return;
+      var f = focusables();
+      if (!f.length) return;
+      var premier = f[0], dernier = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === premier) { e.preventDefault(); dernier.focus(); }
+      else if (!e.shiftKey && document.activeElement === dernier) { e.preventDefault(); premier.focus(); }
+    });
+  }
+
+  /* ── Barre collante ────────────────────────────────────────────────────── */
+  /* Elle sort une fois le héros passé et rentre au moment où le formulaire
+     d'inscription entre à l'écran : proposer d'ouvrir un compte au-dessus du
+     formulaire d'ouverture de compte n'apporte rien. */
+  var barre = document.getElementById('barre-c');
+  if (barre && 'IntersectionObserver' in window) {
+    var haut = document.getElementById('haut');
+    var bas = document.getElementById('acces');
+    var passeHeros = false, dansAcces = false;
+
+    function majBarre() { barre.classList.toggle('on', passeHeros && !dansAcces); }
+
+    if (haut) {
+      new IntersectionObserver(function (es) {
+        passeHeros = !es[0].isIntersecting; majBarre();
+      }, { threshold: 0 }).observe(haut);
+    }
+    if (bas) {
+      new IntersectionObserver(function (es) {
+        dansAcces = es[0].isIntersecting; majBarre();
+      }, { threshold: 0 }).observe(bas);
+    }
+  }
+
+  /* ── Le refus, démontré ────────────────────────────────────────────────── */
+  /* Cinq registres, une seule source. Le registre « manquantes » n'allume
+     rien dans la source : c'est le seul qui parle de ce qui n'y est pas, et
+     l'absence de surlignage est précisément la démonstration. */
+  function refus() {
+    var barreOng = document.getElementById('ong-refus');
+    var sortie = document.getElementById('refus-out');
+    var source = document.getElementById('refus-src');
+    if (!barreOng || !sortie || !source) return;
+
+    var boutons = barreOng.querySelectorAll('.ong');
+    var vues = sortie.querySelectorAll('.rv');
+    var marques = source.querySelectorAll('em');
+    var compteur = document.getElementById('refus-n');
+
+    function montrer(cle) {
+      for (var i = 0; i < boutons.length; i++) {
+        var a = boutons[i].getAttribute('data-r') === cle;
+        boutons[i].classList.toggle('on', a);
+        boutons[i].setAttribute('aria-selected', String(a));
+      }
+      var n = 0;
+      vues.forEach(function (v) {
+        var vise = v.getAttribute('data-r') === cle;
+        v.hidden = !vise;
+        if (vise) n = v.querySelectorAll('li').length;
+      });
+      marques.forEach(function (m) {
+        var liste = (m.getAttribute('data-s') || '').split(' ');
+        m.classList.toggle('on', liste.indexOf(cle) !== -1);
+      });
+      if (compteur) compteur.textContent = n + (n > 1 ? ' éléments' : ' élément');
+    }
+
+    for (var j = 0; j < boutons.length; j++) {
+      (function (b) {
+        b.addEventListener('click', function () { montrer(b.getAttribute('data-r')); });
+      })(boutons[j]);
+    }
+    montrer('faits');
+  }
+
   /* ── Onde de l'appel ───────────────────────────────────────────────────── */
   /* Une vraie voix n'est pas une sinusoïde régulière. Les hauteurs sont
      tirées une fois, pas animées en boucle : c'est le passage du récit qui
@@ -524,48 +689,13 @@
     modules(gsap);
     bandeauParcours();
     rejouer();
+    refus();
     onglets(gsap, "ong-dossier", "data-o", "#explorateur .vol", "data-v");
     onglets(gsap, "ong-doc", "data-d", "#doc-corps .dv", "data-d", function (cle) {
       var t = document.getElementById("doc-titre");
       if (t) t.textContent = TITRES_DOC[cle] || "";
     });
   }
-
-
-  /* ══ TRANSITIONS DE SECTION ════════════════════════════════════════════════
-     Le fond de la page se deplace lentement au fil du parcours au lieu de
-     sauter d une bande a l autre. C est une seule variable CSS animee : rien
-     n est repeint en plus, et les sections ne sont plus des boites posees
-     bout a bout.
-     ═════════════════════════════════════════════════════════════════════════ */
-  function fondEvolutif(gsap, ST) {
-    if (reduit.matches) return;
-    var etapes = [
-      { sel: "#systeme",  bg: "#0a0c0f" },
-      { sel: "#dossier",  bg: "#08090b" },
-      { sel: "#consultation", bg: "#0a0c0f" },
-      { sel: "#documents", bg: "#0c0e11" },
-      { sel: "#transfert", bg: "#0a0c0f" },
-      { sel: "#tarifs",   bg: "#08090b" }
-    ];
-    etapes.forEach(function (e) {
-      var el = document.querySelector(e.sel);
-      if (!el) return;
-      gsap.to(document.body, {
-        backgroundColor: e.bg,
-        ease: "none",
-        scrollTrigger: { trigger: el, start: "top 75%", end: "top 25%", scrub: true }
-      });
-    });
-  }
-
-  /* Le voile de transition : une bande degradee entre deux sections, qui
-     evite la couture nette entre deux fonds differents. */
-  function coutures() {
-    var cibles = document.querySelectorAll(".sect.tinted, .systeme");
-    for (var i = 0; i < cibles.length; i++) cibles[i].classList.add("fondu");
-  }
-
 
   /* ══ LES MODULES DE LA PLATEFORME ══════════════════════════════════════════
      Dix modules, un panneau. La bascule est une vraie transition : le panneau
@@ -683,17 +813,16 @@
     // epinglage. Dans TOUS les autres cas, quelle que soit la largeur, la page
     // s anime. La largeur ne decide que de la choregraphie.
     if (!gsap || !ST) {
-      var sys = document.getElementById('systeme');
-      if (sys) sys.classList.add('plat');
       demarrerRepli();
+      // Les onglets, les modules et le refus ne dependent pas de GSAP : sans
+      // cet appel, une page privee de GSAP perdait toutes ses interactions.
+      interactions(null);
       return;
     }
     gsap.registerPlugin(ST);
     if (window.Flip) gsap.registerPlugin(window.Flip);
 
     if (reduit.matches) {
-      var sys = document.getElementById('systeme');
-      if (sys) sys.classList.add('plat');
       demarrerRepli();
       sceneHeros(gsap);
       interactions(null);
@@ -707,8 +836,6 @@
     actes(gsap);
     couchePointeur(gsap);
     interactions(gsap);
-    fondEvolutif(gsap, ST);
-    coutures();
     // Les polices changent les hauteurs : sans ce recalcul, les positions
     // mesurées pour les fragments seraient celles d'avant leur chargement.
     if (document.fonts && document.fonts.ready) {

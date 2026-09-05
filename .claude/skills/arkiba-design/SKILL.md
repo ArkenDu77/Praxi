@@ -1,6 +1,6 @@
 ---
 name: arkiba-design
-description: Système de design de la vitrine Arkiba, direction « Signal » — identité, tokens, typographie, motion GSAP, règles de vérité produit et interdits. À charger avant toute modification visuelle ou rédactionnelle de public/index.html, site.css, site.js.
+description: Système de design de la vitrine Arkiba, direction « Papier et nuit » — identité, tokens, typographie, motion GSAP, règles de vérité produit et interdits. À charger avant toute modification visuelle ou rédactionnelle de public/index.html, site.css, site.js.
 ---
 
 # Arkiba — système de design de la vitrine
@@ -294,3 +294,77 @@ n apparait pas, verifier QUEL serveur repond.
 comportement correct. Pour montrer la version animee sans toucher au reglage
 systeme, lancer Chrome avec `--force-prefers-no-reduced-motion`. Ne jamais
 supprimer le respect de ce reglage dans le code sans accord explicite.
+
+
+---
+
+## V2 — direction « Papier et nuit » (remplace « Signal »)
+
+« Signal » posait un fond quasi noir sur toute la page. Mesuré contre les
+références réelles (Sully, Clay, Attio, Lovable, Metaforma), cinq sur six sont
+claires et n'utilisent le sombre que comme **surface produit**. Le sombre
+partout lisait « prototype ». La direction s'inverse donc :
+
+**Fond clair. Le sombre n'est plus l'ambiance, c'est l'objet.** Partout où une
+interface d'Arkiba est montrée, elle est sombre, posée sur le papier. Le
+contraste fait exister le produit comme une chose, au lieu d'une page qui en
+parle.
+
+### Jetons
+
+```
+--pap #f6f7f8  --pap-2 #ffffff  --pap-3 #eef0f2
+--enc #0b0d10  --enc-2 #59616b  --enc-3 #6b737d
+--fil #dfe3e7  --fil-2 #cfd5db
+--nuit #141820  --nuit-2 #0d1015  --nuit-l #232935  --nuit-l2 #2e3543
+--nuit-t #8b95a3  --nuit-x #f4f6f8
+--vert #0f9d63 (action)  --vert-c #6ee7a8 (sur nuit)  --verif #f5b963
+```
+
+La règle de couleur ne change pas : **vert et ambre n'existent que là où le
+produit porte un état clinique.** L'ambre reste le seul signal chaud de la
+page, et il dit qu'Arkiba n'a pas tranché.
+
+### Typographie
+
+- Display : **Bricolage Grotesque**, axe `opsz`, graisse 600.
+- UI et corps : **Archivo**, 400 / 500 / 600.
+- Micro-étiquettes rares : **IBM Plex Mono**, 9 à 10 px, capitales, .13em.
+
+Schibsted Grotesk est écartée : elle ne signe rien. Manrope lit « SaaS
+générique ». Les quatre couples ont été comparés au rendu réel, pas sur
+spécimen.
+
+### La photographie
+
+Trois images générées, retravaillées à ffmpeg, servies depuis `/media/` :
+cabinet vide au matin (héros), pile de dossiers du soir et bureau rangé du
+matin (la comparaison), plus une texture de papier pour le grain des cartes
+nuit. Zéro médecin de banque d'images, zéro cabinet cliché. **Toute interface
+montrée comme étant Arkiba reste construite en HTML et CSS.**
+
+Le voile posé sur une photographie ne doit jamais dépasser ~.7 au milieu :
+au-delà, le sujet disparaît et il ne reste qu'un rectangle sombre.
+
+### Le refus, montré plutôt que déclaré
+
+La section `#refus` est le seul argument qu'un concurrent ne peut pas copier en
+le disant : une source unique, cinq registres séparés, et la source qui
+s'allume à l'endroit exact d'où vient chaque élément. Le registre
+« manquantes » n'allume rien — c'est la démonstration, pas un bug.
+
+### Pièges payés dans cette passe
+
+- `.nav-mob a` visait aussi les boutons du bas et repeignait leur libellé en
+  encre sur encre. Une règle de lien de menu se scope au conteneur direct.
+- Un méga-menu ancré à son bouton (`left:50%` sur 85 px) sort de l'écran. Il
+  s'ancre à la barre.
+- Au pointeur fin, le survol a déjà ouvert le menu quand le clic arrive : un
+  bouton qui bascule le referme sous le curseur. Le clic n'ouvre que.
+- Un `<em>` de surlignage avec un remplissage horizontal repousse la
+  ponctuation qui suit. Reprendre en marge négative.
+- Les déclencheurs de modale sont des liens vers `#acces`, pas des boutons :
+  sans JavaScript ils mènent quand même quelque part.
+- Les captures en navigateur sans tête n'avancent GSAP qu'à chaque peinture.
+  Compter ~45 captures jetables avant la capture utile, sinon on photographie
+  une animation à mi-course et on « corrige » un défaut qui n'existe pas.
