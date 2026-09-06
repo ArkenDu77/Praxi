@@ -654,12 +654,12 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   background: var(--nuit-2); color: var(--nuit-x); isolation: isolate;
   border: 1px solid var(--fil);
 }
-.scene-p img {
+.scene-p .film {
   position: absolute; inset: 0; width: 100%; height: 100%;
   object-fit: cover; z-index: -2;
   transition: transform 1.1s cubic-bezier(.16,1,.3,1);
 }
-.scene-p:hover img { transform: scale(1.035); }
+.scene-p:hover .film { transform: scale(1.035); }
 /* Le voile doit rendre le texte lisible sans effacer la photographie : au-delà
    de .75 au milieu, la pile de dossiers du soir disparaissait entièrement. */
 .scene-p::after {

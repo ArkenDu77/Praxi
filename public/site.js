@@ -789,10 +789,26 @@
 
     if (!('IntersectionObserver' in window)) return;
     if (reduit.matches) return;
-    new IntersectionObserver(function (es) {
-      if (es[0].isIntersecting) { var p = film.play(); if (p && p.catch) p.catch(function () {}); }
-      else film.pause();
-    }, { threshold: .05 }).observe(film);
+
+    /* Un film hors ecran continue de decoder : trois boucles simultanees pour
+       une seule visible, c est de la batterie depensee pour rien. Chacun ne
+       tourne que pendant qu il est regarde, et les films secondaires ne
+       chargent meme pas leur premier octet avant d entrer a l ecran. */
+    var obs = new IntersectionObserver(function (es) {
+      es.forEach(function (e) {
+        var v = e.target;
+        /* `play()` suffit a declencher le chargement d un film en
+           `preload=none` : reassigner `preload` puis rappeler `load()`
+           annulait la requete deja partie et la laissait en echec dans le
+           panneau reseau. */
+        if (e.isIntersecting) {
+          var p = v.play(); if (p && p.catch) p.catch(function () {});
+        } else { v.pause(); }
+      });
+    }, { threshold: .05 });
+
+    obs.observe(film);
+    document.querySelectorAll('video[data-film]').forEach(function (v) { obs.observe(v); });
   }
 
   /* ══ CURSEUR ARKIBA ════════════════════════════════════════════════════════

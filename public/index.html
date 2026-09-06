@@ -678,8 +678,11 @@
     <!-- Deux scènes, avant la liste. La comparaison se voit avant de se lire. -->
     <div class="duo-p" data-rev style="--i:1">
       <div class="scene-p">
-        <img src="/media/pile-soir.jpg" width="1400" height="933"
-             alt="Une pile de dossiers papier éclairée par une lampe de bureau, le soir." loading="lazy" decoding="async" />
+        <video class="film" data-film muted loop playsinline preload="none"
+               poster="/media/sans-poster.jpg" aria-hidden="true" tabindex="-1">
+          <source src="/media/sans.webm" type="video/webm" />
+          <source src="/media/sans.mp4" type="video/mp4" />
+        </video>
         <div class="in">
           <span class="lb">Sans Arkiba</span>
           <h3>La rédaction attend la fin de la journée.</h3>
@@ -692,8 +695,11 @@
         </div>
       </div>
       <div class="scene-p bon">
-        <img src="/media/bureau-matin.jpg" width="1400" height="933"
-             alt="Un bureau rangé, un seul dossier fermé, en pleine lumière du matin." loading="lazy" decoding="async" />
+        <video class="film" data-film muted loop playsinline preload="none"
+               poster="/media/avec-poster.jpg" aria-hidden="true" tabindex="-1">
+          <source src="/media/avec.webm" type="video/webm" />
+          <source src="/media/avec.mp4" type="video/mp4" />
+        </video>
         <div class="in">
           <span class="lb">Avec Arkiba</span>
           <h3>Le dossier est prêt avant que la porte s'ouvre.</h3>
