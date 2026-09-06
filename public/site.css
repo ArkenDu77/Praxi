@@ -1050,8 +1050,7 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   .hero-txt .xl { max-width: 20ch; }
   /* Sur une colonne la console tient toute la largeur : au-dela de ~640 px de
      large ses blocs deviennent des lignes tres longues pour peu de contenu. */
-  .plateau { max-width: 640px; }
-  .cs-lg { max-width: 640px; }
+  .cons, .cs-lg { max-width: 640px; }
 }
 @media (max-width: 1023px) {
   .nav-links { display: none; }
@@ -1075,38 +1074,18 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 }
 
 /* ═══ V4 · LA CONSOLE DU HÉROS ═══════════════════════════════════════
-   Le premier écran montre Arkiba au travail. Le film garde sa place, réduit à
-   une bande d'ambiance derrière la surface : c'est le cabinet, ce n'est pas le
-   sujet. La console occupe quatre fois sa hauteur et joue le parcours entier,
-   du rendez-vous à la validation.
+   Le premier ecran ne montre qu une chose : Arkiba au travail. Pas de film
+   derriere, pas de photographie, pas de collage. Une seule surface, posee sur
+   le papier, assez grande pour que ses details se lisent d un coup d oeil, et
+   qui joue le parcours entier du rendez-vous a la validation.
 
-   La fenêtre a une hauteur fixe et la pile glisse dedans : un premier écran
-   qui se réajuste à chaque temps ferait sauter le titre à côté. */
+   La fenetre a une hauteur fixe et la pile glisse dedans : un premier ecran
+   qui se reajuste a chaque temps ferait sauter le titre a cote. */
 
-.plateau { position: relative; }
-
-.plateau-film {
-  position: relative; overflow: hidden;
-  height: clamp(72px, 8.4vw, 116px);
-  margin: 0 clamp(16px, 2.4vw, 38px);
-  border-radius: var(--r-3) var(--r-3) 0 0;
-  background: #24272b;
+.cons {
+  position: relative; border-radius: var(--r-3);
+  box-shadow: 0 52px 100px -58px rgba(11,13,16,.58), inset 0 1px 0 rgba(255,255,255,.07);
 }
-/* Dans une bande de 4,5 pour 1, le cadrage ne choisit plus une zone mais une
-   tranche : centree, elle ne prend que le haut des placards. Descendue aux
-   trois quarts, elle tient le bureau et la tache de lumiere, c'est-a-dire les
-   deux seules choses vivantes du plan. */
-.plateau-film .film {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: 46% 76%;
-}
-/* Le voile plein cadre partait du coin : dans une bande il ne mordait presque
-   rien. Ici il assombrit vers le bas, la ou la console vient se poser. */
-.plateau-film .film-voile {
-  background: linear-gradient(180deg, rgba(11,13,16,.10), rgba(11,13,16,.52));
-}
-
-.cons { position: relative; z-index: 2; margin-top: -16px; border-radius: var(--r-3); }
 
 .cs-bar {
   display: flex; align-items: center; gap: 10px;
@@ -1125,7 +1104,7 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 
 .cs-fen {
   position: relative; overflow: hidden;
-  height: clamp(236px, 24vw, 300px);
+  height: clamp(268px, 27vw, 372px);
   -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16px, #000 calc(100% - 14px), transparent 100%);
           mask-image: linear-gradient(180deg, transparent 0, #000 16px, #000 calc(100% - 14px), transparent 100%);
 }
@@ -1206,23 +1185,6 @@ html:not(.js) .cs-fen, .cs-tout .cs-fen {
   height: auto; -webkit-mask-image: none; mask-image: none;
 }
 .cs-tout .cs-b { opacity: 1; }
-.film-voile {
-  position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(205deg, rgba(246,247,248,0) 38%, rgba(11,13,16,.34) 100%);
-}
-/* La lueur dérive lentement en travers du cadre : c'est le seul mouvement que
-   la page ajoute au film, et il suffit à faire respirer l'image fixe du
-   `poster` tant que la vidéo n'a pas démarré. */
-.film-lueur {
-  position: absolute; inset: -20%; pointer-events: none; mix-blend-mode: screen;
-  background: radial-gradient(38% 46% at 30% 34%, rgba(255,247,230,.20), transparent 70%);
-  animation: derive 17s ease-in-out infinite alternate;
-}
-@keyframes derive {
-  0%   { transform: translate3d(-4%, 2%, 0) scale(1); }
-  100% { transform: translate3d(10%, -5%, 0) scale(1.14); }
-}
-@media (prefers-reduced-motion: reduce) { .film-lueur { animation: none; } }
 
 /* ═══ V3 · LA DÉMONSTRATION JOUABLE ════════════════════════════════════════ */
 
@@ -1348,58 +1310,6 @@ html:not(.js) .cs-fen, .cs-tout .cs-fen {
   .wt-rejouer .lbl { display: none; }
 }
 
-/* ═══ V3 · CURSEUR ARKIBA ══════════════════════════════════════════════════
-   `cursor: none` n'est posé que par `html.cur`, une classe ajoutée en
-   JavaScript après que le curseur a réellement démarré : si le script échoue,
-   le curseur natif reste. */
-html.cur, html.cur * { cursor: none; }
-html.cur a, html.cur button, html.cur summary, html.cur label,
-html.cur input, html.cur select, html.cur textarea { cursor: none; }
-
-/* La boite garde une taille fixe et c'est sa peau, en `::before`, qui change
-   d'echelle. Le curseur est le seul element de la page redessine a chaque
-   mouvement du pointeur : y animer `width` ou `height` declencherait un calcul
-   de disposition a chaque image, pendant que la boucle rAF ecrit deja un
-   `transform`. Echelle et opacite restent sur le compositeur. */
-.cur-pt, .cur-an {
-  position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none;
-  opacity: 0; transition: opacity .22s;
-  will-change: transform;
-}
-body.cur-vu .cur-pt, body.cur-vu .cur-an { opacity: 1; }
-
-.cur-pt { width: 6px; height: 6px; }
-.cur-pt::before {
-  content: ""; display: block; width: 100%; height: 100%;
-  border-radius: 50%; background: var(--enc);
-  transition: background .2s, transform .2s cubic-bezier(.16,1,.3,1), border-radius .2s;
-}
-.cur-pt[data-etat="action"]::before { background: var(--vert); }
-/* Une barre de saisie n'est pas une homothetie du point : les deux axes se
-   mettent a l'echelle separement. */
-.cur-pt[data-etat="saisie"]::before { transform: scale(.34, 3.34); border-radius: 1px; }
-
-.cur-an { width: 46px; height: 46px; }
-.cur-an::before {
-  content: ""; display: block; width: 100%; height: 100%;
-  border-radius: 100px; border: 1.5px solid rgba(11,13,16,.28);
-  transform: scale(.826);
-  transition: transform .28s cubic-bezier(.16,1,.3,1), border-color .22s, background .22s;
-}
-.cur-an[data-etat="action"]::before { border-color: var(--vert); background: var(--vert-bg); }
-.cur-an[data-etat="surface"]::before { border-color: rgba(11,13,16,.4); transform: scale(1); }
-/* `body.cur-vu .cur-an` remet l opacite a 1 avec une specificite superieure :
-   sans ce selecteur complet, l anneau ne s effacait jamais sur un champ. */
-body.cur-vu .cur-an[data-etat="saisie"] { opacity: 0; }
-.cur-an.presse::before { transform: scale(.652); }
-
-/* Le curseur est un objet de bureau : au doigt il n'existe pas, et sous
-   mouvement réduit il n'est même pas construit. */
-@media (hover: none), (pointer: coarse) {
-  .cur-pt, .cur-an { display: none; }
-  html.cur, html.cur * { cursor: auto; }
-}
-
 /* ═══ V3 · MODALE ══════════════════════════════════════════════════════════ */
 
 .modal-vue { display: block; }
@@ -1423,13 +1333,10 @@ body.cur-vu .cur-an[data-etat="saisie"] { opacity: 0; }
 .modal-tick svg { width: 22px; height: 22px; }
 #modal-ok .modal-a { margin-top: 22px; }
 
-/* Au telephone le film est servi dans son recadrage carre : dans une bande
-   large, son centre de gravite n'est plus au meme endroit. */
 @media (max-width: 639px) {
-  .plateau-film .film { object-position: 50% 70%; }
-  /* Au telephone la fenetre se resserre : a 236 px le premier temps flotte
+  /* Au telephone la fenetre se resserre : plus haute, le premier temps flotte
      seul dans une grande boite sombre pendant plusieurs secondes. */
-  .cs-fen { height: 210px; }
+  .cs-fen { height: 232px; }
 }
 
 /* ═══ V3 · LE REGISTRE DES REFUS ═══════════════════════════════════════════

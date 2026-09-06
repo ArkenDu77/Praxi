@@ -122,10 +122,9 @@
 <!-- ═══ 1 · HÉROS ═══════════════════════════════════════════════════════════
      Deux colonnes. À gauche l'accroche seule : le premier écran vend un
      changement de façon de travailler, pas une fiche technique. À droite le
-     produit lui-même, au travail : la console joue le parcours entier en huit
-     temps et se remplit sous les yeux du visiteur. La matière filmée reste,
-     réduite à ce qu'elle apporte vraiment, une bande d'ambiance derrière la
-     surface.
+     produit lui-même, au travail, et rien d'autre : une seule surface, aucun
+     décor derrière. La console joue le parcours entier en huit temps et se
+     remplit sous les yeux du visiteur.
      ═══════════════════════════════════════════════════════════════════════ -->
 <section class="hero" id="haut">
   <div class="wrap hero-2c">
@@ -148,100 +147,88 @@
       </div>
     </div>
 
-    <!-- La console est le sujet, pas le décor. Les huit blocs existent dès le
-         balisage et restent à leur place : la séquence les révèle l'un après
-         l'autre et fait glisser la pile, elle n'invente jamais de contenu.
-         Sans script, ils sont simplement tous là. -->
+    <!-- Une seule surface, sur fond de papier. Les huit blocs existent des le
+         balisage et restent a leur place : la sequence les revele l un apres
+         l autre et fait glisser la pile, elle n invente jamais de contenu.
+         Sans script, ils sont simplement tous la. -->
     <div class="hero-vis" data-h="5">
-      <div class="plateau">
-        <div class="plateau-film" aria-hidden="true">
-          <video id="film-h" class="film" autoplay muted loop playsinline preload="metadata"
-                 poster="/media/heros-poster.jpg" tabindex="-1">
-            <source src="/media/heros.webm" type="video/webm" />
-            <source src="/media/heros.mp4" type="video/mp4" />
-          </video>
-          <span class="film-voile"></span>
-          <span class="film-lueur"></span>
+      <div class="cons surface" id="cons" aria-hidden="true">
+        <div class="cs-bar">
+          <span class="cs-marque"><i></i>Arkiba</span>
+          <span class="cs-fil">Parcours patient</span>
+          <span class="cs-h">M. Delaunay · 9 h 15</span>
         </div>
 
-        <div class="cons surface" id="cons" aria-hidden="true">
-          <div class="cs-bar">
-            <span class="cs-marque"><i></i>Arkiba</span>
-            <span class="cs-fil">Parcours patient</span>
-            <span class="cs-h">Mme Martin · 14 h 30</span>
-          </div>
-
-          <div class="cs-fen">
-            <div class="cs-pile" id="cs-pile">
-              <div class="cs-b">
-                <span class="cs-k">Agenda raccordé</span>
-                <div class="cs-rdv">
-                  <span class="cs-hh">14 h 30</span>
-                  <span class="cs-nom">Mme Martin, 58 ans</span>
-                  <span class="cs-mot">Bilan préopératoire</span>
-                </div>
+        <div class="cs-fen">
+          <div class="cs-pile" id="cs-pile">
+            <div class="cs-b">
+              <span class="cs-k">Agenda raccordé</span>
+              <div class="cs-rdv">
+                <span class="cs-hh">9 h 15</span>
+                <span class="cs-nom">M. Delaunay, 54 ans</span>
+                <span class="cs-mot">Renouvellement de traitement</span>
               </div>
+            </div>
 
-              <div class="cs-b">
-                <span class="cs-k">Appel sortant · 13 h 02</span>
-                <div class="cs-onde"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-                <p class="cs-cit">« Je fume, une vingtaine par jour. »</p>
+            <div class="cs-b">
+              <span class="cs-k">Appel sortant · 8 h 40</span>
+              <div class="cs-onde"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+              <p class="cs-cit">« J'ai des vertiges le matin, depuis trois semaines. »</p>
+            </div>
+
+            <div class="cs-b">
+              <span class="cs-k">Réponses rangées</span>
+              <div class="cs-champ">
+                <span class="k">Motif</span>
+                <span class="v">Renouvellement du traitement de fond, suivi depuis deux ans.</span>
               </div>
-
-              <div class="cs-b">
-                <span class="cs-k">Réponses rangées</span>
-                <div class="cs-champ">
-                  <span class="k">Motif</span>
-                  <span class="v">Bilan préopératoire avant l'intervention du 14 mars.</span>
-                </div>
-                <div class="cs-champ">
-                  <span class="k">Tabac</span>
-                  <span class="v">Une vingtaine par jour. Source · appel, 13 h 02.</span>
-                </div>
+              <div class="cs-champ">
+                <span class="k">Traitement en cours</span>
+                <span class="v">Un comprimé le matin. Source · appel, 8 h 40.</span>
               </div>
+            </div>
 
-              <div class="cs-b amb">
-                <div class="cs-champ">
-                  <span class="k">À vérifier</span>
-                  <span class="v">Souci cardiaque ancien évoqué, sans précision.</span>
-                </div>
+            <div class="cs-b amb">
+              <div class="cs-champ">
+                <span class="k">À vérifier</span>
+                <span class="v">Vertiges au lever signalés, apparus depuis trois semaines.</span>
               </div>
+            </div>
 
-              <div class="cs-b">
-                <div class="cs-etats">
-                  <span class="etat ok"><span class="p"></span>Dossier prêt</span>
-                  <span class="etat wait"><span class="p respire"></span>En attente du médecin</span>
-                </div>
+            <div class="cs-b">
+              <div class="cs-etats">
+                <span class="etat ok"><span class="p"></span>Dossier prêt</span>
+                <span class="etat wait"><span class="p respire"></span>En attente du médecin</span>
               </div>
+            </div>
 
-              <div class="cs-b">
-                <span class="cs-k">Note de consultation</span>
-                <p class="cs-note" id="cs-note"></p>
+            <div class="cs-b">
+              <span class="cs-k">Note de consultation</span>
+              <p class="cs-note" id="cs-note"></p>
+            </div>
+
+            <div class="cs-b">
+              <span class="cs-k">Documents demandés</span>
+              <div class="cs-docs">
+                <span class="cs-doc">Ordonnance</span>
+                <span class="cs-doc">Courrier au cardiologue</span>
+                <span class="cs-doc">Compte rendu</span>
               </div>
+            </div>
 
-              <div class="cs-b">
-                <span class="cs-k">Documents demandés</span>
-                <div class="cs-docs">
-                  <span class="cs-doc">Ordonnance</span>
-                  <span class="cs-doc">Courrier au chirurgien</span>
-                  <span class="cs-doc">Compte rendu</span>
-                </div>
-              </div>
-
-              <div class="cs-b">
-                <div class="cs-val">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12.5l5.2 5.2L20 7"/></svg>
-                  Validé par le médecin
-                  <span class="cs-sortie">Prêt pour votre logiciel</span>
-                </div>
+            <div class="cs-b">
+              <div class="cs-val">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12.5l5.2 5.2L20 7"/></svg>
+                Validé par le médecin
+                <span class="cs-sortie">Prêt pour votre logiciel</span>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="cs-pied">
-            <span class="cs-t" id="cs-t">Rendez-vous détecté</span>
-            <span class="cs-seg" id="cs-seg"></span>
-          </div>
+        <div class="cs-pied">
+          <span class="cs-t" id="cs-t">Rendez-vous détecté</span>
+          <span class="cs-seg" id="cs-seg"></span>
         </div>
       </div>
 

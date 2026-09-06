@@ -744,7 +744,7 @@
     { t: 'Vous validez ce qui part', d: "Ce qui n'est pas coché reste dans Arkiba." }
   ];
 
-  var NOTE_HEROS = "Auscultation sans particularité. TA 128/76. Bilan cardiologique demandé avant le 14 mars.";
+  var NOTE_HEROS = "TA 148/92 à droite, 145/90 à gauche. Vertiges à l'orthostatisme. Traitement à réévaluer.";
 
   function consoleHeros(gsap) {
     var cons = document.getElementById('cons');
@@ -842,18 +842,6 @@
   /* Le film ne tourne que lorsqu il est a l ecran : un heros qui decode une
      video pendant qu on lit les tarifs consomme de la batterie pour rien. */
   function filmVisible() {
-    var film = document.getElementById('film-h');
-    if (!film) return;
-
-    /* Sur un telephone, le cadre est carre : servir le film large revient a en
-       montrer un tiers. Le recadrage 1:1 est un encodage separe, choisi avant
-       le premier octet de video plutot que rogne a l affichage. */
-    if (PETIT.matches) {
-      film.setAttribute('poster', '/media/heros-poster-mob.jpg');
-      film.innerHTML = '<source src="/media/heros-mob.mp4" type="video/mp4">';
-      try { film.load(); } catch (e) {}
-    }
-
     /* Sous mouvement reduit, aucun film ne tourne : l image d affiche est une
        composition complete a elle seule, et une boucle video contredit
        exactement ce que le reglage demande. `pause()` seul ne suffit pas, le
@@ -872,8 +860,8 @@
 
     /* Un film hors ecran continue de decoder : trois boucles simultanees pour
        une seule visible, c est de la batterie depensee pour rien. Chacun ne
-       tourne que pendant qu il est regarde, et les films secondaires ne
-       chargent meme pas leur premier octet avant d entrer a l ecran. */
+       tourne que pendant qu il est regarde, et ne charge meme pas son premier
+       octet avant d entrer a l ecran. */
     var obs = new IntersectionObserver(function (es) {
       es.forEach(function (e) {
         var v = e.target;
@@ -887,71 +875,9 @@
       });
     }, { threshold: .05 });
 
-    obs.observe(film);
     document.querySelectorAll('video[data-film]').forEach(function (v) { obs.observe(v); });
   }
 
-  /* ══ CURSEUR ARKIBA ════════════════════════════════════════════════════════
-     Un point precis qui suit exactement le pointeur, et un anneau qui le
-     rattrape avec un peu de retard. Le retard est la seule chose qui donne
-     l impression d une matiere plutot que d un calque.
-
-     Trois garde-fous, tous necessaires :
-       · il n existe qu au pointeur fin, jamais au doigt ;
-       · il ne se substitue au curseur natif que s il a vraiment demarre, sinon
-         un echec de script laisse la page sans aucun curseur visible ;
-       · il ne recoit jamais d evenement, donc il ne peut rien bloquer.
-     ═════════════════════════════════════════════════════════════════════════ */
-  function curseur() {
-    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-    if (reduit.matches) return;
-
-    var pt = document.createElement('span');
-    var an = document.createElement('span');
-    pt.className = 'cur-pt'; an.className = 'cur-an';
-    pt.setAttribute('aria-hidden', 'true'); an.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(pt); document.body.appendChild(an);
-    document.documentElement.classList.add('cur');
-
-    var x = innerWidth / 2, y = innerHeight / 2, ax = x, ay = y, vu = false, tourne = false;
-
-    function boucle() {
-      /* Rattrapage exponentiel : l anneau parcourt 18 % de la distance
-         restante a chaque image, ce qui donne un retard constant en
-         sensation quelle que soit la vitesse du geste. */
-      ax += (x - ax) * .18;
-      ay += (y - ay) * .18;
-      an.style.transform = 'translate3d(' + (ax - 23) + 'px,' + (ay - 23) + 'px,0)';
-      pt.style.transform = 'translate3d(' + (x - 3) + 'px,' + (y - 3) + 'px,0)';
-      tourne = requestAnimationFrame(boucle);
-    }
-
-    document.addEventListener('pointermove', function (e) {
-      if (e.pointerType !== 'mouse') return;
-      x = e.clientX; y = e.clientY;
-      if (!vu) { vu = true; ax = x; ay = y; document.body.classList.add('cur-vu'); if (!tourne) boucle(); }
-
-      /* L etat se lit sur la cible, pas sur une liste de selecteurs tenue a
-         jour a la main : tout element qui se declare interactif est couvert. */
-      var c = e.target.closest ? e.target.closest('a,button,summary,label,input,select,textarea,.surface,.pointeur,.scene-p,.wt-e,.vg article') : null;
-      var etat = '';
-      if (c) {
-        if (c.matches('input,select,textarea')) etat = 'saisie';
-        else if (c.matches('a,button,summary,label,.wt-e')) etat = 'action';
-        else etat = 'surface';
-      }
-      an.setAttribute('data-etat', etat);
-      pt.setAttribute('data-etat', etat);
-    }, { passive: true });
-
-    document.addEventListener('pointerdown', function () { an.classList.add('presse'); });
-    document.addEventListener('pointerup', function () { an.classList.remove('presse'); });
-    /* Sortir de la fenetre doit rendre la main au systeme, sinon le curseur
-       Arkiba reste colle au bord pendant que le vrai pointeur est ailleurs. */
-    document.addEventListener('pointerleave', function () { document.body.classList.remove('cur-vu'); });
-    document.addEventListener('pointerenter', function () { if (vu) document.body.classList.add('cur-vu'); });
-    window.addEventListener('blur', function () { document.body.classList.remove('cur-vu'); });
-  }
 
   /* ══ LA DÉMONSTRATION JOUABLE ══════════════════════════════════════════════
      Douze etapes, six vues, un pointeur. Le visiteur avance lui-meme : c est
@@ -1237,7 +1163,6 @@
 
   /* ── Démarrage ─────────────────────────────────────────────────────────── */
   function demarrer() {
-    curseur();
     filmVisible();
     var gsap = window.gsap;
     var ST = window.ScrollTrigger;
