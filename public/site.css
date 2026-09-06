@@ -977,7 +977,9 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   padding: 12px 16px; border-top: 1px solid var(--nuit-l);
 }
 .notes-pied .c { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--nuit-t); }
-.notes-pied .fin { margin-left: auto; }
+/* `.fin` est la carte de l appel final : reutilisee ici, elle repeignait la
+   mention en panneau sombre de 64 px de remplissage au fond du champ de notes. */
+.notes-pied .droite { margin-left: auto; }
 .mic-status {
   display: none; align-items: flex-start; gap: 9px;
   padding: 11px 16px; border-top: 1px solid var(--nuit-l);
