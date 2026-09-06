@@ -122,8 +122,10 @@
 <!-- ═══ 1 · HÉROS ═══════════════════════════════════════════════════════════
      Deux colonnes. À gauche l'accroche seule : le premier écran vend un
      changement de façon de travailler, pas une fiche technique. À droite le
-     seul endroit de la page où le monde réel du cabinet et la surface produit
-     se touchent physiquement.
+     produit lui-même, au travail : la console joue le parcours entier en huit
+     temps et se remplit sous les yeux du visiteur. La matière filmée reste,
+     réduite à ce qu'elle apporte vraiment, une bande d'ambiance derrière la
+     surface.
      ═══════════════════════════════════════════════════════════════════════ -->
 <section class="hero" id="haut">
   <div class="wrap hero-2c">
@@ -146,47 +148,104 @@
       </div>
     </div>
 
-    <!-- Le film porte l'atmosphère, la surface porte le produit. Les deux
-         appartiennent à une seule composition : les jetons de données sortent
-         du film et entrent dans la carte. -->
+    <!-- La console est le sujet, pas le décor. Les huit blocs existent dès le
+         balisage et restent à leur place : la séquence les révèle l'un après
+         l'autre et fait glisser la pile, elle n'invente jamais de contenu.
+         Sans script, ils sont simplement tous là. -->
     <div class="hero-vis" data-h="5">
-      <div class="hero-film">
-        <video id="film-h" class="film" autoplay muted loop playsinline preload="metadata"
-               poster="/media/heros-poster.jpg" aria-hidden="true" tabindex="-1">
-          <source src="/media/heros.webm" type="video/webm" />
-          <source src="/media/heros.mp4" type="video/mp4" />
-        </video>
-        <span class="film-voile" aria-hidden="true"></span>
-        <span class="film-lueur" aria-hidden="true"></span>
+      <div class="plateau">
+        <div class="plateau-film" aria-hidden="true">
+          <video id="film-h" class="film" autoplay muted loop playsinline preload="metadata"
+                 poster="/media/heros-poster.jpg" tabindex="-1">
+            <source src="/media/heros.webm" type="video/webm" />
+            <source src="/media/heros.mp4" type="video/mp4" />
+          </video>
+          <span class="film-voile"></span>
+          <span class="film-lueur"></span>
+        </div>
 
-        <span class="jeton j1" aria-hidden="true"><i class="pt"></i>14 h 30 · Mme Martin</span>
-        <span class="jeton j2" aria-hidden="true"><i class="pt"></i>Appel terminé · 4 réponses</span>
-        <span class="jeton j3" aria-hidden="true"><i class="pt amb"></i>1 point à vérifier</span>
-      </div>
+        <div class="cons surface" id="cons" aria-hidden="true">
+          <div class="cs-bar">
+            <span class="cs-marque"><i></i>Arkiba</span>
+            <span class="cs-fil">Parcours patient</span>
+            <span class="cs-h">Mme Martin · 14 h 30</span>
+          </div>
 
-      <div class="hero-carte">
-        <div class="surface">
-          <div class="surface-bar">
-            <span class="who">Mme Martin, 58 ans</span>
-            <span class="mono right">14 h 30</span>
-          </div>
-          <div class="champs">
-            <div class="champ" data-hc="1">
-              <span class="k">Motif</span>
-              <span class="v">Bilan préopératoire avant l'intervention du 14 mars.</span>
-              <span class="src">Déclaré à l'appel · 13 h 02</span>
+          <div class="cs-fen">
+            <div class="cs-pile" id="cs-pile">
+              <div class="cs-b">
+                <span class="cs-k">Agenda raccordé</span>
+                <div class="cs-rdv">
+                  <span class="cs-hh">14 h 30</span>
+                  <span class="cs-nom">Mme Martin, 58 ans</span>
+                  <span class="cs-mot">Bilan préopératoire</span>
+                </div>
+              </div>
+
+              <div class="cs-b">
+                <span class="cs-k">Appel sortant · 13 h 02</span>
+                <div class="cs-onde"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <p class="cs-cit">« Je fume, une vingtaine par jour. »</p>
+              </div>
+
+              <div class="cs-b">
+                <span class="cs-k">Réponses rangées</span>
+                <div class="cs-champ">
+                  <span class="k">Motif</span>
+                  <span class="v">Bilan préopératoire avant l'intervention du 14 mars.</span>
+                </div>
+                <div class="cs-champ">
+                  <span class="k">Tabac</span>
+                  <span class="v">Une vingtaine par jour. Source · appel, 13 h 02.</span>
+                </div>
+              </div>
+
+              <div class="cs-b amb">
+                <div class="cs-champ">
+                  <span class="k">À vérifier</span>
+                  <span class="v">Souci cardiaque ancien évoqué, sans précision.</span>
+                </div>
+              </div>
+
+              <div class="cs-b">
+                <div class="cs-etats">
+                  <span class="etat ok"><span class="p"></span>Dossier prêt</span>
+                  <span class="etat wait"><span class="p respire"></span>En attente du médecin</span>
+                </div>
+              </div>
+
+              <div class="cs-b">
+                <span class="cs-k">Note de consultation</span>
+                <p class="cs-note" id="cs-note"></p>
+              </div>
+
+              <div class="cs-b">
+                <span class="cs-k">Documents demandés</span>
+                <div class="cs-docs">
+                  <span class="cs-doc">Ordonnance</span>
+                  <span class="cs-doc">Courrier au chirurgien</span>
+                  <span class="cs-doc">Compte rendu</span>
+                </div>
+              </div>
+
+              <div class="cs-b">
+                <div class="cs-val">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12.5l5.2 5.2L20 7"/></svg>
+                  Validé par le médecin
+                  <span class="cs-sortie">Prêt pour votre logiciel</span>
+                </div>
+              </div>
             </div>
-            <div class="champ flag" data-hc="2">
-              <span class="k">À vérifier</span>
-              <span class="v">Souci cardiaque ancien évoqué, sans précision.</span>
-            </div>
           </div>
-          <div class="surface-foot" data-hc="3">
-            <span class="etat ok"><span class="p"></span>Dossier prêt</span>
-            <span class="etat wait"><span class="p respire"></span>En attente du médecin</span>
+
+          <div class="cs-pied">
+            <span class="cs-t" id="cs-t">Rendez-vous détecté</span>
+            <span class="cs-seg" id="cs-seg"></span>
           </div>
         </div>
       </div>
+
+      <p class="cs-lg" id="cs-lg">Arkiba lit l'agenda raccordé. Il n'y écrit jamais rien.</p>
     </div>
   </div>
 </section>

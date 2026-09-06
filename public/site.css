@@ -331,8 +331,7 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 /* ═══ 1 · HÉROS ════════════════════════════════════════════════════════════ */
 
 /* Le bas du heros est court : la section suivante porte deja son propre
-   espacement, et deux marges pleines laissaient une bande morte de 170 px
-   une fois les chiffres retires. */
+   espacement, et deux marges pleines laissaient une bande morte de 170 px. */
 .hero { padding: clamp(34px, 4.4vw, 62px) 0 clamp(24px, 3vw, 44px); position: relative; }
 
 .hero-2c {
@@ -343,33 +342,11 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
    d'une largeur : « déjà répondu » ne doit jamais tomber seul sur sa ligne. */
 .hero-txt .xl { margin-top: 20px; text-wrap: pretty; }
 .hero-txt .sub { max-width: 42ch; }
-.hero-fine {
-  margin-top: 22px; font-size: 12.5px; color: var(--enc-3);
-  display: flex; align-items: center; gap: 8px;
-}
-.hero-fine .p { width: 4px; height: 4px; border-radius: 50%; background: var(--fil-2); flex: none; }
 
 
-/* La composition de droite : une photographie réelle, et par-dessus la
-   surface produit. C'est le seul endroit de la page où les deux mondes se
-   touchent physiquement. */
+/* La composition de droite : le produit au travail. Le style de la console
+   vit plus bas, dans sa propre section. */
 .hero-vis { position: relative; }
-.hero-photo {
-  border-radius: var(--r-3); overflow: hidden; position: relative;
-  aspect-ratio: 5 / 4; width: 100%;
-  background: #d8dbdf;
-  box-shadow: 0 40px 80px -50px rgba(11,13,16,.5);
-}
-/* Le cadrage vise le bureau et la fenêtre, pas le mur de placards : un recadrage
-   centré prenait la moitié morte de la pièce. */
-.hero-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 62% center; }
-.hero-photo::after {
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(205deg, rgba(246,247,248,0) 40%, rgba(11,13,16,.3) 100%);
-}
-.hero-carte {
-  position: absolute; right: -6%; bottom: -7%; width: min(348px, 78%); z-index: 3;
-}
 
 /* ═══ SURFACES PRODUIT ═════════════════════════════════════════════════════ */
 
@@ -1065,29 +1042,21 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 
 /* ═══ ADAPTATIONS ══════════════════════════════════════════════════════════ */
 
-/* Le heros repasse sur une colonne bien avant la navigation. En deux colonnes
-   sous ~1250 px, la colonne de texte devient trop etroite pour aligner les deux
-   appels a l action, et la carte produit finit par recouvrir les trois quarts
-   du film. Empile, le film reprend toute la largeur et la carte revient a un
-   tiers. */
+/* Le heros repasse sur une colonne bien avant la navigation : sous ~1250 px la
+   colonne de texte devient trop etroite pour aligner les deux appels a l
+   action. Empilee, la console garde sa hauteur et gagne en lisibilite. */
 @media (max-width: 1279px) {
   .hero-2c { grid-template-columns: 1fr; }
   .hero-txt .xl { max-width: 20ch; }
-  .hero-carte { position: absolute; right: 4%; bottom: -7%; width: min(348px, 46%); }
-  .hero-film { aspect-ratio: 16 / 9; }
-}
-/* Sous 820 px la carte ne peut plus flotter sur le film : a 46 % d une largeur
-   de telephone elle ne fait plus que 160 px, ses libelles se cassent en deux et
-   elle vient recouvrir le second appel a l action. Elle reprend le fil normal
-   du document, sous le film, en le mordant juste assez pour rester liee. */
-@media (max-width: 819px) {
-  .hero-carte { position: static; width: 100%; margin-top: -40px; }
+  /* Sur une colonne la console tient toute la largeur : au-dela de ~640 px de
+     large ses blocs deviennent des lignes tres longues pour peu de contenu. */
+  .plateau { max-width: 640px; }
+  .cs-lg { max-width: 640px; }
 }
 @media (max-width: 1023px) {
   .nav-links { display: none; }
   .nav-cta .btn-2 { display: none; }
   .nav-burger { display: flex; }
-  .hero-photo { aspect-ratio: 16 / 9; }
 }
 
 @media (max-width: 639px) {
@@ -1105,23 +1074,138 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   .barre-c .btn { flex: 1; }
 }
 
-/* ═══ V3 · LE FILM DU HÉROS ════════════════════════════════════════════════
-   Le film porte l'atmosphère, la surface porte le produit, et les jetons font
-   le pont entre les deux : ils sortent de la pièce filmée et entrent dans la
-   carte. Sans ce pont, on aurait une vidéo à gauche et un tableau de bord posé
-   à droite, ce qui n'est pas une composition. */
+/* ═══ V4 · LA CONSOLE DU HÉROS ═══════════════════════════════════════
+   Le premier écran montre Arkiba au travail. Le film garde sa place, réduit à
+   une bande d'ambiance derrière la surface : c'est le cabinet, ce n'est pas le
+   sujet. La console occupe quatre fois sa hauteur et joue le parcours entier,
+   du rendez-vous à la validation.
 
-.hero-film {
-  position: relative; border-radius: var(--r-3); overflow: hidden;
-  aspect-ratio: 4 / 3; width: 100%; background: #24272b;
-  box-shadow: 0 44px 88px -52px rgba(11,13,16,.55);
+   La fenêtre a une hauteur fixe et la pile glisse dedans : un premier écran
+   qui se réajuste à chaque temps ferait sauter le titre à côté. */
+
+.plateau { position: relative; }
+
+.plateau-film {
+  position: relative; overflow: hidden;
+  height: clamp(72px, 8.4vw, 116px);
+  margin: 0 clamp(16px, 2.4vw, 38px);
+  border-radius: var(--r-3) var(--r-3) 0 0;
+  background: #24272b;
 }
-/* Le cadrage vise le bureau et la fenêtre. Centré, la moitié gauche de la
-   pièce est un mur de placards et le film n'a plus de sujet. */
-.hero-film .film {
+/* Dans une bande de 4,5 pour 1, le cadrage ne choisit plus une zone mais une
+   tranche : centree, elle ne prend que le haut des placards. Descendue aux
+   trois quarts, elle tient le bureau et la tache de lumiere, c'est-a-dire les
+   deux seules choses vivantes du plan. */
+.plateau-film .film {
   position: absolute; inset: 0; width: 100%; height: 100%;
-  object-fit: cover; object-position: 46% 64%;
+  object-fit: cover; object-position: 46% 76%;
 }
+/* Le voile plein cadre partait du coin : dans une bande il ne mordait presque
+   rien. Ici il assombrit vers le bas, la ou la console vient se poser. */
+.plateau-film .film-voile {
+  background: linear-gradient(180deg, rgba(11,13,16,.10), rgba(11,13,16,.52));
+}
+
+.cons { position: relative; z-index: 2; margin-top: -16px; border-radius: var(--r-3); }
+
+.cs-bar {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-bottom: 1px solid var(--nuit-l);
+  background: rgba(255,255,255,.03);
+}
+.cs-marque { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; letter-spacing: -.012em; }
+.cs-marque i { width: 6px; height: 6px; border-radius: 50%; background: var(--vert-c); flex: none; }
+.cs-fil, .cs-h {
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  letter-spacing: .12em; text-transform: uppercase; color: var(--nuit-t); white-space: nowrap;
+}
+.cs-fil { padding-left: 11px; border-left: 1px solid var(--nuit-l); }
+.cs-h { margin-left: auto; }
+@media (max-width: 419px) { .cs-fil { display: none; } }
+
+.cs-fen {
+  position: relative; overflow: hidden;
+  height: clamp(236px, 24vw, 300px);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 16px, #000 calc(100% - 14px), transparent 100%);
+          mask-image: linear-gradient(180deg, transparent 0, #000 16px, #000 calc(100% - 14px), transparent 100%);
+}
+.cs-pile { padding: 16px 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+.cs-b {
+  border: 1px solid var(--nuit-l); border-radius: var(--r-1);
+  background: rgba(255,255,255,.025); padding: 11px 13px;
+}
+.js .cs-b { opacity: 0; }
+.cs-b.amb { background: var(--verif-bg); border-color: transparent; box-shadow: inset 2px 0 0 var(--verif); }
+.cs-b.amb .k { color: var(--verif); }
+
+.cs-k {
+  display: block; font-family: var(--mono); font-size: 8.5px; font-weight: 500;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--nuit-t);
+}
+.cs-rdv { margin-top: 8px; display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; font-size: 13px; }
+.cs-hh { font-family: var(--mono); font-size: 11px; padding: 2px 7px; border-radius: 5px; background: rgba(255,255,255,.07); }
+.cs-nom { font-weight: 600; }
+.cs-mot { color: var(--nuit-t); }
+
+.cs-onde { margin-top: 10px; display: flex; align-items: flex-end; gap: 3px; height: 17px; }
+.cs-onde i { width: 3px; border-radius: 2px; background: var(--vert-c); opacity: .6; height: 30%; animation: onde 1.1s ease-in-out infinite alternate; }
+.cs-onde i:nth-child(2n)   { animation-duration: .78s; }
+.cs-onde i:nth-child(3n)   { animation-duration: 1.34s; }
+.cs-onde i:nth-child(4n+1) { animation-delay: .21s; }
+.cs-onde i:nth-child(5n)   { animation-delay: .46s; }
+@keyframes onde { from { height: 16%; } to { height: 100%; } }
+@media (prefers-reduced-motion: reduce) { .cs-onde i { animation: none; height: 55%; } }
+
+.cs-cit { margin-top: 10px; font-size: 13.5px; line-height: 1.5; }
+
+.cs-champ { padding: 9px 0 0; border-top: 1px solid var(--nuit-l); margin-top: 9px; }
+.cs-champ:first-child { border-top: 0; margin-top: 7px; padding-top: 0; }
+.cs-champ .k {
+  display: block; font-family: var(--mono); font-size: 8.5px; font-weight: 500;
+  letter-spacing: .13em; text-transform: uppercase; color: var(--nuit-t);
+}
+.cs-champ .v { display: block; margin-top: 5px; font-size: 13px; line-height: 1.45; }
+
+.cs-etats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cs-note { margin-top: 8px; font-size: 13px; line-height: 1.5; min-height: 2.9em; }
+
+.cs-docs { margin-top: 10px; display: flex; gap: 7px; flex-wrap: wrap; }
+.cs-doc {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 11px; border-radius: 100px;
+  border: 1px solid var(--nuit-l2); font-size: 11.5px;
+}
+.cs-doc::before { content: ""; width: 10px; height: 13px; border-radius: 2px; border: 1px solid var(--nuit-t); flex: none; }
+
+.cs-val { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; font-weight: 600; }
+.cs-val svg { width: 17px; height: 17px; color: var(--vert-c); flex: none; }
+.cs-sortie {
+  margin-left: auto; font-family: var(--mono); font-size: 9px; font-weight: 500;
+  letter-spacing: .11em; text-transform: uppercase; color: var(--nuit-t);
+}
+
+.cs-pied {
+  display: flex; align-items: center; gap: 14px;
+  padding: 11px 16px; border-top: 1px solid var(--nuit-l);
+  background: rgba(255,255,255,.02);
+}
+.cs-t { font-size: 12.5px; font-weight: 600; letter-spacing: -.012em; }
+.cs-seg { margin-left: auto; display: flex; gap: 4px; flex: none; }
+.cs-seg i { width: 15px; height: 3px; border-radius: 2px; background: var(--nuit-l2); transition: background .45s ease; }
+.cs-seg i.on { background: var(--vert-c); }
+@media (max-width: 419px) { .cs-seg i { width: 10px; } }
+
+/* La légende garde sa hauteur d'avance : sans elle, la ligne passe de une à
+   deux lignes au troisième temps et tout le bas du héros remonte. */
+.cs-lg { margin-top: 15px; font-size: 13px; line-height: 1.5; color: var(--enc-3); min-height: 2.9em; max-width: 48ch; }
+
+/* Sans script, la pile est simplement déroulée en entier : rien à révéler,
+   donc rien à masquer. Idem sous mouvement réduit, posé par le script. */
+html:not(.js) .cs-fen, .cs-tout .cs-fen {
+  height: auto; -webkit-mask-image: none; mask-image: none;
+}
+.cs-tout .cs-b { opacity: 1; }
 .film-voile {
   position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(205deg, rgba(246,247,248,0) 38%, rgba(11,13,16,.34) 100%);
@@ -1139,24 +1223,6 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   100% { transform: translate3d(10%, -5%, 0) scale(1.14); }
 }
 @media (prefers-reduced-motion: reduce) { .film-lueur { animation: none; } }
-
-.jeton {
-  position: absolute; z-index: 2;
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 7px 13px; border-radius: 100px;
-  background: rgba(11,13,16,.72);
-  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,.16); color: var(--nuit-x);
-  font-family: var(--mono); font-size: 9.5px; font-weight: 500;
-  letter-spacing: .11em; text-transform: uppercase; white-space: nowrap;
-}
-.jeton .pt { width: 5px; height: 5px; border-radius: 50%; background: var(--vert-c); flex: none; }
-.jeton .pt.amb { background: var(--verif); }
-.jeton.j1 { left: 6%;  top: 9%; }
-.jeton.j2 { right: 6%; top: 21%; }
-.jeton.j3 { left: 8%;  top: 63%; }
-.js .jeton { opacity: 0; }
-@media (max-width: 639px) { .jeton.j2 { display: none; } }
 
 /* ═══ V3 · LA DÉMONSTRATION JOUABLE ════════════════════════════════════════ */
 
@@ -1357,17 +1423,13 @@ body.cur-vu .cur-an[data-etat="saisie"] { opacity: 0; }
 .modal-tick svg { width: 22px; height: 22px; }
 #modal-ok .modal-a { margin-top: 22px; }
 
-/* ═══ V3 · AJUSTEMENTS DU HÉROS ════════════════════════════════════════════ */
-
-.js .hero-carte { opacity: 0; }
-/* Le film garde un format large tant qu il occupe toute la largeur ; il ne
-   devient carre qu au telephone, ou son recadrage dedie prend le relais. */
-@media (max-width: 1279px) {
-  .hero-film { aspect-ratio: 16 / 9; }
-}
+/* Au telephone le film est servi dans son recadrage carre : dans une bande
+   large, son centre de gravite n'est plus au meme endroit. */
 @media (max-width: 639px) {
-  .hero-film { aspect-ratio: 1 / 1; }
-  .hero-film .film { object-position: 58% center; }
+  .plateau-film .film { object-position: 50% 70%; }
+  /* Au telephone la fenetre se resserre : a 236 px le premier temps flotte
+     seul dans une grande boite sombre pendant plusieurs secondes. */
+  .cs-fen { height: 210px; }
 }
 
 /* ═══ V3 · LE REGISTRE DES REFUS ═══════════════════════════════════════════

@@ -727,49 +727,116 @@
 
 
 
-  /* ══ LA CHORÉGRAPHIE DU HÉROS ══════════════════════════════════════════════
-     Deux secondes apres le chargement, quelque chose s est deja passe : les
-     trois jetons sortent du film l un apres l autre, la carte monte, puis ses
-     lignes arrivent. C est le seul endroit de la page ou le film et le produit
-     sont mis en mouvement ensemble, et c est ce qui les fait appartenir a une
-     meme composition plutot qu a deux colonnes voisines.
+  /* ══ LA CONSOLE DU HÉROS ═════════════════════════════════════════════════
+     Huit temps, joues seuls, en boucle. Chaque temps revele un bloc deja
+     present dans le balisage et fait glisser la pile juste assez pour le
+     garder entier a l ecran : le dossier se remplit comme un vrai dossier se
+     remplit, et rien de ce qui est arrive ne disparait en route.
+     ════════════════════════════════════════════════════════════════════════ */
+  var TEMPS = [
+    { t: 'Rendez-vous détecté',      d: "Arkiba lit l'agenda raccordé. Il n'y écrit jamais rien." },
+    { t: 'Le patient répond',        d: "Un interrogatoire structuré, conduit au téléphone la veille." },
+    { t: 'Les réponses se rangent',  d: "Chaque champ garde le lien vers ce qui a été dit, et l'heure." },
+    { t: 'Un point à vérifier',      d: "Arkiba signale. Il ne tranche pas à la place du médecin." },
+    { t: 'Le dossier attend',        d: "Prêt avant la consultation, pas rédigé le soir même." },
+    { t: 'La consultation a lieu',   d: "Un seul champ pour la note. Clavier ou micro, rien à lancer." },
+    { t: 'Les documents demandés',   d: "Ceux que vous demandez. Zéro, un, ou plusieurs." },
+    { t: 'Vous validez ce qui part', d: "Ce qui n'est pas coché reste dans Arkiba." }
+  ];
 
-     Sous mouvement reduit, l etat final est pose d emblee : la composition
-     reste entiere, seule la mise en scene disparait. */
-  function herosAnime(gsap) {
-    var vis = document.querySelector('.hero-vis');
-    if (!vis) return;
-    var jetons = vis.querySelectorAll('.jeton');
-    var carte = vis.querySelector('.hero-carte');
-    var lignes = vis.querySelectorAll('[data-hc]');
-    var film = document.getElementById('film-h');
+  var NOTE_HEROS = "Auscultation sans particularité. TA 128/76. Bilan cardiologique demandé avant le 14 mars.";
 
+  function consoleHeros(gsap) {
+    var cons = document.getElementById('cons');
+    if (!cons) return;
+    var pile  = document.getElementById('cs-pile');
+    var fen   = cons.querySelector('.cs-fen');
+    var titre = document.getElementById('cs-t');
+    var lg    = document.getElementById('cs-lg');
+    var seg   = document.getElementById('cs-seg');
+    var note  = document.getElementById('cs-note');
+    var blocs = pile.querySelectorAll('.cs-b');
+    var k;
+
+    var html = '';
+    for (k = 0; k < TEMPS.length; k++) html += '<i></i>';
+    seg.innerHTML = html;
+    var tics = seg.querySelectorAll('i');
+
+    /* Sans GSAP, ou sous mouvement reduit, la sequence n a pas lieu : la pile
+       est posee entiere et deroulee, et la legende dit ce qu on regarde. Un
+       premier ecran ampute serait un plus mauvais repli qu un premier ecran
+       immobile. */
     if (!gsap || reduit.matches) {
-      gsap && gsap.set([jetons, carte, lignes], { opacity: 1, clearProps: 'transform' });
-      if (!gsap) {
-        for (var i = 0; i < jetons.length; i++) jetons[i].style.opacity = 1;
-        if (carte) carte.style.opacity = 1;
-      }
-      /* Un film qui bouge sous mouvement reduit contredit la demande : on
-         garde l image d affiche, qui reste une composition complete. */
-      if (film && reduit.matches) { try { film.pause(); film.removeAttribute('autoplay'); } catch (e) {} }
+      cons.classList.add('cs-tout');
+      for (k = 0; k < blocs.length; k++) blocs[k].style.opacity = 1;
+      for (k = 0; k < tics.length; k++) tics[k].classList.add('on');
+      note.textContent = NOTE_HEROS;
+      titre.textContent = 'Le parcours, de bout en bout';
+      lg.textContent = "Du rendez-vous à la validation, en huit temps. La démonstration jouable, plus bas, les reprend un par un.";
       return;
     }
 
-    gsap.set(jetons, { opacity: 0, y: 14, scale: .96 });
-    gsap.set(carte, { opacity: 0, y: 26 });
-    gsap.set(lignes, { opacity: 0, y: 10 });
+    var i = -1, minuteur = null, frappeur = null, vu = true;
+    gsap.set(blocs, { opacity: 0, y: 12 });
 
-    gsap.timeline({ defaults: { ease: 'power3.out' }, delay: .55 })
-      .to(jetons[0], { opacity: 1, y: 0, scale: 1, duration: .6 })
-      .to(jetons[1], { opacity: 1, y: 0, scale: 1, duration: .6 }, '+=.42')
-      .to(jetons[2], { opacity: 1, y: 0, scale: 1, duration: .6 }, '+=.42')
-      .to(carte, { opacity: 1, y: 0, duration: .85, ease: 'power3.out' }, '-=.2')
-      .to(lignes, { opacity: 1, y: 0, duration: .55, stagger: .13 }, '-=.5')
-      /* Les jetons ne restent pas : leur information est passee dans la carte,
-         et deux copies du meme etat a l ecran diluent les deux. */
-      .to(jetons[1], { opacity: 0, y: -8, duration: .5 }, '+=1.1')
-      .to(jetons[0], { opacity: 0, y: -8, duration: .5 }, '-=.35');
+    function taper(texte) {
+      clearInterval(frappeur);
+      var c = 0;
+      note.innerHTML = '<span class="curseur"></span>';
+      frappeur = setInterval(function () {
+        c += 2;
+        note.innerHTML = esc(texte.slice(0, c)) + '<span class="curseur"></span>';
+        if (c >= texte.length) clearInterval(frappeur);
+      }, 26);
+    }
+
+    /* La mesure se fait apres le rendu : un bloc qui vient d apparaitre n a
+       pas encore sa hauteur, et la pile glisserait d une valeur fausse. */
+    function suivre() {
+      var b = blocs[i];
+      var dy = Math.max(0, b.offsetTop + b.offsetHeight + 14 - fen.clientHeight);
+      gsap.to(pile, { y: -dy, duration: .72, ease: 'power3.out' });
+    }
+
+    function aller(k2) {
+      i = k2;
+      gsap.to(blocs[k2], { opacity: 1, y: 0, duration: .52, ease: 'power3.out' });
+      /* Le temps precedent reste lisible mais recule d un cran : c est ce qui
+         distingue une pile qui se construit d une suite de diapositives. */
+      if (k2 > 0) gsap.to(blocs[k2 - 1], { opacity: .42, duration: .5 });
+      tics[k2].classList.add('on');
+      titre.textContent = TEMPS[k2].t;
+      lg.textContent = TEMPS[k2].d;
+      if (k2 === 5) taper(NOTE_HEROS);
+      requestAnimationFrame(suivre);
+    }
+
+    function zero() {
+      clearInterval(frappeur);
+      note.textContent = '';
+      for (var z = 0; z < tics.length; z++) tics[z].classList.remove('on');
+      gsap.to(blocs, { opacity: 0, duration: .45, onComplete: function () { gsap.set(blocs, { y: 12 }); } });
+      gsap.to(pile, { y: 0, duration: .6, ease: 'power3.out' });
+      i = -1;
+    }
+
+    function programmer(ms) { clearTimeout(minuteur); minuteur = setTimeout(battre, ms); }
+
+    /* Un temps dure 2,45 s, sauf celui de la note : le texte s y frappe, et le
+       couper au milieu d une phrase annule l effet. Onglet cache ou console
+       hors ecran, la boucle attend au lieu de tourner pour personne. */
+    function battre() {
+      if (document.hidden || !vu) { programmer(800); return; }
+      if (i >= TEMPS.length - 1) { zero(); programmer(1200); return; }
+      aller(i + 1);
+      programmer(i === 5 ? 3900 : 2450);
+    }
+
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (es) { vu = es[0].isIntersecting; }, { threshold: .12 }).observe(cons);
+    }
+    programmer(1250);
   }
 
   /* Le film ne tourne que lorsqu il est a l ecran : un heros qui decode une
@@ -787,8 +854,21 @@
       try { film.load(); } catch (e) {}
     }
 
+    /* Sous mouvement reduit, aucun film ne tourne : l image d affiche est une
+       composition complete a elle seule, et une boucle video contredit
+       exactement ce que le reglage demande. `pause()` seul ne suffit pas, le
+       navigateur peut relancer la lecture des qu il a assez de donnees : on
+       repose la pause a chaque tentative. */
+    if (reduit.matches) {
+      [].forEach.call(document.querySelectorAll('video'), function (v) {
+        v.removeAttribute('autoplay');
+        v.addEventListener('play', function () { try { v.pause(); } catch (e) {} });
+        try { v.pause(); } catch (e) {}
+      });
+      return;
+    }
+
     if (!('IntersectionObserver' in window)) return;
-    if (reduit.matches) return;
 
     /* Un film hors ecran continue de decoder : trois boucles simultanees pour
        une seule visible, c est de la batterie depensee pour rien. Chacun ne
@@ -1166,7 +1246,7 @@
     // epinglage. Dans TOUS les autres cas, quelle que soit la largeur, la page
     // s anime. La largeur ne decide que de la choregraphie.
     if (!gsap || !ST) {
-      herosAnime(null);
+      consoleHeros(null);
       demarrerRepli();
       // Les onglets, les modules et le refus ne dependent pas de GSAP : sans
       // cet appel, une page privee de GSAP perdait toutes ses interactions.
@@ -1177,7 +1257,7 @@
     if (window.Flip) gsap.registerPlugin(window.Flip);
 
     if (reduit.matches) {
-      herosAnime(gsap);
+      consoleHeros(gsap);
       demarrerRepli();
       sceneHeros(gsap);
       interactions(null);
@@ -1185,7 +1265,7 @@
     }
 
     entreeHeros(gsap);
-    herosAnime(gsap);
+    consoleHeros(gsap);
     sceneHeros(gsap);
     blocs(gsap, ST);
     construireSequence(gsap);
