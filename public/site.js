@@ -1162,7 +1162,76 @@
   }
 
   /* ── Démarrage ─────────────────────────────────────────────────────────── */
+  /* ══ LA PLUME ════════════════════════════════════════════════════════════
+     Un seul objet, cale exactement sur le pointeur : aucun retard, aucune
+     trainee. Ce qui le rend vivant n est pas un rattrapage mais une
+     inclinaison, quelques degres pris dans le sens du geste et rendus des
+     que la main s arrete.
+
+     Trois garde-fous, tous necessaires :
+       · elle n existe qu au pointeur fin, jamais au doigt ;
+       · elle ne remplace le curseur natif qu une fois reellement demarree,
+         sinon un echec de script laisse la page sans aucun curseur ;
+       · sortir de la fenetre rend la main au systeme.
+
+     L etat se lit sur la cible, pas sur une liste de selecteurs tenue a la
+     main : tout element qui se declare interactif est couvert.
+     ══════════════════════════════════════════════════════════════════════ */
+  function curseur() {
+    if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+    if (reduit.matches) return;
+
+    var el = document.createElement('span');
+    el.className = 'plume';
+    el.setAttribute('aria-hidden', 'true');
+    el.innerHTML =
+      '<span class="plume-in">' +
+        '<svg class="cur-pl" viewBox="0 0 16 20"><path d="M1 1 Q9.6 8.2 13.5 13.8 L8 14.5 L5.7 19.3 Z"/></svg>' +
+        '<svg class="cur-fl" viewBox="0 0 24 24"><path d="M3 12h15M12.5 6l6 6-6 6"/></svg>' +
+        '<i class="cur-ba"></i>' +
+      '</span>';
+    document.body.appendChild(el);
+    document.documentElement.classList.add('cur');
+
+    var x = innerWidth / 2, y = innerHeight / 2, ax = x;
+    var angle = 0, vu = false, tourne = 0;
+
+    function boucle() {
+      /* L inclinaison suit la vitesse horizontale, plafonnee a 11 degres, et
+         revient a zero des que le geste cesse : c est ce retour qui donne la
+         sensation d une matiere plutot que d un calque colle au pointeur. */
+      var vise = Math.max(-11, Math.min(11, (x - ax) * .85));
+      ax = x;
+      angle += (vise - angle) * .13;
+      if (angle < .01 && angle > -.01) angle = 0;
+      el.style.transform = 'translate3d(' + (x - 1) + 'px,' + (y - 1) + 'px,0) rotate(' + angle.toFixed(2) + 'deg)';
+      tourne = requestAnimationFrame(boucle);
+    }
+
+    document.addEventListener('pointermove', function (e) {
+      if (e.pointerType !== 'mouse') return;
+      x = e.clientX; y = e.clientY;
+      if (!vu) { vu = true; ax = x; document.body.classList.add('cur-vu'); if (!tourne) boucle(); }
+
+      var c = e.target.closest ? e.target.closest('a,button,summary,label,input,select,textarea,.surface,.pointeur,.scene-p,.wt-e,.vg article') : null;
+      var etat = '';
+      if (c) {
+        if (c.matches('input,select,textarea')) etat = 'saisie';
+        else if (c.matches('a,button,summary,label,.wt-e')) etat = 'action';
+        else etat = 'surface';
+      }
+      el.setAttribute('data-etat', etat);
+    }, { passive: true });
+
+    document.addEventListener('pointerdown', function () { el.classList.add('presse'); });
+    document.addEventListener('pointerup', function () { el.classList.remove('presse'); });
+    document.addEventListener('pointerleave', function () { document.body.classList.remove('cur-vu'); });
+    document.addEventListener('pointerenter', function () { if (vu) document.body.classList.add('cur-vu'); });
+    window.addEventListener('blur', function () { document.body.classList.remove('cur-vu'); });
+  }
+
   function demarrer() {
+    curseur();
     filmVisible();
     var gsap = window.gsap;
     var ST = window.ScrollTrigger;

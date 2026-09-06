@@ -1325,6 +1325,83 @@ html:not(.js) .cs-fen, .cs-tout .cs-fen {
   .wt-rejouer .lbl { display: none; }
 }
 
+/* ═══ V4 · LA PLUME ═════════════════════════════════════════
+   Le curseur d'Arkiba n'est pas une bulle qui suit le pointeur, c'est un
+   outil pose sur la page. Une plume d'encre, taillee dans la meme geometrie
+   que le reste du site, avec un lisere clair qui la detache aussi bien du
+   papier que d'une surface sombre.
+
+   Elle dit trois choses, et rien de plus :
+     · sur une surface produit elle s'inverse, encre contre papier, comme si
+       elle prenait la matiere sur laquelle elle passe ;
+     · sur un element cliquable elle devient la fleche verte que portent
+       deja tous les boutons de la page ;
+     · sur un champ elle se replie en simple barre de saisie.
+
+   `cursor: none` n'est pose que par `html.cur`, une classe ajoutee en
+   JavaScript apres que la plume a reellement demarre : si le script echoue,
+   le curseur natif reste. Rien n'est anime ici hors du compositeur.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+html.cur, html.cur * { cursor: none; }
+html.cur a, html.cur button, html.cur summary, html.cur label,
+html.cur input, html.cur select, html.cur textarea { cursor: none; }
+
+.plume {
+  position: fixed; left: 0; top: 0; z-index: 200; pointer-events: none;
+  width: 26px; height: 26px; transform-origin: 1px 1px;
+  opacity: 0; transition: opacity .2s; will-change: transform;
+}
+body.cur-vu .plume { opacity: 1; }
+/* La pression porte sur l'enveloppe interieure : la boucle d'animation ecrit
+   deja un `transform` sur `.cur`, deux ecritures se marcheraient dessus. */
+.plume-in {
+  display: block; width: 26px; height: 26px; transform-origin: 2px 2px;
+  transition: transform .24s cubic-bezier(.16,1,.3,1);
+}
+.plume.presse .plume-in { transform: scale(.84); }
+.plume-in > * { position: absolute; left: 0; top: 0; }
+
+/* La plume. Le lisere clair est peint SOUS le remplissage (`paint-order`) :
+   il ne deborde donc que d'un demi-trait, ce qui suffit a poser la forme sur
+   un fond sombre sans l'epaissir sur le papier. */
+.cur-pl { width: 16px; height: 20px; overflow: visible; filter: drop-shadow(0 3px 7px rgba(11,13,16,.3)); }
+.cur-pl path {
+  fill: var(--enc); stroke: rgba(255,255,255,.4); stroke-width: 1.5;
+  stroke-linejoin: round; paint-order: stroke fill;
+  transition: fill .22s, stroke .22s, opacity .16s, transform .26s cubic-bezier(.16,1,.3,1);
+  transform-origin: 1px 1px;
+}
+.plume[data-etat="surface"] .cur-pl path { fill: var(--pap); stroke: rgba(11,13,16,.5); }
+
+/* La fleche est celle des boutons du site, au trait pres. Elle pousse depuis
+   la pointe de la plume plutot que d'apparaitre a cote. */
+.cur-fl {
+  width: 24px; height: 24px; color: var(--vert);
+  opacity: 0; transform: scale(.5); transform-origin: 2px 12px;
+  transition: opacity .18s, transform .32s cubic-bezier(.16,1,.3,1);
+  filter: drop-shadow(0 3px 7px rgba(11,13,16,.26));
+}
+.cur-fl path { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.plume[data-etat="action"] .cur-pl path { opacity: 0; transform: scale(.45); }
+.plume[data-etat="action"] .cur-fl { opacity: 1; transform: scale(1); }
+
+.cur-ba {
+  width: 2px; height: 21px; border-radius: 1px; background: var(--enc);
+  box-shadow: 0 0 0 1.5px rgba(246,247,248,.55);
+  opacity: 0; transform: translate(5px, 1px) scaleY(.25); transform-origin: 50% 50%;
+  transition: opacity .16s, transform .26s cubic-bezier(.16,1,.3,1);
+}
+.plume[data-etat="saisie"] .cur-pl path { opacity: 0; transform: scale(.45); }
+.plume[data-etat="saisie"] .cur-ba { opacity: 1; transform: translate(5px, 1px) scaleY(1); }
+
+/* La plume est un objet de bureau : au doigt elle n'existe pas, et sous
+   mouvement reduit elle n'est meme pas construite. */
+@media (hover: none), (pointer: coarse) {
+  .plume { display: none; }
+  html.cur, html.cur * { cursor: auto; }
+}
+
 /* ═══ V3 · MODALE ══════════════════════════════════════════════════════════ */
 
 .modal-vue { display: block; }
