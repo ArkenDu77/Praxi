@@ -330,7 +330,10 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 
 /* ═══ 1 · HÉROS ════════════════════════════════════════════════════════════ */
 
-.hero { padding: clamp(34px, 4.4vw, 62px) 0 clamp(52px, 6vw, 92px); position: relative; }
+/* Le bas du heros est court : la section suivante porte deja son propre
+   espacement, et deux marges pleines laissaient une bande morte de 170 px
+   une fois les chiffres retires. */
+.hero { padding: clamp(34px, 4.4vw, 62px) 0 clamp(24px, 3vw, 44px); position: relative; }
 
 .hero-2c {
   display: grid; grid-template-columns: minmax(0, .93fr) minmax(0, 1.07fr);
@@ -346,16 +349,6 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 }
 .hero-fine .p { width: 4px; height: 4px; border-radius: 50%; background: var(--fil-2); flex: none; }
 
-.chiffres {
-  margin-top: 34px; padding-top: 26px; border-top: 1px solid var(--fil);
-  display: flex; gap: clamp(22px, 3vw, 44px); flex-wrap: wrap;
-}
-.chiffre b {
-  display: block; font-family: var(--disp); font-size: clamp(30px, 3vw, 38px);
-  font-weight: 600; letter-spacing: -.035em; line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.chiffre span { display: block; margin-top: 6px; font-size: 12.5px; line-height: 1.35; color: var(--enc-3); max-width: 16ch; }
 
 /* La composition de droite : une photographie réelle, et par-dessus la
    surface produit. C'est le seul endroit de la page où les deux mondes se
@@ -1083,6 +1076,13 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   .hero-carte { position: absolute; right: 4%; bottom: -7%; width: min(348px, 46%); }
   .hero-film { aspect-ratio: 16 / 9; }
 }
+/* Sous 820 px la carte ne peut plus flotter sur le film : a 46 % d une largeur
+   de telephone elle ne fait plus que 160 px, ses libelles se cassent en deux et
+   elle vient recouvrir le second appel a l action. Elle reprend le fil normal
+   du document, sous le film, en le mordant juste assez pour rester liee. */
+@media (max-width: 819px) {
+  .hero-carte { position: static; width: 100%; margin-top: -40px; }
+}
 @media (max-width: 1023px) {
   .nav-links { display: none; }
   .nav-cta .btn-2 { display: none; }
@@ -1099,8 +1099,6 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
   .acts .btn { width: 100%; }
   .nav-mob .acts { flex-direction: row; }
   .nav-mob .acts .btn { width: auto; }
-  .chiffres { gap: 18px 26px; }
-  .chiffre { min-width: 40%; }
   .scene-p .in { min-height: 300px; }
   .cadre-in { padding: 14px; }
   .foot-grid { grid-template-columns: 1fr; }
