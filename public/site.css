@@ -377,7 +377,6 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 .hero-carte {
   position: absolute; right: -6%; bottom: -7%; width: min(348px, 78%); z-index: 3;
 }
-@media (max-width: 1099px) { .hero-carte { right: 0; bottom: -6%; } }
 
 /* ═══ SURFACES PRODUIT ═════════════════════════════════════════════════════ */
 
@@ -1071,13 +1070,21 @@ h1 + .sub, h2 + .sub { margin-top: 17px; }
 
 /* ═══ ADAPTATIONS ══════════════════════════════════════════════════════════ */
 
+/* Le heros repasse sur une colonne bien avant la navigation. En deux colonnes
+   sous ~1250 px, la colonne de texte devient trop etroite pour aligner les deux
+   appels a l action, et la carte produit finit par recouvrir les trois quarts
+   du film. Empile, le film reprend toute la largeur et la carte revient a un
+   tiers. */
+@media (max-width: 1279px) {
+  .hero-2c { grid-template-columns: 1fr; }
+  .hero-txt .xl { max-width: 20ch; }
+  .hero-carte { position: absolute; right: 4%; bottom: -7%; width: min(348px, 46%); }
+  .hero-film { aspect-ratio: 16 / 9; }
+}
 @media (max-width: 1023px) {
   .nav-links { display: none; }
   .nav-cta .btn-2 { display: none; }
   .nav-burger { display: flex; }
-  .hero-2c { grid-template-columns: 1fr; }
-  .hero-txt .xl { max-width: 16ch; }
-  .hero-carte { position: static; width: 100%; margin-top: -44px; }
   .hero-photo { aspect-ratio: 16 / 9; }
 }
 
@@ -1353,8 +1360,10 @@ body.cur-vu .cur-an[data-etat="saisie"] { opacity: 0; }
 /* ═══ V3 · AJUSTEMENTS DU HÉROS ════════════════════════════════════════════ */
 
 .js .hero-carte { opacity: 0; }
-@media (max-width: 1023px) {
-  .hero-film { aspect-ratio: 16 / 10; }
+/* Le film garde un format large tant qu il occupe toute la largeur ; il ne
+   devient carre qu au telephone, ou son recadrage dedie prend le relais. */
+@media (max-width: 1279px) {
+  .hero-film { aspect-ratio: 16 / 9; }
 }
 @media (max-width: 639px) {
   .hero-film { aspect-ratio: 1 / 1; }
