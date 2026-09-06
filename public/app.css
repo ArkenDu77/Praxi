@@ -3995,3 +3995,25 @@ html[data-theme="dark"] .theme-pick-card {
   background:rgba(148,163,184,.10); font-size:.92rem; line-height:1.5; }
 .int-mode-emploi ol { margin:.4rem 0 .4rem 1.1rem; padding:0; }
 .int-mode-emploi li { margin:.25rem 0; }
+
+/* --------------------------------------------------------------------------
+   APPELS ARKIBA — la decision du medecin, dans la carte Doctolib.
+
+   Elle n'apparait qu'une fois l'agenda connecte, et se lit d'un coup d'oeil :
+   ce qui va se passer pour ses patients, et le bouton pour en decider.
+   -------------------------------------------------------------------------- */
+.int-appels {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border, rgba(0, 0, 0, .08));
+}
+.int-appels-tete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.int-appels-titre { font-weight: 600; margin-bottom: 2px; }
+/* Une ligne de texte trop longue ne se lit pas : on la borne. */
+.int-appels-tete .muted { margin: 0; max-width: 46ch; }

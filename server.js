@@ -3145,6 +3145,17 @@ app.post('/api/integrations/:id/auth-session/checkpoint', authenticateJWT, (req,
     `/api/connections/${encodeURIComponent(req.params.id)}/auth-session/checkpoint`,
     { method: 'POST', body: {} }));
 
+/**
+ * APPELS ARKIBA — le medecin autorise, ou non, qu'on telephone a ses patients.
+ *
+ * Le cabinet n'est jamais lu du corps de la requete : le relais l'ajoute
+ * depuis la SESSION. Un medecin ne peut donc pas activer les appels chez un
+ * confrere, meme en fabriquant l'appel a la main.
+ */
+app.post('/api/integrations/:id/calls', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, `/api/connections/${encodeURIComponent(req.params.id)}/calls`,
+    { method: 'POST', body: { enabled: req.body && req.body.enabled === true } }));
+
 app.post('/api/integrations/:id/revoke', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res, `/api/connections/${encodeURIComponent(req.params.id)}/revoke`,
     { method: 'POST', body: {} }));

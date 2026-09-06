@@ -1242,6 +1242,26 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
         <button class="btn btn-ghost" id="int-revoquer" type="button" hidden>Déconnecter</button>
       </div>
 
+      <!--
+        APPELS ARKIBA — la seule decision que le medecin doit prendre ici.
+
+        Elle n'apparait qu'une fois l'agenda connecte : proposer d'appeler des
+        patients avant d'avoir un agenda ne veut rien dire.
+
+        Aucun mot d'ingenieur. Le medecin ne lit ni « precall », ni le nom d'un
+        operateur telephonique, ni « worker » : il lit ce qui va se passer pour
+        ses patients, et il decide.
+      -->
+      <div class="int-appels" id="int-appels" hidden>
+        <div class="int-appels-tete">
+          <div>
+            <div class="int-appels-titre">Appels Arkiba</div>
+            <p class="muted" id="int-appels-detail"></p>
+          </div>
+          <button class="btn" id="int-appels-bouton" type="button"></button>
+        </div>
+      </div>
+
       <!-- Ce qui se passe apres le clic, dit AVANT. Un medecin a qui une
            fenetre s'ouvre sans prevenir la referme. -->
       <div class="int-mode-emploi" id="int-mode-emploi" hidden>
@@ -2309,6 +2329,78 @@ function intRendre(integration) {
 
   // On ne laisse pas croire a une integration officielle. Elle ne l'est pas.
   pilote.textContent = integration && integration.pilote === false ? '' : 'raccordement pilote';
+
+  intRendreAppels(integration);
+}
+
+/**
+ * ============================================================================
+ *  APPELS ARKIBA — le medecin decide, et voit ce qu'il a decide
+ * ============================================================================
+ *
+ * Cela dependait d'un reglage du deploiement, identique pour tous les cabinets
+ * et invisible pour tout le monde. Appeler un patient au telephone n'est pas
+ * un detail d'exploitation : c'est le geste le plus visible du produit.
+ *
+ * ETEINT par defaut. Le medecin l'allume lui-meme, ou personne n'est appele.
+ *
+ * On n'affiche le reglage QUE si l'agenda est connecte : proposer d'appeler
+ * des patients dont on ne lit pas l'agenda n'a pas de sens.
+ */
+function intRendreAppels(integration) {
+  const bloc = document.getElementById('int-appels');
+  const detail = document.getElementById('int-appels-detail');
+  const bouton = document.getElementById('int-appels-bouton');
+  const connecte = Boolean(integration) && integration.state === 'CONNECTED';
+  bloc.hidden = !connecte;
+  if (!connecte) return;
+
+  const actif = integration.calls_enabled === true;
+  // On decrit CE QUI VA SE PASSER, pas l'etat d'un drapeau.
+  detail.textContent = actif
+    ? 'Arkiba appelle vos patients avant leur consultation et prépare leur dossier.'
+    : 'Arkiba n’appelle personne. Vos rendez-vous restent visibles, sans appel.';
+  bouton.textContent = actif ? 'Désactiver' : 'Activer les appels Arkiba';
+  bouton.className = actif ? 'btn btn-ghost' : 'btn btn-primary';
+  bouton.dataset.actif = actif ? '1' : '0';
+}
+
+/**
+ * Allume ou eteint les appels pour CE cabinet.
+ *
+ * Le cabinet n'est jamais envoye par le navigateur : le moteur le derive du
+ * compte connecte. Activer chez le voisin est donc impossible, meme en
+ * fabriquant la requete a la main.
+ */
+async function intBasculerAppels() {
+  if (!intCourante) return;
+  const bouton = document.getElementById('int-appels-bouton');
+  const activer = bouton.dataset.actif !== '1';
+  // Allumer, c'est accepter qu'on telephone a de vrais patients. On le dit
+  // avant, en clair — jamais apres.
+  // Pas de saut de ligne dans ce message : il a d'abord ete ecrit avec de
+  // VRAIS retours a la ligne dans un litteral de chaine, ce qui casse tout le
+  // script de la page — donc toutes ses fonctions, pas seulement celle-ci.
+  // Trois phrases valent mieux qu'un piege.
+  if (activer && !window.confirm(
+    'Activer les appels Arkiba ? '
+    + 'Arkiba appellera automatiquement les patients de vos prochains rendez-vous '
+    + 'pour préparer leur dossier avant la consultation. '
+    + 'Vous pourrez le désactiver à tout moment.'
+  )) return;
+
+  intErreur('');
+  bouton.disabled = true;
+  try {
+    await api(`/api/integrations/${encodeURIComponent(intCourante.connector_id)}/calls`, {
+      method: 'POST', body: { enabled: activer },
+    });
+    await intCharger();
+  } catch (e) {
+    intErreur(e.message);
+  } finally {
+    bouton.disabled = false;
+  }
 }
 
 /**
@@ -2502,6 +2594,7 @@ document.getElementById('pc-save-notes').addEventListener('click', pcEnregistrer
 document.getElementById('int-connecter').addEventListener('click', intConnecter);
 document.getElementById('int-rafraichir').addEventListener('click', intCharger);
 document.getElementById('int-revoquer').addEventListener('click', intRevoquer);
+document.getElementById('int-appels-bouton').addEventListener('click', intBasculerAppels);
 document.getElementById('pc-validate').addEventListener('click', pcValider);
 document.getElementById('pc-transfer').addEventListener('click', pcTransferer);
 document.getElementById('pc-scope-intake').addEventListener('change', pcRafraichirApercu);
