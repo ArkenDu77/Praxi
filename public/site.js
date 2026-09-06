@@ -830,13 +830,13 @@
       if (document.hidden || !vu) { programmer(800); return; }
       if (i >= TEMPS.length - 1) { zero(); programmer(1200); return; }
       aller(i + 1);
-      programmer(i === 5 ? 3900 : 2450);
+      programmer(i === 0 ? 1700 : (i === 5 ? 3900 : 2450));
     }
 
     if ('IntersectionObserver' in window) {
       new IntersectionObserver(function (es) { vu = es[0].isIntersecting; }, { threshold: .12 }).observe(cons);
     }
-    programmer(1250);
+    programmer(800);
   }
 
   /* Le film ne tourne que lorsqu il est a l ecran : un heros qui decode une
