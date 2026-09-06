@@ -1187,7 +1187,7 @@
     el.innerHTML =
       '<span class="plume-in">' +
         '<svg class="cur-pl" viewBox="0 0 16 20"><path d="M1 1 Q9.6 8.2 13.5 13.8 L8 14.5 L5.7 19.3 Z"/></svg>' +
-        '<svg class="cur-fl" viewBox="0 0 24 24"><path d="M3 12h15M12.5 6l6 6-6 6"/></svg>' +
+        '<i class="cur-rd"></i>' +
         '<i class="cur-ba"></i>' +
       '</span>';
     document.body.appendChild(el);

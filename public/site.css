@@ -1356,7 +1356,7 @@ body.cur-vu .plume { opacity: 1; }
 /* La pression porte sur l'enveloppe interieure : la boucle d'animation ecrit
    deja un `transform` sur `.cur`, deux ecritures se marcheraient dessus. */
 .plume-in {
-  display: block; width: 26px; height: 26px; transform-origin: 2px 2px;
+  display: block; width: 26px; height: 26px; transform-origin: 1px 1px;
   transition: transform .24s cubic-bezier(.16,1,.3,1);
 }
 .plume.presse .plume-in { transform: scale(.84); }
@@ -1374,17 +1374,21 @@ body.cur-vu .plume { opacity: 1; }
 }
 .plume[data-etat="surface"] .cur-pl path { fill: var(--pap); stroke: rgba(11,13,16,.5); }
 
-/* La fleche est celle des boutons du site, au trait pres. Elle pousse depuis
-   la pointe de la plume plutot que d'apparaitre a cote. */
-.cur-fl {
-  width: 24px; height: 24px; color: var(--vert);
-  opacity: 0; transform: scale(.5); transform-origin: 2px 12px;
+/* Sur un element cliquable, la plume se ramasse en une goutte d'encre verte.
+   Elle est centree sur la pointe, donc exactement sur le point clique, et
+   comme la pointe est aussi l'origine de la rotation, la goutte ne tourne pas
+   avec le geste : elle se pose, simplement. Le lisere clair ne se voit que
+   sur un fond sombre, ou il detache le vert du noir du bouton. */
+.cur-rd {
+  width: 15px; height: 15px; border-radius: 50%; background: var(--vert);
+  box-shadow: 0 0 0 1.4px rgba(246,247,248,.22),
+              0 3px 8px rgba(11,13,16,.34),
+              inset 0 1px 0 rgba(255,255,255,.26);
+  opacity: 0; transform: translate(-6.5px, -6.5px) scale(.3);
   transition: opacity .18s, transform .32s cubic-bezier(.16,1,.3,1);
-  filter: drop-shadow(0 3px 7px rgba(11,13,16,.26));
 }
-.cur-fl path { fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .plume[data-etat="action"] .cur-pl path { opacity: 0; transform: scale(.45); }
-.plume[data-etat="action"] .cur-fl { opacity: 1; transform: scale(1); }
+.plume[data-etat="action"] .cur-rd { opacity: 1; transform: translate(-6.5px, -6.5px) scale(1); }
 
 .cur-ba {
   width: 2px; height: 21px; border-radius: 1px; background: var(--enc);
