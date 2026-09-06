@@ -376,19 +376,49 @@ s'allume à l'endroit exact d'où vient chaque élément. Le registre
 
 La direction « Papier et nuit » ne change pas. Elle gagne trois pièces.
 
-### Le film du héros
+### Les films
 
-Un plan fixe de 6 s, muet, en boucle, 1440 × 810, servi en WebM (59 ko) avec
-repli MP4 (141 ko) et un recadrage carré séparé pour le téléphone (63 ko).
+Trois plans muets en boucle, générés chez Higgsfield (`kling2_6`, 5 s, 5 crédits
+pièce) **depuis les photographies du site comme image de départ**. Partir de la
+plaque existante est ce qui garantit que le film reste dans la palette et
+n'invente aucune interface : le modèle anime une pièce que nous avons déjà
+choisie, il ne la réinvente pas.
 
-**La boucle est fermée par construction**, pas par un aller-retour : la caméra
-suit un cosinus de période entière, donc la dernière image est exactement la
-première. Un `reverse` ffmpeg garde toutes les images en mémoire et fait tomber
-cette machine ; l'expression périodique coûte une passe et zéro mémoire.
+- héros : le cabinet à l'aube, seule la lumière bouge · WebM 49 ko
+- « sans Arkiba » : la pile de dossiers du soir sous la lampe · WebM 20 ko
+- « avec Arkiba » : le bureau rangé du matin · WebM 23 ko
 
+**Fermer la boucle : fondu croisé, et mesurer la couture.** La queue se fond sur
+la tête pendant 0,8 s :
+
+```
+[0:v]split[a][b];
+[a]trim=0:1.6,setpts=PTS-STARTPTS[tete];
+[b]trim=1.6:D,setpts=PTS-STARTPTS[corps];
+[corps][tete]xfade=transition=fade:duration=0.8:offset=(D-1.6)-0.8
+```
+
+**La tête doit être plus longue que le fondu.** Avec `tete = 0.8` et un fondu de
+0,8 s, le fondu n'est jamais terminé quand la dernière image sort : la couture
+mesurait 33,8 dB contre 47,2 dB pour un écart normal entre deux images. Avec une
+tête de 1,6 s, le fondu se termine bien avant la fin et la couture remonte à
+42,9 dB.
+
+**Vérifier la couture, ne pas la croire.** Extraire la première et la dernière
+image, puis `ffmpeg -i a.png -i z.png -lavfi psnr -f null -`. Comparer au PSNR
+de deux images consécutives du milieu : si l'écart est inférieur à 5 dB, la
+boucle est invisible.
+
+`reverse` garde toutes les images en mémoire et fait tomber cette machine.
 `zoompan` sur une image fixe produit `d` images **par image d'entrée** : avec
-`-loop 1 -t 6` on obtient 150 × 150 images et une vidéo de quinze minutes. La
+`-loop 1 -t 6` on obtient 150 × 150 images et une vidéo de quinze minutes ; la
 forme juste est une seule image en entrée et `-frames:v` en sortie.
+
+**Un seul observateur pilote les trois films.** Aucun ne charge son premier octet
+avant d'entrer à l'écran, aucun ne décode hors champ. `play()` suffit à
+déclencher le chargement d'un `preload="none"` : réassigner `preload` puis
+rappeler `load()` annule la requête déjà partie et la laisse en échec dans le
+panneau réseau.
 
 Le film porte l'atmosphère, jamais l'interface. **Toute surface Arkiba montrée
 reste construite en HTML et CSS**, et les trois jetons de données posés sur le
@@ -441,3 +471,14 @@ reçu.
 - Les captures en navigateur sans tête n'avancent GSAP qu'à chaque peinture :
   compter environ 45 captures jetables avant la capture utile, sinon on
   photographie une animation à mi-course.
+
+- Une classe utilitaire courte finit par entrer en collision. `.fin` désignait à
+  la fois la carte d'appel finale et la mention alignée à droite du pied du champ
+  de notes : cette dernière héritait d'une grille, d'un fond nuit et de 64 px de
+  remplissage, et s'affichait en panneau sombre au fond du champ.
+- Le héros repasse sur une colonne dès 1279 px. En deux colonnes en dessous, la
+  colonne de texte devient trop étroite pour aligner les deux appels à l'action,
+  et la carte produit recouvre jusqu'aux trois quarts du film.
+- Auditer la copie sur `innerText`, jamais sur la source. Un « sans carte
+  bancaire » coupé par un retour à la ligne échappe à toute recherche naïve dans
+  le balisage et reste parfaitement lisible à l'écran.
