@@ -3907,6 +3907,10 @@ html[data-theme="dark"] .theme-pick-card {
   color: var(--text);
 }
 .pc-row:hover { border-color: var(--line-2); }
+/* Une ligne qui ne s'ouvre pas ne doit pas faire croire qu'elle s'ouvre :
+   pas de curseur main, pas de survol. Il n'y a rien a lire dessous. */
+.pc-row-inerte { cursor: default; }
+.pc-row-inerte:hover { border-color: var(--line); }
 .pc-row-name { font-weight: 600; }
 .pc-row-meta { color: var(--text-muted); font-size: 0.85rem; }
 

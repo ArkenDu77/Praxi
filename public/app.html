@@ -394,6 +394,25 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
       <div id="pc-list" class="pc-list"></div>
     </div>
 
+    <!-- ======================================================================
+         LES RENDEZ-VOUS VUS, MAIS PAS APPELES
+         ======================================================================
+
+         L'ecran de liaison promet : « Vos rendez-vous restent visibles, sans
+         appel. » Sans cette carte, cette phrase etait fausse — un cabinet qui
+         laissait les appels desactives connectait Doctolib et ne voyait plus
+         rien du tout.
+
+         On n'invente aucun dossier clinique ici : il n'y a eu aucun appel,
+         donc il n'y a rien a relire. On montre ce qu'Arkiba a reellement vu —
+         qui, quand — et on dit pourquoi il s'est arrete la.
+         ====================================================================== -->
+    <div class="card" id="pc-attente-card" hidden>
+      <div class="card-title">Rendez-vous détectés<span class="panel-aside" id="pc-attente-count"></span></div>
+      <p class="muted" id="pc-attente-sous"></p>
+      <div id="pc-attente-liste" class="pc-list"></div>
+    </div>
+
     <!-- Dossier ouvert -->
     <div id="pc-detail" hidden>
       <button class="btn btn-ghost" id="pc-back" type="button">← Tous les dossiers</button>
@@ -2159,6 +2178,53 @@ async function pcCharger() {
     // Un moteur injoignable est un ETAT, pas une page blanche : on le dit.
     pcErreur(e.message);
   }
+  // Independant des dossiers : un cabinet sans appels n'en a aucun, et c'est
+  // precisement le cas ou il a besoin de voir ses rendez-vous.
+  await pcChargerAttente();
+}
+
+/**
+ * Ce qu'Arkiba a vu dans l'agenda sans aller plus loin.
+ *
+ * Le moteur ne dit pas « CALLS_DISABLED_FOR_TENANT » au medecin : il rend un
+ * motif, et c'est ici qu'il devient une phrase. Un rendez-vous deja appele a
+ * son dossier plus haut ; il ne se repete pas dans cette liste.
+ */
+const PC_MOTIFS = {
+  appels_desactives: 'Appels Arkiba désactivés',
+  telephonie_non_configuree: 'Appels indisponibles',
+  identite_incomplete: 'Informations patient incomplètes',
+  numero_absent: 'Aucun numéro de téléphone',
+  bloque: 'Pré-consultation non réalisée',
+  en_cours: 'Pré-consultation en cours',
+  echec_appel: 'Appel non abouti',
+};
+
+async function pcChargerAttente() {
+  const carte = document.getElementById('pc-attente-card');
+  const liste = document.getElementById('pc-attente-liste');
+  const sous = document.getElementById('pc-attente-sous');
+  try {
+    const data = await api('/api/preconsult/rendez-vous');
+    const vus = (data.calls || []).filter(c => c.sans_preconsultation && c.rendez_vous);
+    if (!vus.length) { carte.hidden = true; return; }
+
+    carte.hidden = false;
+    document.getElementById('pc-attente-count').textContent = `${vus.length} rendez-vous`;
+    sous.textContent = vus.some(v => v.sans_preconsultation === 'appels_desactives')
+      ? "Arkiba suit votre agenda. Aucun patient n'a été appelé : « Appels Arkiba » est désactivé dans Liaison."
+      : "Arkiba a vu ces rendez-vous mais n'a pas pu préparer de dossier.";
+
+    liste.innerHTML = vus.map(v => `
+      <div class="pc-row pc-row-inerte">
+        <span class="pc-row-name">${pcEchappe(v.rendez_vous.patient || 'Patient')}</span>
+        <span class="pc-row-meta">${pcEchappe(fmtDate(v.rendez_vous.starts_at))} · ${pcEchappe(PC_MOTIFS[v.sans_preconsultation] || 'Pré-consultation non réalisée')}</span>
+      </div>`).join('');
+  } catch (e) {
+    // Cette carte est un complement : son echec ne doit pas masquer les
+    // dossiers, qui eux se sont peut-etre charges.
+    carte.hidden = true;
+  }
 }
 
 /** Ouvre UN dossier et affiche ce que l'appel a recueilli. */
@@ -2170,6 +2236,7 @@ async function pcOuvrir(id) {
     pcDocs = (data.encounter.documents || []);
     pcChosenDocs = [];
     document.getElementById('pc-list-card').hidden = true;
+    document.getElementById('pc-attente-card').hidden = true;
     document.getElementById('pc-detail').hidden = false;
     pcRendre();
     await pcChargerTypes();

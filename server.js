@@ -3203,6 +3203,17 @@ app.post('/api/integrations/:id/calls', authenticateJWT, (req, res) =>
  * autre : c'est son propre identifiant, pas un secret, et il vient de la
  * session — pas d'un parametre.
  */
+/**
+ * Les rendez-vous DETECTES dans l agenda du cabinet.
+ *
+ * Distincts des dossiers de pre-consultation : ceux-ci existent des qu Arkiba
+ * a vu le rendez-vous, meme quand aucun appel n a eu lieu — parce que le
+ * medecin n a pas active les appels, par exemple. Sans cette route, l ecran
+ * promettait « vos rendez-vous restent visibles » et ne montrait rien.
+ */
+app.get('/api/preconsult/rendez-vous', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, '/api/source-appointments'));
+
 app.get('/api/mon-cabinet', authenticateJWT, (req, res) => {
   res.json({ cabinet: req.principal.tenantId });
 });
