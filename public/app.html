@@ -1623,7 +1623,35 @@ function api(path, opts = {}) {
     opts.method && opts.method !== 'GET' ? { 'Content-Type': 'application/json' } : {},
     opts.headers || {}
   );
-  return fetch(path, { ...opts, headers }).then(async res => {
+  /**
+   * ========================================================================
+   *  UN CORPS OBJET DEVIENT « [object Object] », ET LE SERVEUR REPOND 400
+   * ========================================================================
+   *
+   * `fetch` ne serialise PAS un objet : il le convertit en chaine, ce qui
+   * donne « [object Object] ». Avec un Content-Type application/json, le
+   * serveur ne peut pas l'analyser et repond 400.
+   *
+   * PANNE REELLE, EN LIGNE : les treize appels qui passaient deja une chaine
+   * marchaient ; les cinq du bloc Doctolib passaient un objet. « Connecter
+   * Doctolib » echouait donc des la PREMIERE requete — la fenetre s'ouvrait
+   * vide et se refermait aussitot, sans message. Vu du medecin : un clic sans
+   * effet.
+   *
+   * On serialise donc ICI, une fois, plutot que d'exiger de chaque appelant
+   * qu'il y pense. Une chaine deja prete, un FormData ou un Blob passent
+   * intacts : seul un objet ordinaire est concerne.
+   */
+  const corps = opts.body;
+  const aSerialiser =
+    corps !== null &&
+    typeof corps === 'object' &&
+    !(corps instanceof FormData) &&
+    !(corps instanceof Blob) &&
+    !(corps instanceof ArrayBuffer) &&
+    !(corps instanceof URLSearchParams);
+  const options = aSerialiser ? { ...opts, body: JSON.stringify(corps) } : { ...opts };
+  return fetch(path, { ...options, headers }).then(async res => {
     if (res.status === 401) { logout(); throw new Error('Session expirée.'); }
     let data = {};
     try { data = await res.json(); } catch (_) {}

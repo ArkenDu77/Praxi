@@ -3156,6 +3156,38 @@ app.post('/api/integrations/:id/calls', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res, `/api/connections/${encodeURIComponent(req.params.id)}/calls`,
     { method: 'POST', body: { enabled: req.body && req.body.enabled === true } }));
 
+/**
+ * MODE DE DEMONSTRATION DE SECOURS.
+ *
+ * Il injecte le rendez-vous FICTIF de reference sans Doctolib ni navigateur,
+ * puis deroule l'interrogatoire. La suite du parcours est identique.
+ *
+ * Le cabinet vient de la SESSION, comme partout ailleurs : un medecin ne peut
+ * pas injecter un patient de demonstration dans le cabinet d'un confrere.
+ *
+ * Cette route n'existe QUE si le moteur a le mode arme — sinon il rend 404, et
+ * le relais rend ce 404 tel quel. Rien ici ne peut l'activer.
+ */
+/**
+ * SON PROPRE CABINET.
+ *
+ * Le medecin ne choisit jamais son cabinet — il est derive du compte. Mais
+ * l'EXPLOITANT a besoin de le connaitre pour configurer le worker qui lira
+ * l'agenda de ce cabinet-la, et il n'existait aucun moyen de l'obtenir sans
+ * lire la base a la main.
+ *
+ * On ne rend que l'identifiant du cabinet de l'appelant, jamais celui d'un
+ * autre : c'est son propre identifiant, pas un secret, et il vient de la
+ * session — pas d'un parametre.
+ */
+app.get('/api/mon-cabinet', authenticateJWT, (req, res) => {
+  res.json({ cabinet: req.principal.tenantId });
+});
+
+app.post('/api/demo-safe/appointment', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res, '/api/demo-safe/appointment',
+    { method: 'POST', body: { dansMinutes: 90 } }));
+
 app.post('/api/integrations/:id/revoke', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res, `/api/connections/${encodeURIComponent(req.params.id)}/revoke`,
     { method: 'POST', body: {} }));
