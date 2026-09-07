@@ -2250,9 +2250,244 @@ async function pcOuvrir(id) {
   }
 }
 
+/* ==========================================================================
+ *  LE DOSSIER MONTRE TOUT CE QUI A ETE DIT — ET CHAQUE DONNEE SE CORRIGE
+ * ==========================================================================
+ *
+ * Cet ecran affichait DEUX lignes d'un dossier qui en contenait trente.
+ *
+ * Il lisait des chemins a la main — `c.substance_use.tobacco`,
+ * `c.anesthesia_history.previous_anesthesia` — qui sont les noms du schema de
+ * STOCKAGE du moteur. La charge exposee, elle, suit un schema d'AFFICHAGE :
+ * `perioperative.tobacco`, `history.anesthetic.previous_anesthesia`. Aucune
+ * erreur n'etait levee : les chemins rendaient `undefined`, les lignes
+ * n'etaient pas ajoutees, et le tabac, l'alcool, les antecedents, la capacite
+ * a l'effort, le diabete, l'asthme — tout ce que le patient avait pris le
+ * temps de dire au telephone — disparaissait en silence. Le medecin ouvrait
+ * un dossier presque vide et en concluait qu'Arkiba n'avait rien appris.
+ *
+ * Le meme code comparait aussi `=== 'yes'` alors que le moteur rend « oui ».
+ *
+ * On ne repare pas cela en corrigeant les chemins : on les supprime. Le
+ * moteur porte desormais, sur chaque fait, son LIBELLE lisible, sa SECTION et
+ * le chemin ou l'ecrire. Cet ecran parcourt la charge et affiche ce qu'il
+ * trouve. Le jour ou le modele clinique gagne un champ, il apparait ici sans
+ * qu'une ligne change — et il ne peut plus disparaitre sans que le banc du
+ * moteur le voie.
+ *
+ * Regle tenue de bout en bout : aucun nom de cle interne n'atteint le
+ * medecin. Un fait que le moteur n'a pas su nommer garde sa valeur et sa
+ * citation, sous un intitule neutre, jamais sous son nom technique.
+ */
+
+/** Tous les faits de la charge, avec leur chemin d'affichage. */
+function pcFaits(clinique) {
+  const faits = [];
+  const marcher = (n, chemin) => {
+    if (n === null || typeof n !== 'object' || Array.isArray(n)) return;
+    // Un fait porte une valeur ET sa fiabilite. C'est ce qui le distingue
+    // d'un simple groupe.
+    if ('value' in n && 'confidence' in n) { faits.push(Object.assign({ chemin }, n)); return; }
+    for (const cle of Object.keys(n)) marcher(n[cle], chemin ? chemin + '.' + cle : cle);
+  };
+  marcher(clinique, '');
+  return faits;
+}
+
+/** Une valeur lisible. Rien n'est reformule : on n'ajoute pas de sens. */
+function pcValeur(v) {
+  if (v === null || v === undefined || v === '') return null;
+  if (v === true) return 'oui';
+  if (v === false) return 'non';
+  return String(v);
+}
+
+/** Une ligne de fait : intitule, valeur, citation du patient, correction. */
+function pcLigneFait(fait) {
+  const intitule = fait.label || 'Information recueillie';
+  const valeur = pcValeur(fait.value);
+  const cite = fait.patient_statement && valeur !== null && fait.patient_statement !== valeur
+    ? fait.patient_statement : null;
+  const corrigible = typeof fait.editable_path === 'string' && fait.editable_path.length > 0;
+  return '<div class="pc-item" data-fait="' + pcEchappe(fait.chemin) + '">' +
+    '<span class="pc-item-label">' + pcEchappe(intitule) + '</span>' +
+    '<span class="pc-item-value' + (valeur === null ? ' pc-vide' : '') + '">' +
+      pcEchappe(valeur === null ? 'non renseigné' : valeur) + '</span>' +
+    (cite ? '<span class="pc-item-note">« ' + pcEchappe(cite) + ' »</span>' : '') +
+    (corrigible
+      ? '<button type="button" class="pc-corriger" data-champ="' + pcEchappe(fait.editable_path) +
+        '" data-valeur="' + pcEchappe(valeur === null ? '' : valeur) +
+        '" data-intitule="' + pcEchappe(intitule) + '">Corriger</button>'
+      : '') +
+    '</div>';
+}
+
+/** Les listes structurees : traitements, allergies, antecedents. */
+function pcLigneListe(cle, items, modele) {
+  if (!items || !items.length) {
+    return '<div class="pc-item"><span class="pc-item-label">' + pcEchappe(modele.libelle) + '</span>' +
+      '<span class="pc-item-value pc-vide">' + pcEchappe(modele.vide) + '</span></div>';
+  }
+  return items.map((item) => {
+    let valeur = null;
+    let note = '';
+    if (cle === 'medications') {
+      valeur = [item.normalized_name || (item.name && item.name.value),
+                item.dose && item.dose.value,
+                item.frequency && item.frequency.value].filter(Boolean).join(' · ');
+      if (item.temporal_status && item.temporal_status !== 'current') note = 'arrêté ou ancien';
+    } else if (cle === 'allergies') {
+      valeur = item.normalized_substance || (item.substance && item.substance.value);
+      if (item.requires_physician_audit) note = 'à confirmer — réponses contradictoires';
+    } else {
+      valeur = pcValeur(item && item.value !== undefined ? item.value : item);
+    }
+    const cite = item && item.name && item.name.patient_statement;
+    return '<div class="pc-item">' +
+      '<span class="pc-item-label">' + pcEchappe(modele.libelle) + '</span>' +
+      '<span class="pc-item-value">' + pcEchappe(valeur || '—') + '</span>' +
+      (note ? '<span class="pc-item-note">' + pcEchappe(note) + '</span>' : '') +
+      (cite && cite !== valeur ? '<span class="pc-item-note">« ' + pcEchappe(cite) + ' »</span>' : '') +
+      '</div>';
+  }).join('');
+}
+
+function pcRendreIntake() {
+  const clinique = pcEncounter.clinical_data || {};
+  const nommage = pcEncounter.nommage || { sections: [], listes: {} };
+  const sections = (nommage.sections || []).concat([{ id: 'autre', titre: 'Autres informations recueillies' }]);
+  const listes = nommage.listes || {};
+
+  // Chaque section rassemble ses faits renseignes, puis ses faits restes sans
+  // reponse. Les seconds ne sont pas caches : un champ vide se corrige aussi,
+  // et le medecin doit voir ce qui n'a PAS ete obtenu.
+  const parSection = {};
+  const ranger = (id, html, renseigne) => {
+    if (!parSection[id]) parSection[id] = { pleins: [], vides: [] };
+    parSection[id][renseigne ? 'pleins' : 'vides'].push(html);
+  };
+
+  for (const fait of pcFaits(clinique)) {
+    ranger(fait.section || 'autre', pcLigneFait(fait), pcValeur(fait.value) !== null);
+  }
+  for (const cle of Object.keys(listes)) {
+    const items = cle.indexOf('.') === -1
+      ? clinique[cle]
+      : cle.split('.').reduce((o, k) => (o == null ? o : o[k]), clinique);
+    const modele = listes[cle];
+    ranger(modele.section || 'autre', pcLigneListe(cle, items, modele), Boolean(items && items.length));
+  }
+
+  const html = sections.map((section) => {
+    const contenu = parSection[section.id];
+    if (!contenu || (!contenu.pleins.length && !contenu.vides.length)) return '';
+    return '<section class="pc-section"><h4 class="pc-section-titre">' + pcEchappe(section.titre) + '</h4>' +
+      contenu.pleins.join('') +
+      (contenu.vides.length
+        ? '<details class="pc-vides"><summary>' + contenu.vides.length +
+          ' information(s) non obtenue(s)</summary>' + contenu.vides.join('') + '</details>'
+        : '') +
+      '</section>';
+  }).join('');
+
+  document.getElementById('pc-intake').innerHTML = html ||
+    '<p class="muted">L\'appel n\'a pas encore produit de données structurées.</p>';
+}
+
+/**
+ * « A verifier » vient des points de relecture du dossier, pas des alertes
+ * internes. Les alertes portent des etiquettes de mecanique — « transcript_review »
+ * — qui n'ont aucun sens pour un medecin et qui remontaient telles quelles a
+ * l'ecran. Le moteur, lui, redige deja ces points en francais.
+ */
+function pcRendreAVerifier() {
+  const clinique = pcEncounter.clinical_data || {};
+  const incertains = (clinique.uncertain_information || []).map((u) => ({
+    intitule: u.field_label || u.label,
+    detail: u.detail || '',
+    champ: u.editable_path || null,
+  }));
+  const manquants = (clinique.missing_information || []).map((m) => ({
+    intitule: m.field_label || m.label,
+    detail: m.reason || '',
+    champ: m.editable_path || null,
+  }));
+  const points = incertains.concat(manquants).filter((p) => p.intitule);
+
+  document.getElementById('pc-alerts-card').hidden = points.length === 0;
+  document.getElementById('pc-alerts').innerHTML = points.map((p) =>
+    '<div class="pc-item">' +
+    '<span class="pc-item-label">' + pcEchappe(p.intitule) + '</span>' +
+    (p.detail ? '<span class="pc-item-note">' + pcEchappe(p.detail) + '</span>' : '') +
+    (p.champ
+      ? '<button type="button" class="pc-corriger" data-champ="' + pcEchappe(p.champ) +
+        '" data-valeur="" data-intitule="' + pcEchappe(p.intitule) + '">Renseigner</button>'
+      : '') +
+    '</div>').join('');
+}
+
+/**
+ * Corriger une donnee.
+ *
+ * Le chemin envoye est celui que LE MOTEUR a annonce sur le fait. C'est
+ * essentiel : une correction s'applique sur le schema de stockage, et un
+ * chemin d'affichage serait accepte en 200 sans rien ecrire. Le medecin
+ * croirait avoir corrige une donnee fausse qui resterait fausse.
+ */
+async function pcCorriger(champ, intitule, valeur) {
+  pcErreur('');
+  try {
+    await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) +
+      '/review/' + encodeURIComponent(champ), {
+      method: 'POST',
+      body: { action: 'correct', corrected_value: valeur, reason: null },
+    });
+    // On relit le dossier plutot que de rafraichir la ligne : la correction
+    // peut lever un point a verifier, changer la version du document ou
+    // debloquer la validation.
+    await pcOuvrir(pcEncounter.encounter.encounter_id);
+  } catch (e) {
+    pcErreur('« ' + intitule + " » n'a pas pu être corrigé : " + e.message);
+  }
+}
+
+/** Ouvre la saisie en place, sans quitter la lecture du dossier. */
+function pcOuvrirCorrection(bouton) {
+  const ligne = bouton.closest('.pc-item');
+  if (!ligne || ligne.querySelector('.pc-saisie')) return;
+  const champ = bouton.dataset.champ;
+  const intitule = bouton.dataset.intitule || 'cette donnée';
+  const saisie = document.createElement('span');
+  saisie.className = 'pc-saisie';
+  saisie.innerHTML = '<input type="text" class="pc-saisie-champ" aria-label="' + pcEchappe(intitule) + '">' +
+    '<button type="button" class="btn btn-ghost pc-saisie-ok">Enregistrer</button>' +
+    '<button type="button" class="btn btn-ghost pc-saisie-non">Annuler</button>';
+  ligne.appendChild(saisie);
+  const input = saisie.querySelector('.pc-saisie-champ');
+  input.value = bouton.dataset.valeur || '';
+  input.focus();
+  const valider = () => {
+    const v = input.value.trim();
+    if (v.length === 0) return;
+    pcCorriger(champ, intitule, v);
+  };
+  saisie.querySelector('.pc-saisie-ok').addEventListener('click', valider);
+  saisie.querySelector('.pc-saisie-non').addEventListener('click', () => saisie.remove());
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') valider();
+    if (ev.key === 'Escape') saisie.remove();
+  });
+}
+
+// Un seul ecouteur pose une fois pour toutes : le contenu des deux cartes est
+// reconstruit a chaque lecture, des ecouteurs par bouton fuiraient.
+document.addEventListener('click', (ev) => {
+  const bouton = ev.target.closest && ev.target.closest('.pc-corriger');
+  if (bouton) pcOuvrirCorrection(bouton);
+});
+
 function pcRendre() {
   const e = pcEncounter.encounter;
-  const c = pcEncounter.clinical_data || {};
   const p = e.patient || {};
 
   document.getElementById('pc-patient').textContent =
@@ -2261,55 +2496,10 @@ function pcRendre() {
     [e.practitioner_name, e.scheduled_start, e.planned_procedure_raw].filter(Boolean).join(' · ');
   document.getElementById('pc-status').textContent = pcEncounter.display_status || e.status;
 
-  // Ce que le patient a déclaré. On montre la VALEUR et, quand elle aide, sa
-  // provenance — pas quinze identifiants techniques.
-  const bloc = [];
-  const ligne = (label, valeur, note) => {
-    if (valeur == null || valeur === '') return;
-    bloc.push(`<div class="pc-item"><span class="pc-item-label">${pcEchappe(label)}</span>` +
-      `<span class="pc-item-value">${pcEchappe(valeur)}</span>` +
-      (note ? `<span class="pc-item-note">${pcEchappe(note)}</span>` : '') + '</div>');
-  };
-
-  const meds = c.medications || [];
-  if (meds.length) {
-    meds.forEach(m => ligne('Traitement',
-      [m.normalized_name || (m.name && m.name.value), m.dose && m.dose.value, m.frequency && m.frequency.value]
-        .filter(Boolean).join(' · '),
-      m.temporal_status && m.temporal_status !== 'current' ? 'arrêté / ancien' : ''));
-  } else ligne('Traitements', 'aucun signalé');
-
-  const alg = c.allergies || [];
-  if (alg.length) {
-    alg.forEach(a => ligne('Allergie',
-      a.normalized_substance || (a.substance && a.substance.value),
-      a.requires_physician_audit ? 'à confirmer — réponses contradictoires' : ''));
-  } else ligne('Allergies', 'aucune signalée');
-
-  const su = c.substance_use || {};
-  if (su.tobacco) ligne('Tabac', su.tobacco.value === 'yes'
-    ? (su.cigarettes_per_day && su.cigarettes_per_day.value ? su.cigarettes_per_day.value + '/jour' : 'oui')
-    : (su.tobacco.value === 'no' ? 'non' : 'non renseigné'));
-  if (su.alcohol) ligne('Alcool', su.alcohol.value === 'yes' ? 'oui' : (su.alcohol.value === 'no' ? 'non' : 'non renseigné'));
-
-  const ah = c.anesthesia_history || {};
-  if (ah.previous_anesthesia) ligne('Anesthésie antérieure',
-    ah.previous_anesthesia.value === 'yes' ? 'oui' : (ah.previous_anesthesia.value === 'no' ? 'non' : 'non renseigné'));
-
-  const cv = c.cardiovascular || {};
-  if (cv.reported_cardiac_history) ligne('Antécédent cardiaque',
-    cv.reported_cardiac_history.value === 'yes' ? 'oui' : (cv.reported_cardiac_history.value === 'no' ? 'non' : 'non renseigné'));
-
-  document.getElementById('pc-intake').innerHTML = bloc.join('') ||
-    '<p class="muted">L\'appel n\'a pas encore produit de données structurées.</p>';
-
-  // Points à vérifier
-  const alertes = e.alerts || [];
-  const carte = document.getElementById('pc-alerts-card');
-  carte.hidden = alertes.length === 0;
-  document.getElementById('pc-alerts').innerHTML = alertes.map(a =>
-    `<div class="pc-item"><span class="pc-item-label">${pcEchappe(a.label)}</span>` +
-    `<span class="pc-item-note">${pcEchappe(a.detail || '')}</span></div>`).join('');
+  // Ce que le patient a réellement dit, tel que le MOTEUR le nomme. Cet
+  // écran ne traduit plus rien lui-même : voir le commentaire de pcRendreIntake.
+  pcRendreIntake();
+  pcRendreAVerifier();
 
   // Divergence du rendez-vous
   const div = document.getElementById('pc-divergence');

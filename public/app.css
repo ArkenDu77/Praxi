@@ -4115,3 +4115,56 @@ html[data-theme="dark"] .theme-pick-card {
    échelle d'environ 1,00, c'est-à-dire aucune déformation. */
 .dl-panneau { height: 96vh; max-height: none; }
 .dl-scene { flex: 1 1 auto; height: auto; max-height: none; min-height: 0; }
+
+/* Le dossier se lit par sections, comme un médecin le parcourt : ce qu'on
+   sait, puis ce qu'on n'a pas obtenu — jamais mélangés, jamais cachés. */
+.pc-section { margin: 0 0 1.1rem; }
+.pc-section:last-child { margin-bottom: 0; }
+.pc-section-titre {
+  margin: 0 0 0.3rem;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+/* Une donnée non obtenue reste une information : elle s'affiche en retrait,
+   elle ne disparaît pas. */
+.pc-vide { color: var(--text-muted); font-weight: 400; font-style: italic; }
+.pc-vides > summary {
+  cursor: pointer;
+  padding: 0.45rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.pc-vides[open] > summary { border-bottom: 1px solid var(--line); }
+
+/* Corriger doit être à portée de la donnée, pas dans un écran séparé. */
+.pc-corriger {
+  margin-left: auto;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 999px;
+  padding: 0.05rem 0.6rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.pc-corriger:hover { color: var(--text); border-color: var(--text-muted); }
+.pc-saisie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  width: 100%;
+  margin-top: 0.4rem;
+}
+.pc-saisie-champ {
+  flex: 1 1 12rem;
+  min-width: 0;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--line-2);
+  border-radius: 0.4rem;
+  background: var(--bg, transparent);
+  color: inherit;
+  font: inherit;
+}
