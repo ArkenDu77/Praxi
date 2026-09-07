@@ -2177,10 +2177,14 @@ async function pcCharger() {
     liste.innerHTML = '';
     // Un moteur injoignable est un ETAT, pas une page blanche : on le dit.
     pcErreur(e.message);
+  } finally {
+    // Dans un `finally`, et pas apres le bloc : la branche « aucun dossier »
+    // sort par `return`, et c'est EXACTEMENT le cabinet qui a besoin de cette
+    // liste — celui qui n'a active aucun appel n'a evidemment aucun dossier.
+    // Ecrit apres le try, cet appel n'aurait jamais eu lieu au seul moment ou
+    // il compte.
+    await pcChargerAttente();
   }
-  // Independant des dossiers : un cabinet sans appels n'en a aucun, et c'est
-  // precisement le cas ou il a besoin de voir ses rendez-vous.
-  await pcChargerAttente();
 }
 
 /**

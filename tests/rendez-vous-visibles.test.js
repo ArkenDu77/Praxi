@@ -74,6 +74,89 @@ afterAll(() => {
 
 const auth = (r) => r.set('Authorization', `Bearer ${tok}`);
 
+/**
+ * Decoupe UNE fonction de l'ecran, de sa signature a son accolade fermante en
+ * colonne zero. Le fichier est un seul document : sans cela on ne peut pas
+ * raisonner sur une fonction en particulier.
+ */
+function extraire(source, signature) {
+  const d = source.indexOf(signature);
+  if (d < 0) throw new Error(`introuvable : ${signature}`);
+  const f = source.indexOf('\n}\n', d);
+  return source.slice(d, f + 3);
+}
+
+/**
+ * Execute VRAIMENT `pcCharger` avec zero dossier, sur un DOM en carton, et
+ * rend la liste des routes appelees.
+ *
+ * Un banc qui se contente de chercher une chaine dans le fichier valide une
+ * chaine, pas un comportement : `await pcChargerAttente();` etait present, et
+ * mort. Ici, si la fonction ne demande pas les rendez-vous, le test tombe.
+ */
+async function pcChargerAVide(source) {
+  const vm = require('vm');
+  const appels = [];
+  const faux = () => {
+    const el = {
+      innerHTML: '', textContent: '', hidden: false,
+      querySelectorAll: () => [], addEventListener: () => {},
+      classList: { toggle: () => {} },
+    };
+    return el;
+  };
+  const bac = {
+    document: { getElementById: faux },
+    async api(route) {
+      appels.push(route);
+      if (route === '/api/preconsult/encounters') return { encounters: [] };
+      return { calls: [] };
+    },
+    fmtDate: (v) => String(v || ''),
+    pcOuvrir: () => {},
+    console,
+  };
+  vm.createContext(bac);
+  for (const sig of ['function pcEchappe(', 'function pcErreur(',
+    'const PC_MOTIFS = {', 'async function pcChargerAttente()',
+    'async function pcCharger()']) {
+    vm.runInContext(extraire(source, sig), bac);
+  }
+  await vm.runInContext('pcCharger()', bac);
+  return appels;
+}
+
+/**
+ * Peint la carte avec UNE ligne, et rend ce qui a ete peint.
+ *
+ * `fmtDate` est ici l'identite : ce banc verifie que la date arrive jusqu'au
+ * DOM, pas comment elle se formate — le formatage depend du fuseau de la
+ * machine, et faire dependre une preuve du fuseau n'en fait plus une preuve.
+ */
+async function pcPeindre(source, ligne) {
+  const vm = require('vm');
+  const els = {};
+  const bac = {
+    document: {
+      getElementById: (id) => (els[id] = els[id] || {
+        innerHTML: '', textContent: '', hidden: false,
+        querySelectorAll: () => [], addEventListener: () => {},
+        classList: { toggle: () => {} },
+      }),
+    },
+    async api() { return { calls: ligne ? [ligne] : [] }; },
+    fmtDate: (v) => String(v || ''),
+    console,
+  };
+  vm.createContext(bac);
+  for (const sig of ['function pcEchappe(', 'const PC_MOTIFS = {',
+    'async function pcChargerAttente()']) {
+    vm.runInContext(extraire(source, sig), bac);
+  }
+  await vm.runInContext('pcChargerAttente()', bac);
+  return { carte: bac.document.getElementById('pc-attente-card'), ligne: els['pc-attente-liste'].innerHTML };
+}
+
 describe('le relais des rendez-vous détectés', () => {
   test('sans session Arkiba, le proxy refuse', async () => {
     const res = await request(app).get('/api/preconsult/rendez-vous');
@@ -113,10 +196,39 @@ describe('l\'écran qui tient la promesse', () => {
     expect(source).toContain('id="pc-attente-card"');
   });
 
-  test('la liste des rendez-vous se charge en même temps que les dossiers', () => {
-    // Un cabinet sans appels n'a AUCUN dossier : si le chargement dependait
-    // d'eux, l'ecran resterait vide exactement dans le cas qui compte.
-    expect(source).toContain('await pcChargerAttente();');
+  test('la liste se charge MÊME quand il n\'y a aucun dossier', () => {
+    // Le piege, et il a ete pose : la branche « aucun dossier » sort par
+    // `return`. Un appel ecrit APRES le try est alors mort exactement dans le
+    // cas qui compte — un cabinet sans appels n'a evidemment aucun dossier.
+    // On n'affirme donc pas que l'appel EXISTE, on affirme qu'aucune sortie ne
+    // peut le sauter : il est dans le `finally`.
+    const corps = extraire(source, 'async function pcCharger()');
+    expect(corps).toMatch(/\}\s*finally\s*\{[^}]*await pcChargerAttente\(\);/);
+  });
+
+  test('EXECUTÉE À VIDE, la fonction demande quand même les rendez-vous', async () => {
+    // La preuve par le comportement : zéro dossier, et le relais est appelé.
+    const vus = await pcChargerAVide(source);
+    expect(vus).toContain('/api/preconsult/rendez-vous');
+  });
+
+  test('la carte PEINT une ligne lisible, pas une ligne vide', async () => {
+    // LIGNE est la forme exacte que le moteur de staging rend pour le
+    // rendez-vous cree a la main dans le vrai Doctolib de test. Un ecran qui
+    // affiche « Patient · » sans heure tiendrait la promesse sur le papier et
+    // pas devant le medecin.
+    const { carte, ligne } = await pcPeindre(source, LIGNE);
+    expect(carte.hidden).toBe(false);
+    expect(ligne).toContain('MARTIN Alpha');
+    expect(ligne).toContain('2026-09-09T10:00:00');
+    expect(ligne).toContain('Appels Arkiba désactivés');
+    // Aucun bouton : rien ne s'ouvre, parce qu'il n'y a rien dessous.
+    expect(ligne).not.toContain('<button');
+  });
+
+  test('sans rien à montrer, la carte reste absente plutôt que vide', async () => {
+    const { carte } = await pcPeindre(source, null);
+    expect(carte.hidden).toBe(true);
   });
 
   test('le motif est écrit pour un médecin, jamais dans la langue du moteur', () => {
