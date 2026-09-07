@@ -1522,6 +1522,58 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 </div>
 
 <!-- ─── MODALE DOCTOLIB ─── -->
+<!--
+  ============================================================================
+   CONNEXION DOCTOLIB — le medecin ne quitte pas Arkiba
+  ============================================================================
+
+  Elle remplace une fenetre surgissante qui affichait la vue technique du
+  fournisseur : adresse etrangere dans la barre, cadre minuscule, image
+  reduite de moitie. Le medecin voyait l'outillage, pas le produit.
+
+  Ici il voit Arkiba, et Doctolib dedans. Le fournisseur n'apparait nulle
+  part — ni son nom, ni son adresse, ni son vocabulaire.
+-->
+<div class="modal-bg dl-connexion" id="dl-connexion" role="dialog" aria-modal="true" aria-labelledby="dl-titre">
+  <div class="dl-panneau">
+    <header class="dl-tete">
+      <div>
+        <h2 id="dl-titre">Connecter Doctolib</h2>
+        <p class="dl-sous-titre">Connectez-vous directement à votre espace Doctolib.</p>
+      </div>
+      <button class="btn btn-ghost dl-fermer" id="dl-fermer" type="button" aria-label="Fermer">Fermer</button>
+    </header>
+
+    <p class="dl-discret">
+      Vos identifiants sont saisis directement dans Doctolib. Arkiba ne les enregistre pas.
+    </p>
+
+    <!-- Tant que la session n'est pas prete, on montre une progression, jamais
+         un cadre vide : une zone blanche donne l'impression que rien ne marche. -->
+    <div class="dl-scene" id="dl-scene">
+      <div class="dl-attente" id="dl-attente">
+        <div class="dl-attente-titre">Préparation de votre connexion Doctolib…</div>
+        <ol class="dl-etapes">
+          <li id="dl-etape-1"><span class="dl-puce"></span>Ouverture de la connexion sécurisée</li>
+          <li id="dl-etape-2"><span class="dl-puce"></span>Chargement de Doctolib</li>
+          <li id="dl-etape-3"><span class="dl-puce"></span>Prêt à vous connecter</li>
+        </ol>
+        <p class="dl-erreur" id="dl-erreur" hidden></p>
+      </div>
+      <!-- `sandbox` et `allow` sont ceux que le fournisseur documente pour un
+           affichage interactif. Sans eux, le cadre reste inerte. -->
+      <iframe
+        id="dl-cadre"
+        class="dl-cadre"
+        title="Connexion Doctolib"
+        sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+        allow="clipboard-read; clipboard-write"
+        referrerpolicy="no-referrer"
+        hidden></iframe>
+    </div>
+  </div>
+</div>
+
 <div class="modal-bg" id="modal-doctolib">
   <div class="modal">
     <div class="doctolib-flag">
@@ -2443,28 +2495,125 @@ async function intBasculerAppels() {
  * devant un ecran qui dit « connexion en cours » sans rien voir venir. On
  * l'ouvre donc vide, puis on l'envoie a la bonne adresse.
  */
+/**
+ * ============================================================================
+ *  CONNECTER DOCTOLIB — dans Arkiba, pas dans une fenetre etrangere
+ * ============================================================================
+ *
+ * CE QUI NE MARCHAIT PAS. On ouvrait une fenetre surgissante sur la vue
+ * technique du fournisseur : adresse etrangere dans la barre, cadre minuscule,
+ * image reduite de plus de moitie. Le medecin voyait l outillage, pas le
+ * produit — et pendant les secondes de preparation, une page blanche.
+ *
+ * CE QUI CHANGE :
+ *
+ *   1. la fenetre d Arkiba s ouvre IMMEDIATEMENT, avant tout appel reseau. Le
+ *      clic a donc un effet visible tout de suite, meme si la session met
+ *      quelques secondes a naitre ;
+ *   2. une progression dit ou l on en est. « Ca rame » et « il se passe
+ *      quelque chose » se ressemblent quand l ecran est vide, pas quand il est
+ *      habite ;
+ *   3. Doctolib s affiche DANS Arkiba. Le medecin ne quitte jamais le produit.
+ *
+ * L adresse de la vue est PORTEUSE : elle n est ni journalisee, ni conservee,
+ * ni ecrite ailleurs que dans l attribut du cadre, et elle est effacee a la
+ * fermeture.
+ */
+function dlEtape(n, etat) {
+  const li = document.getElementById('dl-etape-' + n);
+  if (!li) return;
+  li.classList.toggle('encours', etat === 'encours');
+  li.classList.toggle('fait', etat === 'fait');
+}
+
+function dlErreur(message) {
+  const el = document.getElementById('dl-erreur');
+  if (!el) return;
+  el.textContent = message || '';
+  el.hidden = !message;
+}
+
+/** Ferme la fenetre et ne laisse rien derriere : ni image, ni session. */
+async function dlFermer(options) {
+  const libererLaSession = !options || options.libererLaSession !== false;
+  const modale = document.getElementById('dl-connexion');
+  const cadre = document.getElementById('dl-cadre');
+  modale.classList.remove('show');
+  // On efface l adresse : elle est porteuse, elle n a pas a rester dans le DOM.
+  cadre.setAttribute('hidden', '');
+  cadre.removeAttribute('src');
+  document.getElementById('dl-attente').removeAttribute('hidden');
+  dlErreur('');
+  dlEtape(1, ''); dlEtape(2, ''); dlEtape(3, '');
+
+  // Une session laissee ouverte tourne — et se facture — jusqu a sa peremption.
+  // On la rend, sauf si le medecin vient justement de s authentifier.
+  if (libererLaSession && intCourante && intCourante.state !== 'CONNECTED') {
+    await api('/api/integrations/' + encodeURIComponent(intCourante.connector_id) + '/auth-session/release',
+      { method: 'POST', body: {} }).catch(() => {});
+  }
+  if (intSurveillance) { clearInterval(intSurveillance); intSurveillance = null; }
+}
+
 async function intConnecter() {
   intErreur('');
   const bouton = document.getElementById('int-connecter');
   bouton.disabled = true;
-  const fenetre = window.open('', 'arkiba-doctolib', 'width=1100,height=800');
+
+  // AVANT TOUT APPEL RESEAU. Le clic doit avoir un effet immediat : c est la
+  // difference entre « ca demarre » et « ca ne marche pas ».
+  const modale = document.getElementById('dl-connexion');
+  const cadre = document.getElementById('dl-cadre');
+  const attente = document.getElementById('dl-attente');
+  modale.classList.add('show');
+  attente.removeAttribute('hidden');
+  cadre.setAttribute('hidden', '');
+  dlErreur('');
+  dlEtape(1, 'encours'); dlEtape(2, ''); dlEtape(3, '');
+
   try {
     if (!intCourante) {
       const cree = await api('/api/integrations/doctolib', { method: 'POST', body: {} });
       intCourante = cree.integration || null;
       intRendre(intCourante);
     }
-    const ouverte = await api(`/api/integrations/${encodeURIComponent(intCourante.connector_id)}/auth-session`,
+    if (!intCourante) throw new Error("La connexion n a pas pu etre preparee.");
+
+    const ouverte = await api('/api/integrations/' + encodeURIComponent(intCourante.connector_id) + '/auth-session',
       { method: 'POST', body: {} });
     const url = ouverte.interactive && ouverte.interactive.url;
-    if (!url) throw new Error("Le navigateur d'authentification n'a pas pu être ouvert.");
+    if (!url) throw new Error("La fenetre de connexion n a pas pu etre ouverte.");
 
-    if (fenetre) fenetre.location.href = url;
+    dlEtape(1, 'fait'); dlEtape(2, 'encours');
+
+    // On ne devoile le cadre qu une fois CHARGE : sinon le medecin voit un
+    // rectangle blanc apparaitre avant l image, et c est exactement l effet
+    // qu on cherche a supprimer.
+    await new Promise((resoudre) => {
+      let fini = false;
+      const montrer = () => {
+        if (fini) return;
+        fini = true;
+        dlEtape(2, 'fait'); dlEtape(3, 'fait');
+        attente.setAttribute('hidden', '');
+        cadre.removeAttribute('hidden');
+        resoudre();
+      };
+      cadre.addEventListener('load', montrer, { once: true });
+      // Filet : certaines vues ne declenchent pas `load` de facon fiable. On ne
+      // laisse jamais la progression tourner indefiniment.
+      setTimeout(montrer, 8000);
+      cadre.src = url;
+    });
+
     document.getElementById('int-commande').textContent =
-      "Terminez la connexion dans la fenêtre Doctolib. Arkiba attend, et ne voit ni votre mot de passe ni votre code.";
+      "Connectez-vous dans la fenetre Doctolib. Arkiba attend, et ne voit ni votre mot de passe ni votre code.";
     intSurveiller();
   } catch (e) {
-    if (fenetre) fenetre.close();
+    // On garde la fenetre OUVERTE et on explique. La refermer sans un mot est
+    // ce qui donnait l impression d un clic sans effet.
+    dlEtape(1, ''); dlEtape(2, ''); dlEtape(3, '');
+    dlErreur(e.message);
     intErreur(e.message);
   } finally {
     bouton.disabled = false;
@@ -2498,8 +2647,12 @@ function intSurveiller() {
         { method: 'POST', body: {} });
       intCourante = fin.integration || intCourante;
       intRendre(intCourante);
+      // La fenetre n a plus de raison d exister : la session vient d etre
+      // capturee et fermee cote moteur. On ne demande pas au medecin de
+      // fermer quelque chose qu on peut fermer pour lui.
+      await dlFermer({ libererLaSession: false });
       document.getElementById('int-commande').textContent =
-        'Connexion établie. Vous pouvez fermer la fenêtre Doctolib.';
+        'Connexion etablie. Votre agenda Doctolib est relie a Arkiba.';
     } catch (e) {
       // Une session expiree n'est pas une panne : le medecin peut recommencer.
       clearInterval(intSurveillance);
@@ -2623,6 +2776,14 @@ document.getElementById('int-connecter').addEventListener('click', intConnecter)
 document.getElementById('int-rafraichir').addEventListener('click', intCharger);
 document.getElementById('int-revoquer').addEventListener('click', intRevoquer);
 document.getElementById('int-appels-bouton').addEventListener('click', intBasculerAppels);
+document.getElementById('dl-fermer').addEventListener('click', () => dlFermer());
+// Le voile ferme aussi : un dialogue dont on ne peut pas sortir inquiete.
+document.getElementById('dl-connexion').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('dl-connexion')) dlFermer();
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('dl-connexion').classList.contains('show')) dlFermer();
+});
 document.getElementById('pc-validate').addEventListener('click', pcValider);
 document.getElementById('pc-transfer').addEventListener('click', pcTransferer);
 document.getElementById('pc-scope-intake').addEventListener('change', pcRafraichirApercu);

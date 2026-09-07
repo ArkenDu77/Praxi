@@ -339,7 +339,21 @@ app.use(helmet({
       fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'", "https://cdnjs.cloudflare.com"],
-      frameSrc: ["'none'"],
+      /**
+       * LE SEUL CADRE AUTORISE : la fenetre de connexion a l agenda.
+       *
+       * `'none'` fermait tout, et c est le bon defaut. Mais le medecin se
+       * connecte a Doctolib DANS Arkiba : sans cette autorisation, le cadre
+       * reste vide et le navigateur refuse en silence — « Framing … violates
+       * the following Content Security Policy directive: frame-src 'none' ».
+       * L ecran paraissait alors charger indefiniment.
+       *
+       * On n ouvre QUE l origine de la vue interactive. Tout le reste demeure
+       * interdit : une page d Arkiba n a aucune raison d encadrer autre chose.
+       * L origine est surchargeable pour qu un changement de fournisseur ne
+       * demande pas de toucher au code.
+       */
+      frameSrc: (process.env.ARKIBA_FRAME_SRC || 'https://www.browserbase.com').split(',').map((o) => o.trim()).filter(Boolean),
       objectSrc: ["'none'"],
     },
   },
@@ -3139,6 +3153,15 @@ app.post('/api/integrations/:id/auth-session', authenticateJWT, (req, res) =>
 app.get('/api/integrations/:id/auth-session', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res,
     `/api/connections/${encodeURIComponent(req.params.id)}/auth-session`));
+
+/**
+ * Le medecin referme la fenetre sans s authentifier. On rend la session plutot
+ * que de la laisser tourner jusqu a sa peremption.
+ */
+app.post('/api/integrations/:id/auth-session/release', authenticateJWT, (req, res) =>
+  relayerVersMoteur(req, res,
+    `/api/connections/${encodeURIComponent(req.params.id)}/auth-session/release`,
+    { method: 'POST', body: {} }));
 
 app.post('/api/integrations/:id/auth-session/checkpoint', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res,

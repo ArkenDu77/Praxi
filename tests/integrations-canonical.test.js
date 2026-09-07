@@ -247,13 +247,40 @@ describe("l'écran n'exige plus aucune installation", () => {
   });
 
   test('la fenêtre est ouverte AU CLIC, pas après un aller-retour réseau', () => {
-    // Un navigateur bloque toute fenêtre ouverte après une réponse asynchrone.
-    // Le médecin resterait devant « connexion en cours » sans rien voir venir.
+    // L'intention n'a pas changé, le moyen si : ce n'est plus une fenêtre
+    // surgissante mais une fenêtre d'Arkiba. Dans les deux cas, elle doit
+    // apparaître AVANT le premier appel réseau — sinon le médecin clique et
+    // ne voit rien pendant plusieurs secondes, ce qui se lit exactement comme
+    // « ça ne marche pas ».
     const bloc = page.slice(page.indexOf('async function intConnecter'));
-    const clic = bloc.indexOf('window.open');
+    const ouverture = bloc.indexOf("classList.add('show')");
     const reseau = bloc.indexOf('await api(');
-    expect(clic).toBeGreaterThan(-1);
-    expect(clic).toBeLessThan(reseau);
+    expect(ouverture).toBeGreaterThan(-1);
+    expect(reseau).toBeGreaterThan(-1);
+    expect(ouverture).toBeLessThan(reseau);
+  });
+
+  test("le médecin ne quitte JAMAIS Arkiba pour se connecter", () => {
+    // Une fenêtre surgissante affichait l'adresse du fournisseur dans la barre
+    // du navigateur et son cadre technique autour de Doctolib. Le médecin
+    // voyait l'outillage, pas le produit.
+    const bloc = page.slice(page.indexOf('async function intConnecter'));
+    const finBloc = bloc.indexOf('\n}\n');
+    expect(bloc.slice(0, finBloc)).not.toMatch(/window\.open/);
+    expect(page).toMatch(/id="dl-cadre"/);
+  });
+
+  test("aucun mot d'outillage n'est visible par le médecin", () => {
+    // Le fournisseur doit disparaître derrière le produit. Ces mots sont ceux
+    // qui trahiraient l'implémentation à l'écran.
+    for (const mot of ['Browserbase', 'DevTools', 'debugger', 'Live View', 'remote browser']) {
+      expect(page).not.toContain(mot);
+    }
+  });
+
+  test("la fenêtre ne laisse pas de session tourner quand on la referme", () => {
+    // Une session abandonnée tourne — et se facture — jusqu'à sa péremption.
+    expect(page).toMatch(/auth-session\/release/);
   });
 
   test("il dit au médecin qu'Arkiba ne voit ni son mot de passe ni son code", () => {

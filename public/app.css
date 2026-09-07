@@ -4017,3 +4017,97 @@ html[data-theme="dark"] .theme-pick-card {
 .int-appels-titre { font-weight: 600; margin-bottom: 2px; }
 /* Une ligne de texte trop longue ne se lit pas : on la borne. */
 .int-appels-tete .muted { margin: 0; max-width: 46ch; }
+
+/* ==========================================================================
+   CONNEXION DOCTOLIB — la fenêtre que le médecin voit
+
+   Elle remplace une popup montrant la vue technique du fournisseur. Deux
+   exigences la gouvernent :
+
+   1. GRANDE. Une petite fenêtre perdue au milieu de l'écran ne donne pas
+      confiance, et rend le texte illisible une fois l'image réduite.
+   2. À LA BONNE ÉCHELLE. L'écran distant fait 1440×900 ; plus la surface
+      d'affichage s'en approche, moins l'image est redimensionnée, plus le
+      texte est net.
+   ========================================================================== */
+.dl-connexion.show { display: grid; }
+
+.dl-panneau {
+  width: min(1500px, 94vw);
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 22px 22px;
+  border-radius: 16px;
+  background: var(--surface, #fff);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, .28);
+}
+
+.dl-tete { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; }
+.dl-tete h2 { margin: 0; font-size: 1.3rem; }
+.dl-sous-titre { margin: 4px 0 0; color: var(--muted, #667); }
+.dl-discret { margin: 0; font-size: .86rem; color: var(--muted, #667); }
+
+/* La scène occupe toute la hauteur restante : c'est elle qui décide de
+   l'échelle de l'image distante. */
+.dl-scene {
+  position: relative;
+  height: 88vh;
+  max-height: 78vh;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--fond-doux, #f4f5f7);
+  border: 1px solid var(--border, rgba(0, 0, 0, .08));
+}
+
+.dl-cadre { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+
+.dl-attente {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  text-align: left;
+}
+.dl-attente-titre { font-weight: 600; font-size: 1.05rem; }
+
+.dl-etapes { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.dl-etapes li { display: flex; align-items: center; gap: 10px; color: var(--muted, #667); }
+.dl-etapes li.fait { color: inherit; }
+.dl-etapes li.encours { color: inherit; font-weight: 600; }
+
+.dl-puce {
+  width: 9px; height: 9px; border-radius: 50%;
+  border: 2px solid var(--border-fort, #c8ccd4);
+  flex: 0 0 auto;
+}
+.dl-etapes li.encours .dl-puce { border-color: var(--accent, #2f6df6); background: var(--accent, #2f6df6); animation: dl-battement 1.1s ease-in-out infinite; }
+.dl-etapes li.fait .dl-puce { border-color: #22c55e; background: #22c55e; }
+
+@keyframes dl-battement { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+.dl-erreur { margin: 0; color: #b42318; max-width: 52ch; text-align: center; }
+
+/* Sur petit écran, la scène prend ce qu'elle peut sans écraser l'en-tête. */
+@media (max-height: 800px) { .dl-scene { max-height: 70vh; } }
+@media (max-width: 900px)  { .dl-panneau { width: 96vw; padding: 14px; } }
+
+/* `display: flex` l'emporte sur l'attribut `hidden` : sans cette règle, la
+   progression restait PEINTE PAR-DESSUS Doctolib une fois la vue chargée —
+   le médecin lisait « Préparation… » superposé au formulaire de connexion.
+   Le JS la masquait bien ; c'est le CSS qui la remontrait. */
+.dl-attente[hidden] { display: none; }
+
+/* La scène prend TOUTE la hauteur restante du panneau.
+
+   Une première version fixait `height: 88vh` puis la bridait à `max-height:
+   78vh` — la bride gagnait, et l'image distante était réduite plus que
+   nécessaire. Plus la surface d'affichage approche les 1440×900 de l'écran
+   distant, plus le texte est net : sur un écran 1080p, on atteint ainsi une
+   échelle d'environ 1,00, c'est-à-dire aucune déformation. */
+.dl-panneau { height: 96vh; max-height: none; }
+.dl-scene { flex: 1 1 auto; height: auto; max-height: none; min-height: 0; }
