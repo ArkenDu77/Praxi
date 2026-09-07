@@ -2331,14 +2331,25 @@ function pcLigneListe(cle, items, modele) {
   return items.map((item) => {
     let valeur = null;
     let note = '';
+    /**
+     * Le chemin de correction d'un element de liste porte son identifiant :
+     * `medications.<id>.name`, `allergies.<id>.substance`. Le moteur sait
+     * les appliquer depuis toujours — mais aucun ecran ne les appelait, et
+     * un traitement non confirme peut BLOQUER la validation. Le medecin se
+     * serait retrouve devant une liste qu'on lui demande de traiter sans
+     * aucun moyen de le faire.
+     */
+    let champ = null;
     if (cle === 'medications') {
       valeur = [item.normalized_name || (item.name && item.name.value),
                 item.dose && item.dose.value,
                 item.frequency && item.frequency.value].filter(Boolean).join(' · ');
       if (item.temporal_status && item.temporal_status !== 'current') note = 'arrêté ou ancien';
+      champ = item.id ? 'medications.' + item.id + '.name' : null;
     } else if (cle === 'allergies') {
       valeur = item.normalized_substance || (item.substance && item.substance.value);
       if (item.requires_physician_audit) note = 'à confirmer — réponses contradictoires';
+      champ = item.id ? 'allergies.' + item.id + '.substance' : null;
     } else {
       valeur = pcValeur(item && item.value !== undefined ? item.value : item);
     }
@@ -2348,6 +2359,11 @@ function pcLigneListe(cle, items, modele) {
       '<span class="pc-item-value">' + pcEchappe(valeur || '—') + '</span>' +
       (note ? '<span class="pc-item-note">' + pcEchappe(note) + '</span>' : '') +
       (cite && cite !== valeur ? '<span class="pc-item-note">« ' + pcEchappe(cite) + ' »</span>' : '') +
+      (champ
+        ? '<button type="button" class="pc-corriger" data-champ="' + pcEchappe(champ) +
+          '" data-valeur="' + pcEchappe(valeur || '') +
+          '" data-intitule="' + pcEchappe(modele.libelle) + '">Corriger</button>'
+        : '') +
       '</div>';
   }).join('');
 }

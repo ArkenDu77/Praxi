@@ -343,3 +343,37 @@ describe('chaque donnée est corrigible par le médecin', () => {
     expect(SOURCE).toContain("action: 'correct'");
   });
 });
+
+describe('les traitements et les allergies se corrigent aussi', () => {
+  test('UN TRAITEMENT PORTE SA CORRECTION, avec son identifiant', () => {
+    // Le moteur sait appliquer `medications.<id>.name` depuis toujours. Aucun
+    // écran ne l'appelait — et un traitement non confirmé BLOQUE la
+    // validation : le médecin se serait retrouvé devant une liste qu'on lui
+    // demande de traiter, sans aucun moyen de le faire.
+    const { intake } = peindre(chargeReelle());
+    expect(intake).toContain('data-champ="medications.med_1.name"');
+  });
+
+  test("UNE ALLERGIE AUSSI, dès qu'il y en a une", () => {
+    const charge = chargeReelle();
+    charge.clinical_data.allergies = [
+      {
+        id: 'alg_1',
+        substance: { value: 'pénicilline', patient_statement: 'Je suis allergique à la pénicilline.' },
+        normalized_substance: 'Pénicilline',
+        requires_physician_audit: false,
+      },
+    ];
+    const { intake } = peindre(charge);
+    expect(intake).toContain('data-champ="allergies.alg_1.substance"');
+    expect(intake).toContain('Pénicilline');
+  });
+
+  test("une liste VIDE n'offre rien à corriger", () => {
+    // « Aucune allergie signalée » n'est pas une donnée qu'on corrige : c'est
+    // l'absence de données. Un bouton ici n'aurait aucun champ où écrire.
+    const { intake } = peindre(chargeReelle());
+    const bloc = intake.slice(intake.indexOf('Aucune allergie signalée') - 200, intake.indexOf('Aucune allergie signalée') + 100);
+    expect(bloc).not.toContain('data-champ="allergies.');
+  });
+});
