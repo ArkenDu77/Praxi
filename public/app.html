@@ -2196,6 +2196,10 @@ async function pcCharger() {
  */
 const PC_MOTIFS = {
   appels_desactives: 'Appels Arkiba désactivés',
+  // Ce rendez-vous existait déjà quand les appels ont été activés. Il reste
+  // visible — c'est l'agenda du médecin — mais il n'est pas rattrapé.
+  anterieur_a_activation: 'Rendez-vous antérieur à l’activation des appels',
+  cadence_depassee: 'Trop d’appels en peu de temps — mise en attente',
   telephonie_non_configuree: 'Appels indisponibles',
   identite_incomplete: 'Informations patient incomplètes',
   numero_absent: 'Aucun numéro de téléphone',
@@ -2715,7 +2719,7 @@ function intRendreAppels(integration) {
   const actif = integration.calls_enabled === true;
   // On decrit CE QUI VA SE PASSER, pas l'etat d'un drapeau.
   detail.textContent = actif
-    ? 'Arkiba appelle vos patients avant leur consultation et prépare leur dossier.'
+    ? 'Arkiba appelle les patients de vos nouveaux rendez-vous et prépare leur dossier. Les rendez-vous déjà pris ne sont pas appelés.'
     : 'Arkiba n’appelle personne. Vos rendez-vous restent visibles, sans appel.';
   bouton.textContent = actif ? 'Désactiver' : 'Activer les appels Arkiba';
   bouton.className = actif ? 'btn btn-ghost' : 'btn btn-primary';
@@ -2741,8 +2745,9 @@ async function intBasculerAppels() {
   // Trois phrases valent mieux qu'un piege.
   if (activer && !window.confirm(
     'Activer les appels Arkiba ? '
-    + 'Arkiba appellera automatiquement les patients de vos prochains rendez-vous '
-    + 'pour préparer leur dossier avant la consultation. '
+    + 'Arkiba appellera automatiquement les patients des rendez-vous QUE VOUS PRENDREZ '
+    + 'À PARTIR DE MAINTENANT, pour préparer leur dossier avant la consultation. '
+    + 'Les rendez-vous déjà présents dans votre agenda ne seront pas appelés. '
     + 'Vous pourrez le désactiver à tout moment.'
   )) return;
 
