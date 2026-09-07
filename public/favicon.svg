@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Arkiba">
+  <!-- Le monde du site, réduit à 16 px : fond quasi noir, lettre blanche, et
+       le point vert de l'état « prêt ». Le vert est la seule couleur, ici
+       comme sur la page. -->
+  <rect width="64" height="64" rx="15" fill="#08090b"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="14.5" fill="none" stroke="#1e232a"/>
+  <path d="M31.6 14 L45 48 H38.2 L35.3 40 H27.9 L25 48 H18.2 Z M31.6 24.6 L29.4 33.2 H33.8 Z"
+        fill="#f7f8f8"/>
+  <circle cx="47" cy="18" r="5" fill="#6ee7a8"/>
+</svg>
