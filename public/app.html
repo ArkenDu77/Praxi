@@ -424,6 +424,10 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
           <div class="pc-meta" id="pc-meta"></div>
         </div>
         <div class="pc-status" id="pc-status"></div>
+        <!-- Le dossier de pre-consultation est un EPISODE du patient, pas un
+             patient parallele. On mene au vrai dossier plutot que d'en
+             recopier le contenu ici. -->
+        <button class="btn btn-ghost" id="pc-voir-patient" type="button" hidden>Voir le dossier patient</button>
       </div>
 
       <!-- Divergence du rendez-vous : le RDV a bougé après l'appel -->
@@ -467,10 +471,15 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
         </div>
       </div>
 
-      <!-- Documents -->
+      <!-- Documents a generer.
+           Une case par type, jamais deux fois le meme : l'ecran precedent
+           empilait des cartes « Compte rendu » qu'on ne pouvait plus retirer. -->
       <div class="card">
-        <div class="card-title">Documents<span class="panel-aside">Zéro, un, ou plusieurs</span></div>
-        <div class="pc-kinds" id="pc-kinds"></div>
+        <div class="card-title">Documents à générer<span class="panel-aside">Cochez ce que vous voulez</span></div>
+        <div class="pc-doc-types" id="pc-doc-types"></div>
+        <div class="actions">
+          <button class="btn btn-primary" id="pc-generer" type="button">Générer</button>
+        </div>
         <div id="pc-docs" class="pc-docs"></div>
       </div>
 
@@ -2248,6 +2257,7 @@ async function pcOuvrir(id) {
     document.getElementById('pc-detail').hidden = false;
     pcRendre();
     await pcChargerTypes();
+    await pcChargerPatient();
     await pcRafraichirApercu();
   } catch (e) {
     pcErreur(e.message);
@@ -2957,34 +2967,181 @@ async function intRevoquer() {
   }
 }
 
-async function pcChargerTypes() {
-  try {
-    const data = await api('/api/preconsult/document-kinds');
-    document.getElementById('pc-kinds').innerHTML = (data.kinds || []).map(k =>
-      `<button class="btn btn-ghost" data-kind="${pcEchappe(k.kind)}" title="Exige : ${pcEchappe((k.requires || []).join(', '))}">+ ${pcEchappe(k.label)}</button>`
-    ).join('');
-    document.getElementById('pc-kinds').querySelectorAll('[data-kind]').forEach(b =>
-      b.addEventListener('click', () => pcGenerer(b.dataset.kind)));
-  } catch (_) { /* le moteur dira lui-même s'il est injoignable */ }
+/* ==========================================================================
+ *  LES DOCUMENTS DE LA PRE-CONSULTATION SONT DE VRAIS DOCUMENTS ARKIBA
+ * ==========================================================================
+ *
+ * Cet ecran avait son propre generateur, dans le moteur, en parallele de
+ * ceux d'Arkiba. Deux consequences, et les deux etaient graves :
+ *
+ *   - le medecin obtenait un « compte rendu » qui n'etait pas celui d'Arkiba :
+ *     ni le meme prompt, ni le meme referentiel de specialite, ni les memes
+ *     garde-fous, ni la meme pseudonymisation. Deux qualites de document dans
+ *     le meme produit, sans que rien ne le dise.
+ *   - le document n'existait que dans l'etat de cet ecran. Il n'etait rattache
+ *     a aucun patient, et disparaissait au rafraichissement.
+ *
+ * On appelle donc les VRAIS generateurs — les memes routes que les ecrans
+ * « Compte rendu » et « Lettre de liaison » — puis on archive dans le VRAI
+ * stockage documentaire, rattache au VRAI patient.
+ *
+ * La source du document devient : dossier patient (que le serveur relit tout
+ * seul depuis `patientId`) + interrogatoire de pre-consultation (deja archive
+ * comme document du patient, donc repris par ce meme contexte) + notes brutes
+ * du medecin. Rien n'est recopie ici : on donne l'identifiant du patient et
+ * les notes, le reste est deja en place.
+ */
+const PC_TYPES_DOCUMENT = [
+  {
+    cle: 'cr',
+    endpoint: 'compte-rendu',
+    label: 'Compte rendu de consultation',
+    typeHistorique: 'cr',
+    // Les notes du medecin sont la matiere premiere : sans elles, le
+    // generateur refuse, et il a raison.
+    exigeNotes: true,
+  },
+  {
+    cle: 'liaison',
+    endpoint: 'liaison',
+    label: 'Lettre de liaison',
+    typeHistorique: 'liaison',
+    exigeNotes: true,
+    demandeDestinataire: true,
+  },
+];
+
+/** Les cases a cocher. Chaque type apparait une fois, et une seule. */
+function pcRendreTypesDocument() {
+  const hote = document.getElementById('pc-doc-types');
+  if (!hote) return;
+  hote.innerHTML = PC_TYPES_DOCUMENT.map((t) =>
+    '<label class="pc-check">' +
+    '<input type="checkbox" data-pc-type="' + pcEchappe(t.cle) + '"' +
+    (pcChosenDocs.includes(t.cle) ? ' checked' : '') + '> ' +
+    pcEchappe(t.label) +
+    '</label>').join('');
+  hote.querySelectorAll('[data-pc-type]').forEach((c) => c.addEventListener('change', () => {
+    const cle = c.dataset.pcType;
+    pcChosenDocs = c.checked
+      ? [...new Set([...pcChosenDocs, cle])]
+      : pcChosenDocs.filter((x) => x !== cle);
+  }));
 }
 
-async function pcGenerer(kind) {
+/**
+ * Genere les documents coches, un par un, par les VRAIS generateurs.
+ *
+ * La pseudonymisation est celle du produit : on appelle exactement les memes
+ * fonctions que les ecrans de redaction. Raccorder la pre-consultation ne doit
+ * pas envoyer au modele une seule donnee identifiante de plus.
+ */
+async function pcGenererDocuments() {
   pcErreur('');
+  if (!pcEncounter) return;
+  if (pcChosenDocs.length === 0) { pcErreur('Cochez au moins un document à générer.'); return; }
+
+  const notes = (document.getElementById('pc-notes').value || '').trim();
+  const e = pcEncounter.encounter;
+  const p = e.patient || {};
+  const nomPatient = [p.last_name, p.first_name].filter(Boolean).join(' ') || 'Patient';
+
+  const bouton = document.getElementById('pc-generer');
+  bouton.disabled = true;
+  const faits = [];
   try {
-    // Un courrier a besoin d'un destinataire : on le DEMANDE avant, plutôt que
-    // de laisser le moteur refuser — ou pire, de produire un document troué.
-    let recipient = null;
-    if (kind === 'lettre_liaison' || kind === 'courrier_specialiste') {
-      recipient = window.prompt('Destinataire du courrier ?');
-      if (recipient === null) return;
+    for (const cle of pcChosenDocs) {
+      const type = PC_TYPES_DOCUMENT.find((t) => t.cle === cle);
+      if (!type) continue;
+      if (type.exigeNotes && !notes) {
+        throw new Error('Renseignez les notes brutes de consultation avant de générer.');
+      }
+
+      const payload = { patient: nomPatient, notes };
+      if (pcPatientLie) payload.patientId = pcPatientLie.id;
+      if (type.demandeDestinataire) {
+        const destinataire = window.prompt('Destinataire de la lettre ?');
+        if (destinataire === null) continue;
+        payload.specialiste = destinataire;
+        payload.motif = e.planned_procedure_raw || '';
+      }
+      if (cle === 'cr') payload.date = (e.scheduled_start || '').slice(0, 10);
+
+      // Exactement le mecanisme du produit : on masque avant l'envoi, on
+      // restitue au retour, sur le poste du medecin uniquement.
+      const pseudo = pseudonymizePayload(cle, payload);
+      const subs = pseudo ? pseudo.substitutions : null;
+      const patientOrig = pseudo ? pseudo.patientOrig : '';
+
+      const data = await api('/api/generate/' + type.endpoint, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+      let texte = data.document || '';
+      if (subs) texte = resubstitute(texte, subs, patientOrig);
+
+      // Le VRAI stockage documentaire, rattache au VRAI patient.
+      await api('/api/documents', {
+        method: 'POST',
+        body: JSON.stringify({
+          patientId: pcPatientLie ? pcPatientLie.id : null,
+          patientNom: nomPatient,
+          type: type.typeHistorique,
+          typeLabel: type.label,
+          contenu: texte,
+          sources: [],
+          meta: { encounterId: e.encounter_id },
+        }),
+      });
+      faits.push(type.label);
     }
-    await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) + '/documents',
-      { method: 'POST', body: JSON.stringify({ kind, recipient }) });
-    await pcOuvrir(pcEncounter.encounter.encounter_id);
-  } catch (e) {
-    pcErreur(e.message);
+    if (faits.length) {
+      pcChosenDocs = [];
+      await pcOuvrir(e.encounter_id);
+    }
+  } catch (err) {
+    pcErreur(err.message);
+  } finally {
+    bouton.disabled = false;
   }
 }
+
+/**
+ * Le patient Arkiba auquel ce dossier se rattache.
+ *
+ * Il n'y a qu'UNE source de patients dans Arkiba, et la pre-consultation ne
+ * doit pas en ouvrir une seconde. On demande donc au serveur de retrouver la
+ * fiche, plutot que de la deviner a l'ecran.
+ */
+let pcPatientLie = null;
+
+async function pcChargerPatient() {
+  pcPatientLie = null;
+  const bouton = document.getElementById('pc-voir-patient');
+  if (bouton) bouton.hidden = true;
+  if (!pcEncounter) return;
+  try {
+    const r = await api('/api/preconsult/encounters/' +
+      encodeURIComponent(pcEncounter.encounter.encounter_id) + '/patient');
+    if (r && r.patient) {
+      pcPatientLie = r.patient;
+      if (bouton) {
+        bouton.hidden = false;
+        bouton.textContent = 'Voir le dossier patient — ' + r.patient.nom;
+      }
+    }
+  } catch (_) {
+    // Un patient pas encore cree n'est pas une panne : la fiche arrive avec
+    // le prochain passage du worker.
+  }
+}
+
+async function pcChargerTypes() {
+  // Les types viennent du PRODUIT, pas du moteur : ce sont les documents
+  // qu'Arkiba sait reellement produire, avec leurs vrais generateurs.
+  pcRendreTypesDocument();
+}
+
 
 async function pcEnregistrerNotes() {
   pcErreur('');
@@ -2996,13 +3153,49 @@ async function pcEnregistrerNotes() {
   } catch (e) { pcErreur(e.message); }
 }
 
+/**
+ * Valider le dossier. Vraie requête, vrai refus, vrai statut.
+ *
+ * Le moteur refuse en 409 tant qu'il reste des éléments à traiter. Ce refus
+ * doit se LIRE : afficher « erreur » sans dire lesquels laisserait le médecin
+ * devant un bouton qui ne marche pas, sans savoir quoi faire. Et l'écran ne
+ * fabrique jamais un statut « validé » de son côté — après ce clic, il relit
+ * le dossier depuis le serveur, comme un rafraîchissement le ferait.
+ */
 async function pcValider() {
   pcErreur('');
+  const bouton = document.getElementById('pc-validate');
+  bouton.disabled = true;
   try {
     await api('/api/preconsult/encounters/' + encodeURIComponent(pcEncounter.encounter.encounter_id) + '/review',
       { method: 'POST', body: JSON.stringify({ reviewed_by: (me && me.email) || 'medecin', note: null }) });
     await pcOuvrir(pcEncounter.encounter.encounter_id);
-  } catch (e) { pcErreur(e.message); }
+  } catch (e) {
+    const restants = (pcEncounter && pcEncounter.review_requirements
+      && pcEncounter.review_requirements.required_fields) || [];
+    const nommes = restants
+      .map((champ) => pcLibelleDuChamp(champ))
+      .filter(Boolean);
+    pcErreur(nommes.length
+      ? 'Il reste à traiter : ' + nommes.join(', ') + '. Corrigez-les ci-dessus, puis validez.'
+      : e.message);
+  } finally {
+    bouton.disabled = false;
+  }
+}
+
+/**
+ * Le nom lisible d'un champ réclamé avant validation.
+ *
+ * Le moteur les désigne par leur chemin technique. On le traduit avec les
+ * libellés qu'il fournit déjà dans les points à vérifier : le médecin ne doit
+ * jamais lire « cardiovascular.pacemaker ».
+ */
+function pcLibelleDuChamp(champ) {
+  const clinique = (pcEncounter && pcEncounter.clinical_data) || {};
+  const points = [].concat(clinique.uncertain_information || [], clinique.missing_information || []);
+  const trouve = points.find((p) => p.field === champ);
+  return (trouve && (trouve.field_label || trouve.label)) || null;
 }
 
 /** L'aperçu vient de la MÊME construction que l'envoi réel. */
@@ -3067,6 +3260,11 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.getElementById('dl-connexion').classList.contains('show')) dlFermer();
 });
 document.getElementById('pc-validate').addEventListener('click', pcValider);
+document.getElementById('pc-generer').addEventListener('click', pcGenererDocuments);
+// Le dossier de pre-consultation est un episode DU patient : on y mene.
+document.getElementById('pc-voir-patient').addEventListener('click', () => {
+  if (pcPatientLie) openDossier(pcPatientLie.id);
+});
 document.getElementById('pc-transfer').addEventListener('click', pcTransferer);
 document.getElementById('pc-scope-intake').addEventListener('change', pcRafraichirApercu);
 document.getElementById('pc-scope-notes').addEventListener('change', pcRafraichirApercu);

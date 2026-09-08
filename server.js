@@ -2991,6 +2991,37 @@ app.post('/api/dossiers/import', authenticateJWT, exigerFonctionnalite('patients
  * patients du cabinet, mais il n'est plus le chemin par lequel le medecin
  * travaille : ces routes-ci lisent la structure la ou elle existe encore.
  */
+/**
+ * Lit une ressource du moteur SANS repondre au client.
+ *
+ * `relayerVersMoteur` renvoie directement la reponse : parfait pour un relais,
+ * inutilisable quand Arkiba doit se servir du contenu pour repondre autre
+ * chose. Les deux partagent la meme regle d'identite — cabinet derive de la
+ * session, jeton de service — parce qu'en avoir deux versions serait la
+ * garantie que l'une des deux finisse par l'oublier.
+ */
+async function lireDepuisMoteur(req, chemin) {
+  const tenantId = req.principal && req.principal.tenantId;
+  if (!tenantId) return { ok: false, status: 401, body: null };
+  if (!intakeEngineConfigured()) return { ok: false, status: 503, body: null };
+  try {
+    const reponse = await fetch(`${INTAKE_ENGINE_URL}${chemin}`, {
+      headers: {
+        'content-type': 'application/json',
+        'x-arkiba-tenant': tenantId,
+        ...(ARKIBA_ENGINE_TOKEN ? { 'x-arkiba-service-token': ARKIBA_ENGINE_TOKEN } : {}),
+      },
+      signal: AbortSignal.timeout(20_000),
+    });
+    const texte = await reponse.text();
+    let corps = null;
+    try { corps = texte ? JSON.parse(texte) : null; } catch (_) { corps = null; }
+    return { ok: reponse.ok, status: reponse.status, body: corps };
+  } catch (_) {
+    return { ok: false, status: 502, body: null };
+  }
+}
+
 async function relayerVersMoteur(req, res, chemin, options = {}) {
   // Le cabinet est DERIVE de la session, jamais lu dans la requete entrante.
   // Sans principal, la route n'est pas passee par l'authentification : on
@@ -3214,6 +3245,39 @@ app.post('/api/integrations/:id/calls', authenticateJWT, (req, res) =>
 app.get('/api/preconsult/rendez-vous', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res, '/api/source-appointments'));
 
+/**
+ * ============================================================================
+ *  A QUEL PATIENT CE DOSSIER DE PRE-CONSULTATION APPARTIENT-IL
+ * ============================================================================
+ *
+ * Arkiba n'a qu'UNE source de patients, et la pre-consultation ne doit pas en
+ * ouvrir une seconde. Cet ecran a donc besoin de savoir quelle fiche existante
+ * il decrit — pour y mener le medecin, et pour que les documents qu'il genere
+ * s'y rattachent au lieu de flotter.
+ *
+ * On resout ici, cote serveur, plutot que de laisser l'ecran deviner a partir
+ * d'un nom : deviner reviendrait a rapprocher sur le nom seul, ce qui melange
+ * les dossiers de deux personnes homonymes.
+ */
+app.get('/api/preconsult/encounters/:id/patient', authenticateJWT, async (req, res) => {
+  const relais = await lireDepuisMoteur(req, `/api/encounters/${encodeURIComponent(req.params.id)}`);
+  if (!relais.ok) return res.status(relais.status).json({ error: 'Dossier introuvable.' });
+
+  const enc = relais.body && relais.body.encounter;
+  if (!enc) return res.status(404).json({ error: 'Dossier introuvable.' });
+
+  const identite = enc.patient || {};
+  const nom = [identite.last_name, identite.first_name].filter(Boolean).join(' ');
+  const patient = dossiers.trouverPatientPour(req.user.id, {
+    intakeId: enc.intake_id || null,
+    sourcePatientRef: (enc.appointment && enc.appointment.patient_reference) || null,
+    nom,
+    ddn: identite.date_of_birth || null,
+  });
+  if (!patient) return res.status(404).json({ error: 'Aucune fiche patient pour ce dossier.' });
+  res.json({ patient });
+});
+
 app.get('/api/mon-cabinet', authenticateJWT, (req, res) => {
   res.json({ cabinet: req.principal.tenantId });
 });
@@ -3226,14 +3290,41 @@ app.post('/api/integrations/:id/revoke', authenticateJWT, (req, res) =>
   relayerVersMoteur(req, res, `/api/connections/${encodeURIComponent(req.params.id)}/revoke`,
     { method: 'POST', body: {} }));
 
+/**
+ * ============================================================================
+ *  LE MOTEUR REMET UN DOSSIER : IL DEVIENT UN VRAI PATIENT ARKIBA
+ * ============================================================================
+ *
+ * Le medecin destinataire etait designe par son EMAIL, pose dans une variable
+ * d'environnement du moteur (`PRAXI_TARGET_USER_EMAIL`). Autrement dit : un
+ * seul cabinet pouvait recevoir ses patients, et il fallait un deploiement
+ * pour en brancher un second. Le medecin qui cree son compte ce matin ne
+ * verrait jamais arriver ses dossiers.
+ *
+ * Le cabinet, lui, est deja porte par tout le reste de la chaine. On le
+ * prefere donc a l'email : `org-<id>` designe exactement un compte, sans
+ * qu'aucune variable ne le nomme. L'email reste accepte pour ne pas casser un
+ * deploiement existant.
+ */
 app.post('/api/internal/intake-results', requireIntakeService, (req, res) => {
   const email = s(req.body.practitioner_email, 200).toLowerCase();
+  const tenantId = s(req.body.tenant_id, 60);
   const intakeId = s(req.body.intake_id, 80);
-  if (!email)    return res.status(400).json({ error: 'practitioner_email requis.' });
-  if (!intakeId) return res.status(400).json({ error: 'intake_id requis.' });
+  const sourcePatientRef = s(req.body.source_patient_ref, 120);
+  if (!email && !tenantId) {
+    return res.status(400).json({ error: 'tenant_id ou practitioner_email requis.' });
+  }
+  if (!intakeId && !sourcePatientRef) {
+    return res.status(400).json({ error: 'intake_id ou source_patient_ref requis.' });
+  }
 
-  const user = readUsers().users.find(u => u.email === email);
-  if (!user) return res.status(404).json({ error: 'Médecin introuvable pour cet email.' });
+  const comptes = readUsers().users;
+  const user = tenantId
+    ? comptes.find(u => u.organizationId === tenantId)
+    : comptes.find(u => u.email === email);
+  if (!user) {
+    return res.status(404).json({ error: 'Médecin introuvable pour ce cabinet.' });
+  }
 
   const patientBody = req.body.patient || {};
   const resume = req.body.patient_summary || {};
@@ -3244,23 +3335,38 @@ app.post('/api/internal/intake-results', requireIntakeService, (req, res) => {
     patho:       txt(resume.patho, 1000),
     traitements: txt(resume.traitements, 1000),
     allergies:   txt(resume.allergies, 500),
+    sourcePatientRef,
   });
   if (resultatPatient.error) return res.status(400).json({ error: resultatPatient.error });
 
+  /**
+   * Le document d'interrogatoire est OPTIONNEL.
+   *
+   * Le patient doit exister des que le rendez-vous est detecte — bien avant
+   * qu'un appel ait eu lieu, et donc bien avant qu'il y ait quoi que ce soit a
+   * ecrire. Exiger un contenu ici retardait la fiche patient jusqu'apres
+   * l'appel, ce qui la rendait invisible pendant tout le temps ou le medecin
+   * en avait justement besoin.
+   */
   const documentBody = req.body.document || {};
-  const resultatDocument = dossiers.upsertIntakeDocument(
-    user.id,
-    resultatPatient.patient.id,
-    resultatPatient.patient.nom,
-    intakeId,
-    txt(documentBody.contenu, 40000),
-  );
-  if (resultatDocument.error) return res.status(400).json({ error: resultatDocument.error });
+  const contenu = txt(documentBody.contenu, 40000);
+  let documentId = null;
+  if (contenu && intakeId) {
+    const resultatDocument = dossiers.upsertIntakeDocument(
+      user.id,
+      resultatPatient.patient.id,
+      resultatPatient.patient.nom,
+      intakeId,
+      contenu,
+    );
+    if (resultatDocument.error) return res.status(400).json({ error: resultatDocument.error });
+    documentId = resultatDocument.document.id;
+  }
 
   res.status(resultatPatient.created ? 201 : 200).json({
     ok: true,
     patientId: resultatPatient.patient.id,
-    documentId: resultatDocument.document.id,
+    documentId,
     created: resultatPatient.created,
   });
 });

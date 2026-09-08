@@ -142,11 +142,18 @@ describe('POST /api/internal/intake-results', () => {
   });
 
   test('le dossier créé par Intake apparaît dans le contexte de génération', async () => {
+    // Un NOUVEL interrogatoire du MÊME patient ne crée pas un second dossier :
+    // il enrichit le premier. Sans cela, un patient qui reprend rendez-vous se
+    // retrouvait en double, chaque fiche portant la moitié de son histoire —
+    // et le médecin lisait ses allergies dans l'une, ses traitements dans
+    // l'autre. La réponse est donc 200 (retrouvé), pas 201 (créé).
     const res = await request(app)
       .post('/api/internal/intake-results')
       .set('x-intake-token', 'test-intake-token')
       .send(payloadIntake({ intake_id: 'intake_contexte_002', session_id: 'sess_contexte_002' }))
-      .expect(201);
+      .expect(200);
+
+    expect(res.body.created).toBe(false);
 
     const contexte = dossiers.contextePatient(
       dossiers.readDossiers().patients.find(p => p.id === res.body.patientId).userId,
