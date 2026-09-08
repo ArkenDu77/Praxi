@@ -39,10 +39,19 @@ function extraire(signature) {
 }
 
 describe("l'écran est découpé en étapes", () => {
-  test('LES QUATRE ÉTAPES EXISTENT DANS LE DOCUMENT', () => {
-    for (const etape of ['preconsultation', 'consultation', 'documents', 'transfert']) {
+  test('DEUX ÉTAPES, PAS QUATRE', () => {
+    // « Consultation » et « Documents » n'avaient aucune raison d'être
+    // séparés : les documents sont rédigés à partir du dossier ET des notes
+    // de consultation. Les séparer imposait un aller-retour pour un seul
+    // geste. Le transfert n'est pas une étape : c'est une action de fin.
+    for (const etape of ['preconsultation', 'consultation']) {
       expect(APP).toContain(`data-etape="${etape}"`);
     }
+    expect(APP).not.toContain('data-etape="documents"');
+    expect(APP).not.toContain('data-etape="transfert"');
+    const debut = APP.indexOf('const PC_ETAPES = [');
+    const table = APP.slice(debut, APP.indexOf('];', debut));
+    expect([...table.matchAll(/cle: '([a-z]+)'/g)].map((m) => m[1])).toEqual(['preconsultation', 'consultation']);
   });
 
   test("UNE SEULE ÉTAPE EST VISIBLE À LA FOIS", () => {
@@ -56,8 +65,11 @@ describe("l'écran est découpé en étapes", () => {
   test('LE DOSSIER COMPLET EST REPLIÉ PAR DÉFAUT', () => {
     // Le médecin doit comprendre son patient en dix secondes. Le détail reste
     // accessible, il n'est simplement plus ce qu'on voit en premier.
-    expect(APP).toContain('Voir toutes les informations');
+    expect(APP).toContain('Voir le dossier complet');
     expect(APP).toContain('id="pc-intake-resume"');
+    // Les réponses négatives se comptent, elles ne se lisent pas : onze
+    // « non » d'affilée sont du bruit, pas de l'information.
+    expect(APP).toContain('sans particularité');
   });
 });
 

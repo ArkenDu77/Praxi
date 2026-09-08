@@ -4240,3 +4240,100 @@ html[data-theme="dark"] .theme-pick-card {
   color: var(--text-muted);
 }
 .pc-tout[open] > summary { border-bottom: 1px solid var(--line); margin-bottom: 0.4rem; }
+
+/* ==========================================================================
+   PRÉ-CONSULTATION — UNE HIÉRARCHIE, PAS UNE PILE
+
+   Tout était beige, même taille, même contraste, même densité : on ne savait
+   pas où regarder. Trois niveaux désormais — ce qui demande une action, le
+   résumé clinique, le détail — et une colonne assez large pour qu'un écran de
+   1500 px ne rende pas une page de trois hauteurs.
+   ========================================================================== */
+#view-preconsult { max-width: 1180px; }
+
+.pc-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 0.9rem;
+}
+.pc-nom { margin: 0; font-size: 1.5rem; line-height: 1.2; }
+.pc-motif { margin: 0.15rem 0 0; color: var(--text-muted); }
+.pc-compteurs { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.pc-compteur {
+  font-size: 0.82rem;
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+  padding: 0.15rem 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.pc-compteur-alerte { color: var(--text); border-color: currentColor; font-weight: 600; }
+.pc-compteur-ok { opacity: 0.75; }
+
+/* PRIORITÉ 1 — ce qui demande une action. Il ne ressemble à rien d'autre. */
+.pc-action {
+  border: 1px solid var(--text-muted);
+  border-radius: 0.9rem;
+  padding: 1.15rem 1.25rem;
+  margin: 0 0 1.4rem;
+}
+.pc-action-prete { border-color: var(--line-2); }
+.pc-action-titre { margin: 0 0 0.8rem; font-size: 1.05rem; }
+.pc-action-sous { margin: 0 0 0.9rem; color: var(--text-muted); font-size: 0.9rem; }
+.btn-lg { padding: 0.6rem 1.4rem; font-size: 1rem; }
+
+/* Un problème : ce qui ne va pas, ce que le patient a dit, et le champ pour
+   le régler. Tout dans la même carte. */
+.pc-souci { padding: 0.9rem 0; border-top: 1px solid var(--line); }
+.pc-souci:first-child { border-top: 0; padding-top: 0; }
+.pc-souci-titre { margin: 0 0 0.3rem; font-size: 0.98rem; }
+.pc-souci-detail { margin: 0 0 0.5rem; font-size: 0.88rem; color: var(--text-muted); }
+.pc-souci-citation {
+  margin: 0 0 0.7rem;
+  padding: 0.35rem 0 0.35rem 0.8rem;
+  border-left: 2px solid var(--line-2);
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+.pc-souci-saisie { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pc-souci-saisie .input { flex: 1 1 16rem; min-width: 0; }
+
+/* PRIORITÉ 2 — le résumé clinique, lisible d'un coup d'œil. */
+.pc-resume { margin: 0 0 1.4rem; }
+.pc-sous-titre {
+  margin: 0 0 0.6rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+.pc-bloc { margin: 0 0 1rem; }
+.pc-bloc-titre { margin: 0 0 0.2rem; font-size: 0.95rem; }
+.pc-rien { margin: 0.15rem 0; color: var(--text-muted); font-size: 0.9rem; }
+
+/* PRIORITÉ 3 — le détail. Accessible, jamais au premier plan. */
+.pc-negatifs > summary,
+.pc-tout > summary {
+  cursor: pointer;
+  padding: 0.4rem 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+.pc-negatifs .pc-item { opacity: 0.65; }
+.pc-transfert { display: grid; gap: 0.45rem; margin-top: 0.8rem; }
+.pc-enregistrement { margin: 0.4rem 0 0; font-size: 0.8rem; color: var(--text-muted); }
+
+/* Deux colonnes pour le résumé quand l'écran le permet : la lecture clinique
+   y gagne, et la page raccourcit d'autant. Les actions restent sur une seule
+   colonne — on ne cherche pas où cliquer. */
+@media (min-width: 1000px) {
+  #pc-intake-resume {
+    columns: 2;
+    column-gap: 2.2rem;
+  }
+  .pc-bloc { break-inside: avoid; }
+}

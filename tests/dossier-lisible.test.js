@@ -180,6 +180,11 @@ function peindre(charge) {
         set hidden(v) { peint[id + '-hidden'] = v; },
         get hidden() { return peint[id + '-hidden']; },
         textContent: '',
+        // L'écran câble ses corrections sur les éléments qu'il vient de
+        // peindre. Ce banc ne teste pas le câblage — il teste ce qui est
+        // peint — mais il doit laisser le code s'exécuter jusqu'au bout.
+        querySelectorAll: () => [],
+        addEventListener: () => {},
       };
     }
     return elements[id];
@@ -333,12 +338,17 @@ describe('chaque donnée est corrigible par le médecin', () => {
     expect(intake).not.toContain('data-champ="perioperative.tobacco"');
   });
 
-  test('PROPOSE DE RENSEIGNER ce qui manque, depuis « À vérifier »', () => {
+  test('LA CORRECTION SE FAIT DANS LA CARTE, sans aller chercher ailleurs', () => {
+    // Un bouton « Corriger » qui renvoyait chercher le champ trente lignes
+    // plus bas est exactement ce qui rendait l'écran pénible : on voyait le
+    // problème sans pouvoir le régler.
     const { alerts } = peindre(chargeReelle());
+    expect(alerts).toContain('pc-souci-saisie');
+    expect(alerts).toContain('<input type="text"');
     expect(alerts).toContain('data-champ="cardiovascular.pacemaker"');
-    // Un seul verbe pour un seul geste : le médecin corrige, qu'il s'agisse
-    // d'une donnée douteuse ou d'une donnée absente.
-    expect(alerts).toContain('Corriger');
+    // Un seul geste, et il se termine dans la carte : on saisit, on
+    // enregistre. Rien n'envoie chercher ailleurs.
+    expect(alerts).toContain('>Enregistrer<');
   });
 
   test("l'écran appelle bien la route de correction du moteur", () => {
