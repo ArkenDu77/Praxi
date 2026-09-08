@@ -430,6 +430,9 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
           <p class="pc-motif" id="pc-meta"></p>
         </div>
         <div class="pc-compteurs" id="pc-compteurs"></div>
+        <!-- Le dossier de pré-consultation est un ÉPISODE du patient : on y
+             mène plutôt que d'en recopier le contenu ici. -->
+        <button class="btn btn-ghost" id="pc-voir-patient" type="button" hidden>Voir le dossier patient</button>
       </header>
 
       <nav class="pc-etapes" id="pc-etapes" aria-label="Étapes"></nav>
@@ -2423,7 +2426,10 @@ function pcAllerA(cle) {
     el.hidden = el.dataset.etape !== cle;
   });
   pcRendreEtapes();
-  if (cle === 'documents') pcRendreTypesDocument();
+  // L'étape « Documents » a fusionné avec « Consultation » : c'est elle qui
+  // porte désormais les cases à cocher. Sans cette ligne, elles ne se
+  // peignaient plus du tout — le médecin voyait une section vide.
+  if (cle === 'consultation') pcRendreTypesDocument();
 }
 
 function pcRendreEtapes() {
@@ -3487,14 +3493,41 @@ document.getElementById('dl-connexion').addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.getElementById('dl-connexion').classList.contains('show')) dlFermer();
 });
-document.getElementById('pc-validate').addEventListener('click', pcValider);
-// Le dossier de pre-consultation est un episode DU patient : on y mene.
-document.getElementById('pc-voir-patient').addEventListener('click', () => {
+/**
+ * ============================================================================
+ *  UN ÉLÉMENT ABSENT NE DOIT PAS EMPORTER TOUTE LA PAGE
+ * ============================================================================
+ *
+ * `document.getElementById('x').addEventListener(...)` jette quand `x`
+ * n'existe pas — et la levée interrompt le script AU MILIEU du câblage. Tous
+ * les écouteurs déclarés APRÈS ne sont jamais posés : la barre latérale, les
+ * onglets, les boutons des autres écrans. Le produit entier devient inerte.
+ *
+ * C'est arrivé : une refonte a retiré un bouton de l'écran de
+ * pré-consultation sans retirer sa ligne de câblage. La console montrait une
+ * seule TypeError, et plus rien ne répondait au clic nulle part.
+ *
+ * Le remède n'est pas d'être plus attentif : c'est que l'absence d'un élément
+ * ne soit plus une exception. Un bouton qui n'existe pas n'a simplement pas
+ * d'écouteur, et le reste de la page vit.
+ */
+function surClic(id, action, evenement = 'click') {
+  const el = document.getElementById(id);
+  if (!el) {
+    console.warn('[arkiba] élément « ' + id + " » absent : aucun écouteur posé (le reste de la page n'est pas affecté)");
+    return null;
+  }
+  el.addEventListener(evenement, action);
+  return el;
+}
+
+surClic('pc-validate', pcValider);
+surClic('pc-voir-patient', () => {
   if (pcPatientLie) openDossier(pcPatientLie.id);
 });
-document.getElementById('pc-transfer').addEventListener('click', pcTransferer);
-document.getElementById('pc-scope-intake').addEventListener('change', pcRafraichirApercu);
-document.getElementById('pc-scope-notes').addEventListener('change', pcRafraichirApercu);
+surClic('pc-transfer', pcTransferer);
+surClic('pc-scope-intake', pcRafraichirApercu, 'change');
+surClic('pc-scope-notes', pcRafraichirApercu, 'change');
 
 document.querySelectorAll('.side-link[data-view]').forEach(b => {
   b.addEventListener('click', () => {
