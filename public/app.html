@@ -433,65 +433,98 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
       <!-- Divergence du rendez-vous : le RDV a bougé après l'appel -->
       <div class="alert alert-warn" id="pc-divergence" hidden></div>
 
-      <!-- Ce que le patient a déclaré -->
-      <div class="card">
-        <div class="card-title">Ce que le patient a déclaré<span class="panel-aside">Appel de pré-consultation</span></div>
-        <div id="pc-intake"></div>
-      </div>
+      <!-- ==================================================================
+           QUATRE ETAPES, UNE SEULE A LA FOIS
 
-      <!-- Points à vérifier -->
-      <div class="card" id="pc-alerts-card" hidden>
-        <div class="card-title">À vérifier<span class="panel-aside">Signalé par Arkiba</span></div>
-        <div id="pc-alerts"></div>
-      </div>
+           Tout tenait sur une seule page interminable : dossier, points a
+           verifier, validation, notes, documents, transfert — six cartes
+           empilees, chacune avec son gros bouton. Le medecin ne savait pas ou
+           regarder, ni ce qui restait a faire.
 
-      <!-- Validation -->
-      <div class="card">
-        <div class="card-title">Validation</div>
-        <p class="muted" id="pc-review-state">—</p>
-        <div class="actions">
-          <button class="btn btn-primary" id="pc-validate" type="button">Valider le dossier</button>
+           Le travail a un ordre naturel : on relit, on valide, on consulte,
+           on redige. L'ecran le suit.
+           ================================================================== -->
+      <nav class="pc-etapes" id="pc-etapes" aria-label="Étapes de la consultation"></nav>
+
+      <!-- ÉTAPE 1 — PRÉ-CONSULTATION ---------------------------------------->
+      <div class="pc-etape" data-etape="preconsultation">
+
+        <!-- Ce qui appelle vraiment le médecin. Seule zone de travail
+             obligatoire : le reste du dossier se lit, il ne se remplit pas. -->
+        <div class="card" id="pc-alerts-card" hidden>
+          <div class="card-title" id="pc-alerts-titre">À vérifier</div>
+          <p class="muted">Corrigez ces points, puis validez le dossier.</p>
+          <div id="pc-alerts"></div>
         </div>
-      </div>
 
-      <!-- Notes brutes de consultation — MÊME composant que « Nouvelle consultation » -->
-      <div class="card">
-        <div class="card-title">Notes de consultation</div>
-        <div class="field">
-          <label class="label"><span>Notes brutes</span><span class="label-opt">Dictez ou tapez — les deux fonctionnent ensemble</span></label>
-          <div class="with-mic">
-            <textarea class="textarea" id="pc-notes" style="min-height:180px" placeholder="Motif, plaintes du patient, examen clinique, impression diagnostique, traitement…"></textarea>
-            <button type="button" class="mic-btn" data-mic="pc-notes" title="Dictée vocale">
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
-            </button>
+        <!-- Le dossier complet. Replié par défaut : le médecin doit
+             comprendre son patient en dix secondes, pas parcourir trente
+             champs. -->
+        <div class="card">
+          <div class="card-title">Ce que le patient a déclaré<span class="panel-aside" id="pc-intake-compte"></span></div>
+          <div id="pc-intake-resume"></div>
+          <details class="pc-tout" id="pc-tout">
+            <summary>Voir toutes les informations</summary>
+            <div id="pc-intake"></div>
+          </details>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Validation</div>
+          <p class="muted" id="pc-review-state">—</p>
+          <div class="actions">
+            <button class="btn btn-primary" id="pc-validate" type="button">Valider le dossier</button>
           </div>
         </div>
-        <div class="actions">
-          <button class="btn btn-primary" id="pc-save-notes" type="button">Enregistrer les notes</button>
+      </div>
+
+      <!-- ÉTAPE 2 — CONSULTATION -------------------------------------------->
+      <div class="pc-etape" data-etape="consultation" hidden>
+        <div class="card">
+          <div class="card-title">Notes brutes de consultation</div>
+          <div class="field">
+            <label class="label"><span>Vos notes</span><span class="label-opt">Dictez ou tapez — les deux fonctionnent ensemble</span></label>
+            <div class="with-mic">
+              <textarea class="textarea" id="pc-notes" style="min-height:200px" placeholder="Motif, plaintes du patient, examen clinique, impression diagnostique, traitement…"></textarea>
+              <button type="button" class="mic-btn" data-mic="pc-notes" title="Dictée vocale">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3zM19 10v2a7 7 0 01-14 0v-2M12 19v4M8 23h8"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="btn btn-primary" id="pc-save-notes" type="button">Enregistrer les notes</button>
+          </div>
         </div>
       </div>
 
-      <!-- Documents a generer.
-           Une case par type, jamais deux fois le meme : l'ecran precedent
-           empilait des cartes « Compte rendu » qu'on ne pouvait plus retirer. -->
-      <div class="card">
-        <div class="card-title">Documents à générer<span class="panel-aside">Cochez ce que vous voulez</span></div>
-        <div class="pc-doc-types" id="pc-doc-types"></div>
-        <div class="actions">
-          <button class="btn btn-primary" id="pc-generer" type="button">Générer</button>
+      <!-- ÉTAPE 3 — DOCUMENTS ----------------------------------------------->
+      <div class="pc-etape" data-etape="documents" hidden>
+        <div class="card">
+          <div class="card-title">Documents à générer</div>
+          <p class="muted">Chaque document est rédigé à partir du dossier du patient, de la pré-consultation et de vos notes.</p>
+          <div class="pc-doc-types" id="pc-doc-types"></div>
         </div>
-        <div id="pc-docs" class="pc-docs"></div>
+        <!-- Les VRAIS blocs de rédaction viennent se poser ici. Ce ne sont pas
+             des copies : ce sont les mêmes éléments que les onglets Compte
+             rendu et Lettre de liaison, déplacés le temps de la rédaction. -->
+        <div id="pc-blocs-documents"></div>
+        <div class="card">
+          <div class="card-title">Documents du patient</div>
+          <div id="pc-docs" class="pc-docs"></div>
+        </div>
       </div>
 
-      <!-- Terminer & transférer -->
-      <div class="card">
-        <div class="card-title">Terminer &amp; transférer</div>
-        <p class="muted">Cochez ce qui doit partir. Rien d'autre ne sera envoyé.</p>
-        <label class="pc-check"><input type="checkbox" id="pc-scope-intake" checked> Données pré-consultation <span class="muted">(appel patient + vos corrections)</span></label>
-        <label class="pc-check"><input type="checkbox" id="pc-scope-notes"> Notes de consultation</label>
-        <div class="pc-preview" id="pc-preview"></div>
-        <div class="actions">
-          <button class="btn btn-primary" id="pc-transfer" type="button">Terminer &amp; transférer</button>
+      <!-- ÉTAPE 4 — TRANSFERT ----------------------------------------------->
+      <div class="pc-etape" data-etape="transfert" hidden>
+        <div class="card">
+          <div class="card-title">Transfert vers le logiciel du cabinet</div>
+          <p class="muted">Cochez ce qui doit partir. Rien d'autre ne sera envoyé.</p>
+          <label class="pc-check"><input type="checkbox" id="pc-scope-intake" checked> Données pré-consultation <span class="muted">(appel patient + vos corrections)</span></label>
+          <label class="pc-check"><input type="checkbox" id="pc-scope-notes"> Notes de consultation</label>
+          <div class="pc-preview" id="pc-preview"></div>
+          <div class="actions">
+            <button class="btn btn-primary" id="pc-transfer" type="button">Terminer &amp; transférer</button>
+          </div>
         </div>
       </div>
     </div>
@@ -2147,6 +2180,8 @@ function switchView(name) {
 let pcEncounter = null;
 let pcDocs = [];
 let pcChosenDocs = [];
+/** Les TYPES de document cochés. Distinct des documents à transférer. */
+let pcTypesChoisis = [];
 
 function pcErreur(message) {
   const el = document.getElementById('pc-error');
@@ -2255,9 +2290,13 @@ async function pcOuvrir(id) {
     document.getElementById('pc-list-card').hidden = true;
     document.getElementById('pc-attente-card').hidden = true;
     document.getElementById('pc-detail').hidden = false;
+    // Un bloc reste emprunte a l'onglet Compte rendu serait invisible pour
+    // le medecin qui y retourne : on rend tout avant de repeindre.
+    pcRendreTousLesBlocs();
     pcRendre();
-    await pcChargerTypes();
     await pcChargerPatient();
+    pcAllerA('preconsultation');
+    await pcChargerDocumentsDuPatient();
     await pcRafraichirApercu();
   } catch (e) {
     pcErreur(e.message);
@@ -2382,6 +2421,157 @@ function pcLigneListe(cle, items, modele) {
   }).join('');
 }
 
+/* ==========================================================================
+ *  QUATRE ÉTAPES, UNE SEULE À LA FOIS
+ * ==========================================================================
+ *
+ * Tout tenait sur une page interminable : dossier, points à vérifier,
+ * validation, notes, documents, transfert. Six cartes empilées, chacune avec
+ * son gros bouton vert. Le médecin ne savait ni où regarder, ni ce qui
+ * restait à faire.
+ *
+ * Le travail a un ordre naturel — on relit, on valide, on consulte, on rédige
+ * — et l'écran le suit. Les étapes restent toutes atteignables : un médecin
+ * qui veut relire son dossier pendant qu'il rédige ne doit pas avoir à
+ * recommencer.
+ */
+const PC_ETAPES = [
+  { cle: 'preconsultation', titre: 'Pré-consultation' },
+  { cle: 'consultation', titre: 'Consultation' },
+  { cle: 'documents', titre: 'Documents' },
+  { cle: 'transfert', titre: 'Transfert' },
+];
+let pcEtapeActive = 'preconsultation';
+
+function pcAllerA(cle) {
+  pcEtapeActive = cle;
+  document.querySelectorAll('.pc-etape').forEach((el) => {
+    el.hidden = el.dataset.etape !== cle;
+  });
+  pcRendreEtapes();
+  if (cle === 'documents') pcRendreTypesDocument();
+}
+
+function pcRendreEtapes() {
+  const hote = document.getElementById('pc-etapes');
+  if (!hote) return;
+  const valide = Boolean(pcEncounter && pcEncounter.encounter.doctor_review);
+  hote.innerHTML = PC_ETAPES.map((e, i) => {
+    const actif = e.cle === pcEtapeActive;
+    // La pré-consultation porte une pastille tant qu'elle n'est pas validée :
+    // c'est la seule étape dont l'ordre compte vraiment.
+    const marque = e.cle === 'preconsultation' && valide ? ' ✓' : '';
+    return '<button type="button" class="pc-etape-onglet' + (actif ? ' est-actif' : '') +
+      '" data-aller="' + e.cle + '">' +
+      '<span class="pc-etape-num">' + (i + 1) + '</span>' +
+      pcEchappe(e.titre) + marque + '</button>';
+  }).join('');
+  hote.querySelectorAll('[data-aller]').forEach((b) =>
+    b.addEventListener('click', () => pcAllerA(b.dataset.aller)));
+}
+
+/* ==========================================================================
+ *  CE QUI APPELLE VRAIMENT LE MÉDECIN
+ * ==========================================================================
+ *
+ * « À vérifier » est la seule zone de travail obligatoire. Le reste du
+ * dossier se LIT ; il ne se remplit pas. Le médecin n'a pas à parcourir trente
+ * champs pour trouver les deux qui posent problème.
+ *
+ * Chaque point porte sa correction, sur place. Une fois corrigé, il disparaît
+ * — parce qu'on relit le dossier depuis le serveur, jamais parce que l'écran
+ * aurait décidé tout seul qu'il est résolu.
+ */
+function pcPointsAVerifier() {
+  const c = (pcEncounter && pcEncounter.clinical_data) || {};
+  const incertains = (c.uncertain_information || []).map((u) => ({
+    intitule: u.field_label || u.label,
+    // Ce que le patient a dit, mot pour mot : c'est ce qui permet au médecin
+    // de trancher sans réécouter l'appel.
+    citation: (u.evidence && u.evidence.text) || null,
+    detail: u.detail || '',
+    champ: u.editable_path || null,
+  }));
+  const manquants = (c.missing_information || []).map((m) => ({
+    intitule: m.field_label || m.label,
+    citation: null,
+    detail: m.reason === 'posée, sans réponse exploitable'
+      ? 'Le patient n\'a pas donné de réponse exploitable.'
+      : (m.reason || ''),
+    champ: m.editable_path || null,
+  }));
+  return incertains.concat(manquants).filter((p) => p.intitule);
+}
+
+function pcRendreAVerifier() {
+  const points = pcPointsAVerifier();
+  const carte = document.getElementById('pc-alerts-card');
+  carte.hidden = points.length === 0;
+  document.getElementById('pc-alerts-titre').textContent =
+    points.length === 1 ? '1 élément à vérifier' : points.length + ' éléments à vérifier';
+
+  document.getElementById('pc-alerts').innerHTML = points.map((p) =>
+    '<div class="pc-souci">' +
+    '<div class="pc-souci-titre">' + pcEchappe(p.intitule) + '</div>' +
+    (p.citation
+      ? '<div class="pc-souci-citation">Le patient a dit : « ' + pcEchappe(p.citation) + ' »</div>'
+      : '') +
+    (p.detail ? '<div class="pc-souci-detail">' + pcEchappe(p.detail) + '</div>' : '') +
+    (p.champ
+      ? '<button type="button" class="pc-corriger" data-champ="' + pcEchappe(p.champ) +
+        '" data-valeur="" data-intitule="' + pcEchappe(p.intitule) + '">Corriger</button>'
+      : '') +
+    '</div>').join('');
+}
+
+/* ==========================================================================
+ *  LIRE LE PATIENT EN DIX SECONDES
+ * ==========================================================================
+ *
+ * Le dossier complet reste disponible, mais il n'est plus ce qu'on voit en
+ * premier. Ce qui compte cliniquement — ce que le patient a de positif — tient
+ * en quelques lignes. Le reste se déplie.
+ */
+function pcRendreResume() {
+  const clinique = (pcEncounter && pcEncounter.clinical_data) || {};
+  const faits = pcFaits(clinique);
+  const positifs = [];
+  const negatifs = [];
+  for (const fait of faits) {
+    const valeur = pcValeur(fait.value);
+    if (valeur === null) continue;
+    if (!fait.label) continue;
+    // « non » est une information, mais discrète : elle rassure sans occuper
+    // la place de ce qui doit sauter aux yeux.
+    (valeur === 'non' ? negatifs : positifs).push({ label: fait.label, valeur });
+  }
+  const listes = (pcEncounter && pcEncounter.nommage && pcEncounter.nommage.listes) || {};
+  for (const cle of Object.keys(listes)) {
+    const items = cle.indexOf('.') === -1
+      ? clinique[cle]
+      : cle.split('.').reduce((o, k) => (o == null ? o : o[k]), clinique);
+    if (!items || !items.length) continue;
+    const noms = items.map((it) =>
+      it.normalized_name || (it.name && it.name.value) ||
+      it.normalized_substance || (it.substance && it.substance.value) ||
+      pcValeur(it && it.value !== undefined ? it.value : it)).filter(Boolean);
+    if (noms.length) positifs.push({ label: listes[cle].libelle, valeur: noms.join(', ') });
+  }
+
+  document.getElementById('pc-intake-compte').textContent =
+    (positifs.length + negatifs.length) + ' informations recueillies';
+
+  const ligne = (x, discret) =>
+    '<div class="pc-item' + (discret ? ' pc-discret' : '') + '">' +
+    '<span class="pc-item-label">' + pcEchappe(x.label) + '</span>' +
+    '<span class="pc-item-value">' + pcEchappe(x.valeur) + '</span></div>';
+
+  document.getElementById('pc-intake-resume').innerHTML =
+    positifs.length || negatifs.length
+      ? positifs.map((x) => ligne(x, false)).join('') + negatifs.map((x) => ligne(x, true)).join('')
+      : '<p class="muted">L\'appel n\'a pas encore produit de données structurées.</p>';
+}
+
 function pcRendreIntake() {
   const clinique = pcEncounter.clinical_data || {};
   const nommage = pcEncounter.nommage || { sections: [], listes: {} };
@@ -2430,31 +2620,6 @@ function pcRendreIntake() {
  * — qui n'ont aucun sens pour un medecin et qui remontaient telles quelles a
  * l'ecran. Le moteur, lui, redige deja ces points en francais.
  */
-function pcRendreAVerifier() {
-  const clinique = pcEncounter.clinical_data || {};
-  const incertains = (clinique.uncertain_information || []).map((u) => ({
-    intitule: u.field_label || u.label,
-    detail: u.detail || '',
-    champ: u.editable_path || null,
-  }));
-  const manquants = (clinique.missing_information || []).map((m) => ({
-    intitule: m.field_label || m.label,
-    detail: m.reason || '',
-    champ: m.editable_path || null,
-  }));
-  const points = incertains.concat(manquants).filter((p) => p.intitule);
-
-  document.getElementById('pc-alerts-card').hidden = points.length === 0;
-  document.getElementById('pc-alerts').innerHTML = points.map((p) =>
-    '<div class="pc-item">' +
-    '<span class="pc-item-label">' + pcEchappe(p.intitule) + '</span>' +
-    (p.detail ? '<span class="pc-item-note">' + pcEchappe(p.detail) + '</span>' : '') +
-    (p.champ
-      ? '<button type="button" class="pc-corriger" data-champ="' + pcEchappe(p.champ) +
-        '" data-valeur="" data-intitule="' + pcEchappe(p.intitule) + '">Renseigner</button>'
-      : '') +
-    '</div>').join('');
-}
 
 /**
  * Corriger une donnee.
@@ -2528,8 +2693,10 @@ function pcRendre() {
 
   // Ce que le patient a réellement dit, tel que le MOTEUR le nomme. Cet
   // écran ne traduit plus rien lui-même : voir le commentaire de pcRendreIntake.
+  pcRendreResume();
   pcRendreIntake();
   pcRendreAVerifier();
+  pcRendreEtapes();
 
   // Divergence du rendez-vous
   const div = document.getElementById('pc-divergence');
@@ -2548,28 +2715,9 @@ function pcRendre() {
   document.getElementById('pc-validate').disabled = Boolean(revu);
 
   document.getElementById('pc-notes').value = (e.consultation_notes || {}).text || '';
-  pcRendreDocs();
+  pcChargerDocumentsDuPatient();
 }
 
-function pcRendreDocs() {
-  const el = document.getElementById('pc-docs');
-  if (!pcDocs.length) {
-    el.innerHTML = '<p class="muted">Aucun document généré pour cette consultation.</p>';
-    return;
-  }
-  const version = pcEncounter.encounter.document_version;
-  el.innerHTML = pcDocs.map(d => `
-    <label class="pc-check">
-      <input type="checkbox" data-doc="${pcEchappe(d.document_id)}" ${pcChosenDocs.includes(d.document_id) ? 'checked' : ''}>
-      ${pcEchappe(d.title)}
-      ${d.source_document_version < version ? '<span class="pc-stale">antérieur à la dernière correction</span>' : ''}
-    </label>`).join('');
-  el.querySelectorAll('[data-doc]').forEach(cb => cb.addEventListener('change', () => {
-    const id = cb.dataset.doc;
-    pcChosenDocs = cb.checked ? [...pcChosenDocs, id] : pcChosenDocs.filter(x => x !== id);
-    pcRafraichirApercu();
-  }));
-}
 
 /** Les types que le moteur sait RÉELLEMENT produire, avec leurs exigences. */
 /* ==========================================================================
@@ -2968,141 +3116,137 @@ async function intRevoquer() {
 }
 
 /* ==========================================================================
- *  LES DOCUMENTS DE LA PRE-CONSULTATION SONT DE VRAIS DOCUMENTS ARKIBA
+ *  LE VRAI BLOC COMPTE RENDU, PAS UNE IMITATION
  * ==========================================================================
  *
- * Cet ecran avait son propre generateur, dans le moteur, en parallele de
- * ceux d'Arkiba. Deux consequences, et les deux etaient graves :
+ * Cet écran avait sa propre interface de génération : un bouton « Générer »,
+ * pas d'aperçu, pas d'animation, pas les outils du document. Le médecin
+ * obtenait une expérience différente de celle qu'il connaît, pour le même
+ * geste — et le résultat s'affichait autrement.
  *
- *   - le medecin obtenait un « compte rendu » qui n'etait pas celui d'Arkiba :
- *     ni le meme prompt, ni le meme referentiel de specialite, ni les memes
- *     garde-fous, ni la meme pseudonymisation. Deux qualites de document dans
- *     le meme produit, sans que rien ne le dise.
- *   - le document n'existait que dans l'etat de cet ecran. Il n'etait rattache
- *     a aucun patient, et disparaissait au rafraichissement.
+ * On ne recopie donc rien : on DÉPLACE les éléments existants des onglets
+ * Compte rendu et Lettre de liaison dans l'étape Documents, le temps de la
+ * rédaction, puis on les remet chez eux. Ce sont les mêmes nœuds du document,
+ * donc les mêmes écouteurs, la même animation, le même rendu, les mêmes
+ * actions, le même archivage.
  *
- * On appelle donc les VRAIS generateurs — les memes routes que les ecrans
- * « Compte rendu » et « Lettre de liaison » — puis on archive dans le VRAI
- * stockage documentaire, rattache au VRAI patient.
- *
- * La source du document devient : dossier patient (que le serveur relit tout
- * seul depuis `patientId`) + interrogatoire de pre-consultation (deja archive
- * comme document du patient, donc repris par ce meme contexte) + notes brutes
- * du medecin. Rien n'est recopie ici : on donne l'identifiant du patient et
- * les notes, le reste est deja en place.
+ * C'est aussi la seule façon honnête de tenir la promesse « même composant » :
+ * une copie finit toujours par diverger de l'original.
  */
 const PC_TYPES_DOCUMENT = [
   {
     cle: 'cr',
-    endpoint: 'compte-rendu',
     label: 'Compte rendu de consultation',
-    typeHistorique: 'cr',
-    // Les notes du medecin sont la matiere premiere : sans elles, le
-    // generateur refuse, et il a raison.
-    exigeNotes: true,
+    vue: 'view-cr',
+    // Les éléments à déplacer, dans l'ordre où ils s'affichent.
+    morceaux: ['#view-cr > .card', '#view-cr > .actions', '#c-error', '#c-result'],
+    champs: { patient: 'c-patient', age: 'c-age', date: 'c-date', notes: 'c-notes' },
   },
   {
     cle: 'liaison',
-    endpoint: 'liaison',
     label: 'Lettre de liaison',
-    typeHistorique: 'liaison',
-    exigeNotes: true,
-    demandeDestinataire: true,
+    vue: 'view-liaison',
+    morceaux: ['#view-liaison > .card', '#view-liaison > .actions', '#l-error', '#l-result'],
+    champs: { patient: 'l-patient', age: 'l-age', notes: 'l-notes', motif: 'l-motif' },
   },
 ];
 
-/** Les cases a cocher. Chaque type apparait une fois, et une seule. */
+/** Où chaque morceau doit revenir quand on décoche. */
+const pcMorceauxEmpruntes = new Map();
+
 function pcRendreTypesDocument() {
   const hote = document.getElementById('pc-doc-types');
   if (!hote) return;
   hote.innerHTML = PC_TYPES_DOCUMENT.map((t) =>
     '<label class="pc-check">' +
     '<input type="checkbox" data-pc-type="' + pcEchappe(t.cle) + '"' +
-    (pcChosenDocs.includes(t.cle) ? ' checked' : '') + '> ' +
-    pcEchappe(t.label) +
-    '</label>').join('');
+    (pcTypesChoisis.includes(t.cle) ? ' checked' : '') + '> ' +
+    pcEchappe(t.label) + '</label>').join('');
   hote.querySelectorAll('[data-pc-type]').forEach((c) => c.addEventListener('change', () => {
     const cle = c.dataset.pcType;
-    pcChosenDocs = c.checked
-      ? [...new Set([...pcChosenDocs, cle])]
-      : pcChosenDocs.filter((x) => x !== cle);
+    if (c.checked) {
+      pcTypesChoisis = [...new Set([...pcTypesChoisis, cle])];
+      pcEmprunterBloc(cle);
+    } else {
+      pcTypesChoisis = pcTypesChoisis.filter((x) => x !== cle);
+      pcRendreBloc(cle);
+    }
   }));
 }
 
-/**
- * Genere les documents coches, un par un, par les VRAIS generateurs.
- *
- * La pseudonymisation est celle du produit : on appelle exactement les memes
- * fonctions que les ecrans de redaction. Raccorder la pre-consultation ne doit
- * pas envoyer au modele une seule donnee identifiante de plus.
- */
-async function pcGenererDocuments() {
-  pcErreur('');
-  if (!pcEncounter) return;
-  if (pcChosenDocs.length === 0) { pcErreur('Cochez au moins un document à générer.'); return; }
+/** Emprunte le vrai bloc et le pré-remplit avec ce qu'on sait déjà. */
+function pcEmprunterBloc(cle) {
+  const type = PC_TYPES_DOCUMENT.find((t) => t.cle === cle);
+  const hote = document.getElementById('pc-blocs-documents');
+  if (!type || !hote || pcMorceauxEmpruntes.has(cle)) return;
 
-  const notes = (document.getElementById('pc-notes').value || '').trim();
-  const e = pcEncounter.encounter;
+  const empruntes = [];
+  for (const selecteur of type.morceaux) {
+    const el = document.querySelector(selecteur);
+    if (!el) continue;
+    empruntes.push({ el, parent: el.parentNode, suivant: el.nextSibling });
+    hote.appendChild(el);
+  }
+  pcMorceauxEmpruntes.set(cle, empruntes);
+
+  // Le contexte : c'est la SEULE différence avec l'onglet classique.
+  const e = pcEncounter && pcEncounter.encounter;
+  if (!e) return;
   const p = e.patient || {};
-  const nomPatient = [p.last_name, p.first_name].filter(Boolean).join(' ') || 'Patient';
+  const nom = [p.last_name, p.first_name].filter(Boolean).join(' ');
+  const poser = (id, valeur) => {
+    const champ = id && document.getElementById(id);
+    if (champ && !champ.value && valeur) champ.value = valeur;
+  };
+  poser(type.champs.patient, nom);
+  poser(type.champs.age, p.age ? String(p.age) + ' ans' : '');
+  poser(type.champs.date, (e.scheduled_start || '').slice(0, 10));
+  poser(type.champs.motif, e.planned_procedure_raw || '');
+  // Les notes du médecin, saisies à l'étape précédente.
+  const notes = document.getElementById('pc-notes');
+  if (notes) poser(type.champs.notes, notes.value);
 
-  const bouton = document.getElementById('pc-generer');
-  bouton.disabled = true;
-  const faits = [];
+  // Le rattachement au dossier : c'est lui qui donne au serveur le droit de
+  // relire la pré-consultation du patient, et à l'archivage de s'y attacher.
+  if (pcPatientLie) lierPatient(pcPatientLie);
+}
+
+/** Remet le bloc là où il vit d'habitude. */
+function pcRendreBloc(cle) {
+  const empruntes = pcMorceauxEmpruntes.get(cle);
+  if (!empruntes) return;
+  for (const { el, parent, suivant } of empruntes) {
+    if (suivant && suivant.parentNode === parent) parent.insertBefore(el, suivant);
+    else parent.appendChild(el);
+  }
+  pcMorceauxEmpruntes.delete(cle);
+}
+
+/** Tout rendre, en quittant l'écran : un bloc oublié ailleurs serait invisible. */
+function pcRendreTousLesBlocs() {
+  for (const cle of [...pcMorceauxEmpruntes.keys()]) pcRendreBloc(cle);
+  pcTypesChoisis = [];
+}
+
+/** Les documents RÉELS du patient, relus depuis le serveur. */
+async function pcChargerDocumentsDuPatient() {
+  const el = document.getElementById('pc-docs');
+  if (!el) return;
+  if (!pcPatientLie) {
+    el.innerHTML = '<p class="muted">Aucun dossier patient rattaché pour le moment.</p>';
+    return;
+  }
   try {
-    for (const cle of pcChosenDocs) {
-      const type = PC_TYPES_DOCUMENT.find((t) => t.cle === cle);
-      if (!type) continue;
-      if (type.exigeNotes && !notes) {
-        throw new Error('Renseignez les notes brutes de consultation avant de générer.');
-      }
-
-      const payload = { patient: nomPatient, notes };
-      if (pcPatientLie) payload.patientId = pcPatientLie.id;
-      if (type.demandeDestinataire) {
-        const destinataire = window.prompt('Destinataire de la lettre ?');
-        if (destinataire === null) continue;
-        payload.specialiste = destinataire;
-        payload.motif = e.planned_procedure_raw || '';
-      }
-      if (cle === 'cr') payload.date = (e.scheduled_start || '').slice(0, 10);
-
-      // Exactement le mecanisme du produit : on masque avant l'envoi, on
-      // restitue au retour, sur le poste du medecin uniquement.
-      const pseudo = pseudonymizePayload(cle, payload);
-      const subs = pseudo ? pseudo.substitutions : null;
-      const patientOrig = pseudo ? pseudo.patientOrig : '';
-
-      const data = await api('/api/generate/' + type.endpoint, {
-        method: 'POST',
-        body: JSON.stringify(payload),
-      });
-      let texte = data.document || '';
-      if (subs) texte = resubstitute(texte, subs, patientOrig);
-
-      // Le VRAI stockage documentaire, rattache au VRAI patient.
-      await api('/api/documents', {
-        method: 'POST',
-        body: JSON.stringify({
-          patientId: pcPatientLie ? pcPatientLie.id : null,
-          patientNom: nomPatient,
-          type: type.typeHistorique,
-          typeLabel: type.label,
-          contenu: texte,
-          sources: [],
-          meta: { encounterId: e.encounter_id },
-        }),
-      });
-      faits.push(type.label);
-    }
-    if (faits.length) {
-      pcChosenDocs = [];
-      await pcOuvrir(e.encounter_id);
-    }
-  } catch (err) {
-    pcErreur(err.message);
-  } finally {
-    bouton.disabled = false;
+    const r = await api('/api/documents?patientId=' + encodeURIComponent(pcPatientLie.id));
+    const docs = r.documents || [];
+    el.innerHTML = docs.length
+      ? docs.map((d) =>
+          '<div class="pc-item"><span class="pc-item-label">' + pcEchappe(d.typeLabel || d.type) +
+          '</span><span class="pc-item-value">' + pcEchappe((d.createdAt || '').slice(0, 10)) +
+          '</span></div>').join('')
+      : '<p class="muted">Aucun document pour ce patient.</p>';
+  } catch (e) {
+    el.innerHTML = '<p class="muted">Documents indisponibles pour le moment.</p>';
   }
 }
 
@@ -3136,11 +3280,6 @@ async function pcChargerPatient() {
   }
 }
 
-async function pcChargerTypes() {
-  // Les types viennent du PRODUIT, pas du moteur : ce sont les documents
-  // qu'Arkiba sait reellement produire, avec leurs vrais generateurs.
-  pcRendreTypesDocument();
-}
 
 
 async function pcEnregistrerNotes() {
@@ -3240,7 +3379,10 @@ async function pcTransferer() {
   } catch (e) { pcErreur(e.message); }
 }
 
+// Quitter le dossier rend les blocs empruntes aux onglets Compte rendu et
+// Lettre de liaison : les laisser ici les rendrait invisibles la-bas.
 document.getElementById('pc-back').addEventListener('click', () => {
+  pcRendreTousLesBlocs();
   document.getElementById('pc-detail').hidden = true;
   document.getElementById('pc-list-card').hidden = false;
   pcEncounter = null;
@@ -3260,7 +3402,6 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && document.getElementById('dl-connexion').classList.contains('show')) dlFermer();
 });
 document.getElementById('pc-validate').addEventListener('click', pcValider);
-document.getElementById('pc-generer').addEventListener('click', pcGenererDocuments);
 // Le dossier de pre-consultation est un episode DU patient : on y mene.
 document.getElementById('pc-voir-patient').addEventListener('click', () => {
   if (pcPatientLie) openDossier(pcPatientLie.id);

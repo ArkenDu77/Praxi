@@ -197,6 +197,7 @@ function peindre(charge) {
     'function pcLigneFait(',
     'function pcLigneListe(',
     'function pcRendreIntake()',
+    'function pcPointsAVerifier()',
     'function pcRendreAVerifier()',
   ]) {
     vm.runInContext(extraire(SOURCE, sig), bac);
@@ -300,7 +301,9 @@ describe('la carte « À vérifier »', () => {
     const { alerts } = peindre(chargeReelle());
     expect(alerts).toContain('Intervention prévue');
     expect(alerts).toContain('Pacemaker ou défibrillateur');
-    expect(alerts).toContain('posée, sans réponse exploitable');
+    // Le motif est rédigé pour un médecin, pas recopié du moteur : « posée,
+    // sans réponse exploitable » est une note d'ingénieur.
+    expect(alerts).toContain("Le patient n&#39;a pas donné de réponse exploitable.");
     expect(alerts).not.toContain('transcript_review');
   });
 
@@ -333,7 +336,9 @@ describe('chaque donnée est corrigible par le médecin', () => {
   test('PROPOSE DE RENSEIGNER ce qui manque, depuis « À vérifier »', () => {
     const { alerts } = peindre(chargeReelle());
     expect(alerts).toContain('data-champ="cardiovascular.pacemaker"');
-    expect(alerts).toContain('Renseigner');
+    // Un seul verbe pour un seul geste : le médecin corrige, qu'il s'agisse
+    // d'une donnée douteuse ou d'une donnée absente.
+    expect(alerts).toContain('Corriger');
   });
 
   test("l'écran appelle bien la route de correction du moteur", () => {
