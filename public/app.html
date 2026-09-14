@@ -14,6 +14,8 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:ital,wght@0,300;0,400;0,500;0,600;1,300&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/app.css" />
+<link rel="stylesheet" href="/physician-workflow.css" />
+<script src="/physician-workflow.js"></script>
 </head>
 <body>
 
@@ -44,6 +46,18 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
   </div>
 
   <nav class="side-nav">
+  <div class="wf-primary-nav">
+  <button class="side-link" data-view="today"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></svg>Aujourd’hui</button>
+  <button class="side-link" data-view="patients">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+    Patients
+  </button>
+  <button class="side-link active" data-view="consult">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6v0a6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3M8 15v1a6 6 0 006 6v0a6 6 0 006-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
+    Consultation
+  </button>
+  </div>
+  <details class="wf-secondary-nav" id="workflow-secondary-nav"><summary>Documents et outils</summary>
   <div class="side-section">Consultation</div>
   <!-- Le dossier prepare par l'appel patient attend le medecin ICI, dans
        Arkiba. Place avant « Nouvelle consultation » parce que c'est l'ordre
@@ -52,10 +66,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
     Pré-consultation
   </button>
-  <button class="side-link active" data-view="consult">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M4.8 2.3A.3.3 0 105 2H4a2 2 0 00-2 2v5a6 6 0 006 6v0a6 6 0 006-6V4a2 2 0 00-2-2h-1a.2.2 0 10.3.3M8 15v1a6 6 0 006 6v0a6 6 0 006-6v-4"/><circle cx="20" cy="10" r="2"/></svg>
-    Nouvelle consultation
-  </button>
+
 
   <div class="side-section">Rédaction</div>
   <button class="side-link" data-view="liaison">
@@ -98,10 +109,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M12 8v4l3 3M3.05 11a9 9 0 11.5 4M3 4v5h5"/></svg>
     Historique <span class="side-count" id="history-count"></span>
   </button>
-  <button class="side-link" data-view="patients">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-    Mes patients
-  </button>
+
   <!-- L'agenda du cabinet se raccorde ICI, dans Arkiba. Le medecin n'ouvre
        jamais d'autre outil : c'est le meme produit qui lui montre l'etat de
        sa connexion et les dossiers qu'elle a permis de preparer. -->
@@ -118,6 +126,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     Abonnement <span class="side-plan" id="side-plan"></span>
   </button>
 
+  </details>
   </nav>
 
   <div class="side-foot">
@@ -135,6 +144,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 
 <!-- ─── MAIN ─── -->
 <main class="main">
+  <div id="wf-mic-global" class="wf-mic-global" hidden role="status"><span></span><button type="button" class="btn btn-sm" id="wf-mic-stop">Arrêter</button></div>
 
   <div class="generation-settings" id="generation-settings" aria-label="Réglages du document">
     <label class="clinical-v2-control">Longueur
@@ -148,6 +158,8 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
       </select>
     </label>
   </div>
+
+  <section class="view" id="view-today"><header class="screen-head"><p class="eyebrow">Votre journée</p><h1 class="page-title">Aujourd’hui</h1><p class="page-sub">Les rendez-vous reçus, les dossiers à relire et ce qui demande votre attention.</p></header><div class="wf-output-actions"><button class="btn btn-ghost" id="today-refresh">Actualiser</button><button class="btn btn-ghost" id="today-preconsult">Toutes les pré-consultations</button></div><div id="today-content"></div></section>
 
   <!-- ── CONSULTATION : parcours guidé en 3 temps ── -->
   <section class="view active" id="view-consult">
@@ -186,6 +198,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 
     <!-- Étape 1 — Ouverture du dossier -->
     <div class="consult-pane active" id="ct-pane-1">
+      <section id="ct-preparation" class="wf-preparation" hidden aria-label="Préparation du dossier"></section>
       <div class="card">
       <div class="card-title">Ouverture du dossier</div>
       <div class="field-row">
@@ -241,6 +254,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 
     <!-- Étape 2 — Consultation -->
     <div class="consult-pane" id="ct-pane-2">
+      <div class="wf-specialty" id="ct-specialty"></div>
       <div class="card">
       <div class="card-title">Consultation du jour</div>
       <div class="field">
@@ -640,6 +654,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
 
   <!-- ── COMPTE-RENDU ── -->
   <section class="view" id="view-cr">
+    <div class="wf-specialty" id="cr-specialty"></div>
     <header class="screen-head">
       <p class="eyebrow">Rédaction</p>
       <h1 class="page-title">Compte-rendu de consultation</h1>
@@ -1241,6 +1256,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
     </button>
 
     <div class="dossier-head" id="ds-head"></div>
+    <section id="ds-preparation" class="wf-preparation" hidden aria-label="Préparation du dossier"></section>
 
     <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap">
       <h2 style="font-size:16px;font-weight:600;color:var(--text)">Fil de suivi</h2>
@@ -1788,6 +1804,7 @@ api('/api/auth/me').then(async ({ user }) => {
   localStorage.setItem(PROFIL_KEY, JSON.stringify(user));
   renderUser();
   fillProfileForm();
+  ArkibaWorkflow.mountScales(document.getElementById('ct-specialty'), api, me && me.specialite);
   // L'état d'abonnement arrive avec le profil : les verrous sont posés avant
   // le premier clic. L'appel à /api/billing/state qui suit ne sert qu'à savoir
   // si le paiement en ligne est ouvert.
@@ -2091,7 +2108,14 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') ouvrirMenu(f
 })();
 document.getElementById('side-user').addEventListener('click', () => switchView('profile'));
 
+function loadToday() {
+  return ArkibaWorkflow.today(document.getElementById('today-content'), api, id => { switchView('preconsult'); if (id) pcOuvrir(id); }, () => switchView('integrations'));
+}
+document.getElementById('today-refresh').addEventListener('click', loadToday);
+document.getElementById('today-preconsult').addEventListener('click', () => switchView('preconsult'));
 function switchView(name) {
+  const navDisclosure = document.getElementById('workflow-secondary-nav');
+  if (navDisclosure && navDisclosure.querySelector('[data-view="' + name + '"]')) navDisclosure.open = true;
   ouvrirMenu(false);
   // Module verrouillé : on n'ouvre pas un écran dont le serveur refusera la
   // moindre génération, on explique pourquoi.
@@ -2109,11 +2133,13 @@ function switchView(name) {
     b.classList.toggle('active', b.dataset.view === name));
   document.querySelectorAll('.view').forEach(v =>
     v.classList.toggle('active', v.id === 'view-' + name));
+  if (name === 'today') loadToday();
   if (name === 'patients') refreshPatients().then(() => renderPatients());
   if (name === 'profile') refreshHistory().then(renderUsageStats);
   if (name === 'abonnement') majAbonnement();
   if (name === 'avis') initAvis();
   if (name === 'consult') consultOnEnter();
+  if (name === 'consult' || name === 'cr') ArkibaWorkflow.mountScales(document.getElementById(name === 'consult' ? 'ct-specialty' : 'cr-specialty'), api, me && me.specialite);
   if (name === 'preconsult') pcCharger();
   if (name === 'integrations') intCharger();
   placeClinicalSettings(name);
@@ -2891,7 +2917,8 @@ function intRendre(integration) {
   const modeEmploi = document.getElementById('int-mode-emploi');
   const pilote = document.getElementById('int-pilote');
 
-  const nom = integration ? integration.state : 'DISCONNECTED';
+  const health = ArkibaWorkflow.connectionHealth(integration);
+  const nom = integration && integration.state === 'CONNECTED' && health.state === 'DEGRADED' ? 'TEMPORARILY_UNAVAILABLE' : integration ? integration.state : 'DISCONNECTED';
   const modele = INT_ETATS[nom] || INT_ETATS.DISCONNECTED;
 
   etat.innerHTML = `<span class="int-puce ${modele.puce}"></span>${pcEchappe(modele.titre)}`;
@@ -2899,6 +2926,8 @@ function intRendre(integration) {
   // Ce que dit l'ecran est toujours date : « depuis ce matin » et « a
   // l'instant » n'appellent pas la meme reaction.
   const morceaux = [];
+  if (integration && integration.last_observed_at) morceaux.push(`Session vérifiée ${intDepuis(integration.last_observed_at)}.`);
+  if (integration && integration.state === 'CONNECTED' && health.state === 'DEGRADED') morceaux.push('La dernière vérification de session est ancienne ou absente.');
   if (modele.detail) morceaux.push(modele.detail);
   if (integration && integration.last_error) morceaux.push(integration.last_error);
   if (integration && nom === 'NEEDS_REAUTH' && integration.reauth_required_at) {
@@ -3207,7 +3236,7 @@ const PC_TYPES_DOCUMENT = [
     label: 'Compte rendu de consultation',
     vue: 'view-cr',
     // Les éléments à déplacer, dans l'ordre où ils s'affichent.
-    morceaux: ['#view-cr > .card', '#view-cr > .actions', '#c-error', '#c-result'],
+    morceaux: ['#cr-specialty', '#view-cr > .card', '#view-cr > .actions', '#c-error', '#c-result'],
     champs: { patient: 'c-patient', age: 'c-age', date: 'c-date', notes: 'c-notes' },
   },
   {
@@ -3248,6 +3277,7 @@ function pcEmprunterBloc(cle) {
   const hote = document.getElementById('pc-blocs-documents');
   if (!type || !hote || pcMorceauxEmpruntes.has(cle)) return;
 
+  if (cle === 'cr') ArkibaWorkflow.mountScales(document.getElementById('cr-specialty'), api, me && me.specialite);
   const empruntes = [];
   for (const selecteur of type.morceaux) {
     const el = document.querySelector(selecteur);
@@ -4230,6 +4260,12 @@ function pseudonymizePayload(key, payload) {
     payload[champ] = pseudonymize(payload[champ], patientOrig, ageOrig, substitutions).anonymizedText;
   }
 
+  // Les interprétations éditées sont du texte patient au même titre que les notes.
+  const protectList = values => Array.isArray(values) ? values.filter(value => typeof value === 'string').map(value => pseudonymize(value, patientOrig, ageOrig, substitutions).anonymizedText) : [];
+  if (payload.acceptedSuggestions) payload.acceptedSuggestions = protectList(payload.acceptedSuggestions);
+  if (payload.clinicalAnalysis && typeof payload.clinicalAnalysis === 'object') {
+    for (const field of ['deductions', 'inconsistencies', 'specialtyFocus']) payload.clinicalAnalysis[field] = protectList(payload.clinicalAnalysis[field]);
+  }
   if (patientOrig) payload.patient = IDENTITY_TOKENS.patient;
   if (ageOrig) { substitutions.set('__age__', ageOrig); payload.age = IDENTITY_TOKENS.age; }
   // La date de naissance est directement identifiante : elle ne quitte pas le
@@ -4598,6 +4634,8 @@ function ensureClinicalModal() {
       stylePreference: selectedStyle(), acceptedSuggestions,
       clinicalAnalysis: Object.assign({}, clinicalPending.analysis, { deductions: reviewedDeductions })
     };
+    options.reviewedAt = new Date().toISOString();
+    options.specialtyPack = clinicalPending.analysis.specialtyPack || null;
     lastClinicalOptions[clinicalPending.key] = options;
     const { key, btn, label } = clinicalPending; clinicalPending = null;
     closeModal(); runGeneration(key, btn, '', label, options);
@@ -4833,6 +4871,7 @@ function renderClinicalReview(key, btn, label, analysis, sourcePayload) {
       <button type="button" class="mini-apply" id="apply-recommended-format">Format ${escapeHtml(analysis.recommendedLength)}</button>
     </div>
 
+    ${ArkibaWorkflow.packReview(analysis.specialtyPack)}
     ${repli('Détail du score', (analysis.confidenceBreakdown || []).length, confidenceBreakdownHtml(analysis.confidenceBreakdown))}
     ${repli('Interprétations à intégrer', deductions.length, deductionsHtml(deductions))}
     ${repli(`Suggestions pour ${nomDocument(key)}`, analysis.suggestions.length,
@@ -4861,7 +4900,7 @@ async function prepareClinicalGeneration(key, btn) {
   setLoading(btn, true);
   const stopProgress = startAiProgress(cfg.errId, 'analyze');
   try {
-    const payload = Object.assign({}, built.payload, { documentType: key, specialty: built.payload.specialiste || '' });
+    const payload = Object.assign({}, built.payload, { documentType: key, specialty: built.payload.specialiste || '' }, ArkibaWorkflow.scalePayload(document.getElementById(key === 'consult' ? 'ct-specialty' : key === 'cr' ? 'cr-specialty' : '')));
     const data = await api('/api/clinical/analyze', { method:'POST', body:JSON.stringify(payload) });
     renderClinicalReview(key, btn, cfg.btnLabel, data.analysis, payload);
   } catch (err) { showError(cfg.errId, err.message); }
@@ -5250,6 +5289,13 @@ async function runGeneration(key, btn, complement, btnLabel, clinicalOptions) {
     payload.mode = options.mode || 'standard';
     payload.stylePreference = options.stylePreference || selectedStyle();
     payload.acceptedSuggestions = options.acceptedSuggestions || [];
+    const reviewed = options.clinicalAnalysis || {};
+    payload.clinicalAnalysis = {
+      deductions: reviewed.deductions || [],
+      inconsistencies: reviewed.inconsistencies || [],
+      specialtyFocus: reviewed.specialtyFocus || []
+    };
+    Object.assign(payload, ArkibaWorkflow.scalePayload(document.getElementById(key === 'consult' ? 'ct-specialty' : key === 'cr' ? 'cr-specialty' : '')));
     // Pseudonymisation : pilotée par PSEUDO_FIELDS, elle couvre désormais tous
     // les types de documents, et non les seules notes de trois d'entre eux.
     const pseudo = pseudonymizePayload(key, payload);
@@ -5876,6 +5922,7 @@ async function openDossier(patientId) {
   switchView('dossier');
   const head = document.getElementById('ds-head');
   const tl   = document.getElementById('ds-timeline');
+  ArkibaWorkflow.preparation(document.getElementById('ds-preparation'), null, api);
   head.innerHTML = '<div class="sk-line title"></div><div class="sk-line short"></div>';
   tl.innerHTML   = '<div class="sk-line"></div><div class="sk-line short"></div>';
 
@@ -5889,6 +5936,7 @@ async function openDossier(patientId) {
   }
 
   renderDossierHead(data.patient, data.stats);
+  ArkibaWorkflow.preparation(document.getElementById('ds-preparation'), patientId, api);
   renderTimeline(data.jours);
   document.getElementById('ds-count').textContent =
     data.stats.total === 0 ? 'Aucun document'
@@ -6200,7 +6248,14 @@ function effacerIdentiteLiee(patient) {
 
 function lierPatient(p) {
   const precedent = patientLie;
+  if (precedent && (!p || precedent.id !== p.id)) stopMic();
   patientLie = p || null;
+  ArkibaWorkflow.preparation(document.getElementById('ct-preparation'), p && p.id, api);
+  if (!p || !precedent || precedent.id !== p.id) {
+    ArkibaWorkflow.resetScales(document.getElementById('ct-specialty'));
+    ArkibaWorkflow.resetScales(document.getElementById('cr-specialty'));
+    for (const key of Object.keys(lastClinicalOptions)) delete lastClinicalOptions[key];
+  }
   document.querySelectorAll('[data-patient-pick]').forEach(el => syncPatientPick(el));
 
   // Détacher devait rendre l'application à son état d'avant : le sélecteur
@@ -6352,6 +6407,12 @@ async function archiverDocument(key, cfg, texte, patientNomForce) {
       typeLabel:  (cfg && cfg.label) || 'Document',
       contenu:    texte,
       sources:    (derniereProvenance[key] || []).map(d => d.id),
+      meta: { clinicalReview: lastClinicalOptions[key] ? {
+        reviewedAt: lastClinicalOptions[key].reviewedAt,
+        interpretations: (lastClinicalOptions[key].clinicalAnalysis || {}).deductions || [],
+        acceptedSuggestions: lastClinicalOptions[key].acceptedSuggestions || [],
+        specialtyPack: lastClinicalOptions[key].specialtyPack || null,
+      } : null },
     }),
   });
   const id = cree && (cree.document ? cree.document.id : cree.id);
@@ -6650,6 +6711,13 @@ function micRender(state, snapshot) {
     body.append(label, timer, help); el.appendChild(body);
     state.statusSignature = signature;
   }
+  const globalStatus = document.getElementById('wf-mic-global');
+  if (globalStatus) {
+    globalStatus.hidden = !snapshot.running && snapshot.phase !== 'error';
+    globalStatus.dataset.warning = String(warning);
+    globalStatus.querySelector('span').textContent = labels[snapshot.phase] + ' · ' + micDuration(snapshot.elapsedMs) +
+      (snapshot.phase === 'reconnecting' || snapshot.phase === 'offline' ? (audioOk ? ' · Secours audio actif' : ' · Secours audio indisponible') : '');
+  }
   const timer = el.querySelector('[data-mic-elapsed]');
   if (timer) timer.textContent = micDuration(snapshot.elapsedMs);
 }
@@ -6681,6 +6749,7 @@ function micArchive(state, snapshot) {
   }
   state.archive.querySelector('[data-audio-caption]').textContent = 'Audio de secours · ' + micDuration(snapshot.elapsedMs) + ' · ' + (snapshot.audio.bytes / 1024 / 1024).toFixed(1) + ' Mo' + (snapshot.audio.discontinuities ? ' · enregistrement incomplet' : '');
 }
+document.getElementById('wf-mic-stop').addEventListener('click', () => stopMic());
 function stopMic() {
   if (activeRec) activeRec.session.stop();
 }
@@ -7283,6 +7352,8 @@ function consultDoCloture() {
     persistPatients(patients);
   }
 
+  stopMic();
+  lierPatient(null);
   // Réinitialise le dossier pour le patient suivant
   ['ct-patient','ct-age','ct-atcd','ct-ttt','ct-histoire','ct-notes','ct-rx-libre','ct-rx-med'].forEach(id => {
     document.getElementById(id).value = '';
@@ -7321,7 +7392,7 @@ document.getElementById('ct-next-1').addEventListener('click', () => ctGoto(2));
 document.getElementById('ct-next-2').addEventListener('click', () => ctGoto(3));
 document.getElementById('ct-generate').addEventListener('click', function () {
   document.getElementById('ct-result').classList.remove('show');
-  runGeneration('consult', this);
+  prepareClinicalGeneration('consult', this);
 });
 document.getElementById('ct-rx-generate').addEventListener('click', consultRxGenerate);
 document.getElementById('ct-close-btn').addEventListener('click', consultOpenCloture);
@@ -7784,6 +7855,9 @@ function initAvis() {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); submit.click(); }
   });
 }
+ArkibaWorkflow.mountScales(document.getElementById('ct-specialty'), api, me && me.specialite);
+switchView('today');
+
 </script>
 <!-- Version figée + contrôle d'intégrité : `@latest` faisait suivre à Arkiba
      toute version publiée sur unpkg, y compris une version compromise, dans une

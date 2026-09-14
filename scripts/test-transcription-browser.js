@@ -6,12 +6,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const playwright = require(process.env.PLAYWRIGHT_MODULE || '../../doctolib-lab/node_modules/playwright');
+const { listSpecialtyPacks } = require('../lib/specialty-packs');
 
 async function main() {
   const publicDir = path.join(__dirname, '..', 'public');
   const server = http.createServer((req, res) => {
     const name = new URL(req.url, 'http://localhost').pathname;
-    const allowed = { '/app.html': 'text/html', '/app.css': 'text/css', '/transcription.js': 'application/javascript' };
+    const allowed = { '/app.html': 'text/html', '/app.css': 'text/css', '/transcription.js': 'application/javascript',
+      '/physician-workflow.js': 'application/javascript', '/physician-workflow.css': 'text/css' };
     if (!allowed[name]) { res.writeHead(404); res.end(); return; }
     res.writeHead(200, { 'Content-Type': allowed[name] + '; charset=utf-8' });
     res.end(fs.readFileSync(path.join(publicDir, name.slice(1))));
@@ -32,8 +34,18 @@ async function main() {
       const url = new URL(route.request().url());
       if (url.origin !== origin) return route.abort();
       if (!url.pathname.startsWith('/api/')) return route.continue();
-      const user = { id: 'synthetic-doctor', prenom: 'Médecin', nom: 'Test', email: 'synthetic@example.invalid', specialites: ['Médecin généraliste'], abonnement: { plan: 'pro', actif: true, fonctionnalites: { consultation: true, dictee: true } } };
-      const response = url.pathname === '/api/auth/me' ? { user } : url.pathname === '/api/specialites' ? { specialites: ['Médecin généraliste'] } : { patients: [], documents: [], appointments: [], etapes: [], fonctionnalites: {}, integrations: [], calls: [] };
+      const user = { id: 'synthetic-doctor', prenom: 'Médecin', nom: 'Test', email: 'synthetic@example.invalid', specialite: 'Algologue', specialites: ['Algologue'], abonnement: { plan: 'pro', actif: true, fonctionnalites: { consultation: true, dictee: true } } };
+      const today = new Date();
+      today.setUTCHours(9, 30, 0, 0);
+      const encounter = { encounter_id: 'enc-browser-1', patient_name: 'Patient synthétique', scheduled_start: today.toISOString(), display_status: 'Dossier à relire' };
+      const waiting = { sans_preconsultation: true, rendez_vous: { patient: 'Patient en attente', starts_at: new Date(today.getTime() + 3600000).toISOString() } };
+      const response = url.pathname === '/api/auth/me' ? { user }
+        : url.pathname === '/api/specialites' ? { specialites: ['Algologue'] }
+        : url.pathname === '/api/clinical/specialty-packs' ? { packs: listSpecialtyPacks() }
+        : url.pathname === '/api/preconsult/encounters' ? { encounters: [encounter] }
+        : url.pathname === '/api/preconsult/rendez-vous' ? { calls: [waiting] }
+        : url.pathname === '/api/integrations' ? { integrations: [{ kind: 'doctolib_browser', state: 'TEMPORARILY_UNAVAILABLE', last_observed_at: new Date().toISOString() }] }
+        : { patients: [], documents: [], appointments: [], etapes: [], fonctionnalites: {}, integrations: [], calls: [] };
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(response) });
     });
     await page.addInitScript(() => {
@@ -54,21 +66,31 @@ async function main() {
       window.__speechTest.disconnect = () => window.__speechTest.instances.at(-1).onerror?.({ error: 'network' });
     });
     await page.goto(origin + '/app.html');
+    await page.locator('#view-today.active').waitFor();
+    assert.equal(await page.locator('.wf-primary-nav .side-link').count(), 3);
+    await page.locator('#today-content [data-health="DEGRADED"]').waitFor();
+    assert.equal(await page.locator('#today-content .wf-today-counts div').first().locator('b').innerText(), '2');
+    assert((await page.locator('#today-content').innerText()).includes('rendez-vous visibles aujourd’hui'));
+    assert((await page.locator('#today-content').innerText()).includes('Patient synthétique'));
     await page.locator('[data-view="consult"]').first().click();
     await page.locator('#ct-next-1').click();
+    await page.locator('#ct-specialty [data-pack]').waitFor();
+    assert.equal(await page.locator('#ct-specialty [data-pack]').inputValue(), 'algologie');
+    assert.equal(await page.locator('#ct-specialty [data-scale-item]').count(), 13);
     const notes = page.locator('#ct-notes');
     await notes.fill('Note fictive tapée avant écoute.');
     const mic = page.locator('[data-mic="ct-notes"]');
+    const micStatus = notes.locator('xpath=parent::div/following-sibling::div[contains(@class,"mic-status")][1]');
     await mic.click();
-    await page.getByText('Transcription active', { exact: false }).waitFor();
-    await page.getByText('Audio de secours capturé dans cet onglet uniquement.', { exact: false }).waitFor();
+    await micStatus.getByText('Transcription active', { exact: false }).waitFor();
+    await micStatus.getByText('Audio de secours capturé dans cet onglet uniquement.', { exact: false }).waitFor();
     await page.evaluate(() => window.__speechTest.result('Phrase fictive provisoire.', false));
     assert((await notes.inputValue()).includes('Phrase fictive provisoire.'));
     await notes.press('End');
     await notes.pressSequentially(' Correction médecin fictive.');
     await page.evaluate(() => window.__speechTest.disconnect());
-    await page.getByText('Reconnexion à la transcription', { exact: false }).waitFor();
-    await page.getByText('Transcription active', { exact: false }).waitFor();
+    await micStatus.getByText('Reconnexion à la transcription', { exact: false }).waitFor();
+    await micStatus.getByText('Transcription active', { exact: false }).waitFor();
     await page.evaluate(() => window.__speechTest.result('Suite après la coupure.'));
     const value = await notes.inputValue();
     for (const phrase of ['Note fictive tapée avant écoute.', 'Phrase fictive provisoire.', 'Correction médecin fictive.', 'Suite après la coupure.']) assert(value.includes(phrase), phrase);
@@ -85,23 +107,23 @@ async function main() {
     assert(download.suggestedFilename().endsWith('.webm') || download.suggestedFilename().endsWith('.m4a'));
     // Restart and fatal permission error; archive and notes must survive.
     await mic.click();
-    await page.getByText('Transcription active', { exact: false }).waitFor();
+    await micStatus.getByText('Transcription active', { exact: false }).waitFor();
     await page.evaluate(() => window.__speechTest.instances.at(-1).onerror?.({ error: 'not-allowed' }));
-    await page.getByText('Transcription interrompue', { exact: false }).waitFor();
+    await micStatus.getByText('Transcription interrompue', { exact: false }).waitFor();
     assert.equal(await mic.getAttribute('aria-pressed'), 'false');
     assert.equal(await notes.inputValue(), value);
     assert.equal(await archive.count(), 1);
     await page.clock.install();
     await page.clock.runFor(10000);
-    await page.getByText('Transcription interrompue', { exact: false }).waitFor();
+    await micStatus.getByText('Transcription interrompue', { exact: false }).waitFor();
     await archive.getByRole('button', { name: 'Supprimer le secours audio' }).click();
     assert.equal(await archive.count(), 0);
     assert.deepEqual(errors, []);
     const output = path.join(__dirname, '..', 'docs', 'transcription-browser-2026-09-14.json');
-    const evidence = { test: 'real-browser-clicks', status: 'PASS', browser: await browser.version(), assertions: 14,
+    const evidence = { test: 'real-browser-clicks', status: 'PASS', browser: await browser.version(), assertions: 21,
       transcriptionProvider: 'synthetic Web Speech API', capture: 'real MediaRecorder with Chromium synthetic microphone',
       actualAudioBytesBeforeStop: captureBeforeStop.bytes, noPatientData: true, noUpstreamRequests: true,
-      scenarios: ['start by click', 'type while dictating', 'interim preservation', 'forced network error without end', 'automatic recovery', 'stop by click', 'backup download', 'archive survives restart', 'permission failure persists over 9 seconds', 'backup explicit discard'], pageErrors: errors };
+      scenarios: ['three-space navigation', 'today workspace with degraded Doctolib health', 'algology scale rendering', 'start by click', 'type while dictating', 'interim preservation', 'forced network error without end', 'automatic recovery', 'stop by click', 'backup download', 'archive survives restart', 'permission failure persists over 9 seconds', 'backup explicit discard'], pageErrors: errors };
     fs.mkdirSync(path.dirname(output), { recursive: true });
     fs.writeFileSync(output, JSON.stringify(evidence, null, 2) + '\n');
     console.log(JSON.stringify(evidence, null, 2));

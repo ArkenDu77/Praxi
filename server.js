@@ -101,6 +101,9 @@ const { getSpecialite, listSpecialites } = require('./lib/specialites');
 
 // ── DOSSIERS PATIENTS (fiches + timeline de documents) ──
 const dossiers = require('./lib/dossiers');
+const { buildPrevisitSummary } = require('./lib/previsit');
+const { protectHistoricalContext } = require('./lib/context-privacy');
+const { analyzeSpecialtyPack, reportStructure, calculatedScoreText, listSpecialtyPacks } = require('./lib/specialty-packs');
 
 // ── PLANS D'ABONNEMENT ──
 // Le contrôle d'accès aux fonctionnalités est appliqué ici, côté serveur, avant
@@ -1831,7 +1834,7 @@ function clinicalGenerationRules(req, documentType) {
     consigneJetons(req) +
     "Si une autre donnée manque, omets naturellement la phrase ou la rubrique au lieu de répéter 'Information non renseignée', sauf champ légal strictement obligatoire. N'utilise aucune valeur chiffrée absente des données source. " +
     `Éléments attendus par la spécialité destinataire : ${focus.length ? focus.join(' ; ') : 'non spécifiés'}. Ne les présente que s'ils figurent dans la source.\n` +
-    `Déductions identifiées (à formuler comme interprétations cliniques dans le texte, jamais comme faits établis) : ${deductions.length ? deductions.join(' ; ') : 'aucune'}.\n` +
+    `Interprétations explicitement validées par le médecin (reprendre la formulation médicale retenue, sans attribution au modèle) : ${deductions.length ? deductions.join(' ; ') : 'aucune'}.\n` +
     `Incohérences non résolues : ${unresolved.length ? unresolved.join(' ; ') : 'aucune'}. Si elles sont présentes, signale qu'elles doivent être vérifiées sans choisir arbitrairement une version.\n` +
     `Suggestions validées par le médecin (à intégrer dans le corps du texte uniquement) : ${accepted.length ? accepted.join(' ; ') : 'aucune'}.\n`;
 }
@@ -1847,7 +1850,7 @@ function chargerContextePatient(req) {
   if (req.body.utiliserContexte === false) return null;
   try {
     const ctx = dossiers.contextePatient(req.user.id, patientId);
-    return ctx && !ctx.vide ? ctx : null;
+    return ctx && !ctx.vide ? protectHistoricalContext(ctx) : null;
   } catch (err) {
     // Un contexte indisponible ne doit jamais empêcher une génération :
     // le document se fait sans, et le front l'indique.
@@ -1949,8 +1952,18 @@ function documentSafety(document, source, user) {
 app.post('/api/clinical/analyze', authenticateJWT, exigerFonctionnalite('clinical.analyze'), (req, res) => {
   const source = plainClinicalText(req.body);
   if (!source) return res.status(400).json({ error: 'Ajoutez des informations cliniques à analyser.' });
-  res.json({ analysis: clinicalAnalysis(req.body) });
+  const analysis = clinicalAnalysis(req.body);
+  const pack = analyzeSpecialtyPack(req.body.specialtyPack || req.body.specialty || req.user.specialite, source, req.body.scaleInputs);
+  if (pack) {
+    analysis.specialtyPack = pack;
+    analysis.deductions = [...pack.interpretations.map(item => item.text), ...analysis.deductions];
+    analysis.interpretations = pack.interpretations;
+    analysis.specialtyFocus = pack.fields.map(field => field.label);
+  }
+  res.json({ analysis });
 });
+
+app.get('/api/clinical/specialty-packs', authenticateJWT, (_req, res) => res.json({ packs: listSpecialtyPacks() }));
 
 // POST /api/generate/liaison — lettre de liaison vers un spécialiste
 app.post('/api/generate/liaison', authenticateJWT, exigerFonctionnalite('generate.liaison'), async (req, res) => {
@@ -2052,7 +2065,8 @@ app.post('/api/generate/compte-rendu', authenticateJWT, exigerFonctionnalite('ge
   }
 
   const specialiteRedacteurCR = (req.user && req.user.specialite) || 'médecine générale';
-  const isAlgologie = /algologue|anesthésiste/i.test(specialiteRedacteurCR);
+  const specialtyPack = analyzeSpecialtyPack(req.body.specialtyPack || specialiteRedacteurCR, notes, req.body.scaleInputs);
+  const scores = calculatedScoreText(specialtyPack);
 
   // Contexte antérieur du patient : ce compte-rendu sait ce qui a été prescrit
   // la semaine dernière. Le médecin peut le désactiver (utiliserContexte:false).
@@ -2063,75 +2077,22 @@ app.post('/api/generate/compte-rendu', authenticateJWT, exigerFonctionnalite('ge
   const referentiel = getReferentiel(specialiteRedacteurCR);
   const couverture  = analyserCouverture(referentiel, `${notes}\n${complement}`);
 
-  const system = isAlgologie
-    ? (`Tu es un médecin ${specialiteRedacteurCR}, expert en médecine de la douleur, ` +
-       "exerçant en libéral en France. À partir des notes brutes, rédige un compte-rendu de " +
-       "consultation douleur structuré selon les recommandations HAS 2024. " +
-       "Style télégraphique médical concis — pas de phrases complètes, aller droit au but. " +
-       enteteConsigne(req.user) +
-       clinicalGenerationRules(req, 'compte-rendu de consultation') +
-       "Sections dans cet ordre exact, chaque titre en MAJUSCULES suivi de deux-points :\n" +
-       "MOTIF DE CONSULTATION : patient, âge, contexte d'adressage, type et topographie de douleur.\n" +
-       "ÉVALUATION DE LA DOULEUR :\n" +
-       "Intensité : EVA .../10 — EN .../10 — EVS .../5\n" +
-       "Type de douleur : DN4 .../10 (neuropathique si score ≥ 4)\n" +
-       "Retentissement : HAD-A .../21 — HAD-D .../21\n" +
-       "Autres échelles si pertinentes : NPSI, QCD, POMI, Marshall\n" +
-       "ANAMNÈSE : chronologie, facteurs déclenchants/aggravants/soulageants, traitements " +
-       "antérieurs avec efficacité et tolérance.\n" +
-       "EXAMEN CLINIQUE CIBLÉ : neurologique, musculo-squelettique, cutané — allodynie, " +
-       "hyperpathie, points trigger.\n" +
-       "DIMENSION PSYCHOSOCIALE : retentissement professionnel, familial, social — " +
-       "catastrophisme (PCS si coté).\n" +
-       "SYNTHÈSE DIAGNOSTIQUE : mécanisme dominant " +
-       "(nociceptif / neuropathique / nociplastique / mixte) — diagnostic retenu.\n" +
-       "PLAN MULTIMODAL :\n" +
-       "Pharmacologique : paliers OMS, adjuvants avec posologie complète\n" +
-       "Physique : kinésithérapie, mésothérapie si pertinent\n" +
-       "Psychologique : TCC, EMDR, mindfulness si indiqué\n" +
-       "Éducation : ETP, autogestion\n" +
-       "SUIVI & COORDINATION : délai de réévaluation — critères d'adressage SDC/CETD — " +
-       "lettre au médecin traitant : oui / non.\n" +
-       "RÈGLES ABSOLUES : si des valeurs d'échelles sont mentionnées dans les notes " +
-       "(ex. 'EVA 7', 'DN4 positif'), intègre-les dans la section ÉVALUATION. " +
-       "Si une valeur n'est pas mentionnée, écris '— à coter' à la place. " +
-       "Si une valeur manque, omets-la sans créer de rubrique artificielle. " +
-       "FORMAT : n'utilise JAMAIS de Markdown (pas d'astérisques, pas de dièses). " +
-       "Sections séparées par des sauts de ligne. N'ajoute aucun commentaire hors du compte-rendu.")
-    : (`Tu es un médecin expert en ${specialiteRedacteurCR}, exerçant en libéral en France. ` +
-       "À partir de notes brutes de consultation, rédige un compte-rendu structuré et cliniquement " +
-       "enrichi, comme tu le ferais dans ta pratique. Mobilise tes connaissances de spécialité pour " +
-       "expliciter le raisonnement clinique à partir des seuls faits fournis. Les hypothèses et " +
-       "propositions validées doivent rester clairement étiquetées comme telles. " +
-       "N'invente aucune donnée absente — structure uniquement ce qui est fourni. " +
-       enteteConsigne(req.user) +
-       clinicalGenerationRules(req, 'compte-rendu de consultation') +
-       "Organise le compte-rendu avec exactement ces sections dans cet ordre, chaque titre en " +
-       "MAJUSCULES suivi de deux-points : " +
-       "MOTIF DE CONSULTATION :, " +
-       "EXAMEN CLINIQUE ET CONSTANTES : (inclure les constantes si mentionnées : PA, FC, SpO2, poids, taille, IMC), " +
-       "DIAGNOSTIC / IMPRESSION CLINIQUE :, " +
-       "OBJECTIFS THÉRAPEUTIQUES :, " +
-       "CONDUITE À TENIR : (traitements avec posologie complète si pertinent, examens complémentaires, orientations), " +
-       "SURVEILLANCE :, " +
-       "ÉDUCATION THÉRAPEUTIQUE / CONSEILS : (si applicable). " +
-       "Omets toute rubrique sans donnée disponible. " +
-       "Sous chaque titre, écris en prose (phrases continues), jamais sous forme de liste à puces. " +
-       "FORMAT : n'utilise JAMAIS de Markdown : pas d'astérisques, pas de dièses, pas de tirets de liste. " +
-       "Sépare les sections par des sauts de ligne. N'ajoute aucun commentaire hors du compte-rendu.");
-
-  // Le référentiel s'ajoute au cadrage de spécialité ; l'algologie garde sa
-  // structure propre, déjà dérivée des recommandations HAS 2024.
-  const systemComplet = system
-    + (isAlgologie ? '' : blocPrompt(referentiel, couverture))
-    + consigneContexte(contexte);
+  const system = 'Tu rédiges le compte rendu du médecin à partir des observations fournies. ' +
+    'Rends un document médical concis, en prose lisible. La synthèse et le raisonnement retenus priment sur la répétition des notes. ' +
+    'Les calculs fournis sont déterministes. Ne calcule aucun autre score depuis des items absents. ' +
+    'Ne propose aucun diagnostic ou mécanisme supplémentaire dans le document final : seules les interprétations validées sont retenues. ' +
+    enteteConsigne(req.user) + clinicalGenerationRules(req, 'compte-rendu de consultation') +
+    reportStructure(specialiteRedacteurCR, req.body.specialtyPack) +
+    'Titres en majuscules, sections séparées par des sauts de ligne. Aucun Markdown, commentaire sur le modèle ou rubrique vide.';
+  const systemComplet = system + (specialtyPack ? '' : blocPrompt(referentiel, couverture)) + consigneContexte(contexte);
 
   const user =
     (patient ? `Patient : ${patient}\n` : '') +
     (date ? `Date de consultation : ${date}\n` : '') +
     (contexte ? `\n${contexte.texte}\n` : '') +
     `\nNotes brutes de consultation :\n${notes}\n` +
-    (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '');
+    (complement ? `\nÉléments additionnels à intégrer : ${complement}\n` : '') +
+    (scores ? `\nScores calculés sur les réponses complètes du médecin :\n${scores}\n` : '');
 
   try {
     const document = finalizeDocument(await generateDocument({ system: systemComplet, user, maxTokens: 1800 }));
@@ -2139,7 +2100,8 @@ app.post('/api/generate/compte-rendu', authenticateJWT, exigerFonctionnalite('ge
       document,
       // Le contrôle des valeurs chiffrées inclut le contexte antérieur : une
       // posologie reprise d'une ordonnance passée est sourcée, pas inventée.
-      safety: documentSafety(document, `${plainClinicalText(req.body)}\n${contexte ? contexte.texte : ''}`, req.user),
+      safety: documentSafety(document, `${plainClinicalText(req.body)}\n${scores}\n${contexte ? contexte.texte : ''}`, req.user),
+      specialtyPack,
       referentiel: referentielPublic(referentiel, couverture),
       contexte: contexteMeta(contexte),
     });
@@ -2882,6 +2844,13 @@ app.post('/api/patients', authenticateJWT, exigerFonctionnalite('patients.write'
 });
 
 // GET /api/patients/:id — fiche + timeline complète des documents
+app.get('/api/patients/:id/preparation', authenticateJWT, (req, res) => {
+  const patientId = s(req.params.id, 40);
+  const patient = dossiers.getPatient(req.user.id, patientId);
+  if (!patient) return res.status(404).json({ error: 'Patient introuvable.' });
+  res.json(buildPrevisitSummary(patient, dossiers.listDocuments(req.user.id, { patientId })));
+});
+
 app.get('/api/patients/:id', authenticateJWT, (req, res) => {
   const timeline = dossiers.getTimeline(req.user.id, s(req.params.id, 40));
   if (!timeline) return res.status(404).json({ error: 'Patient introuvable.' });
