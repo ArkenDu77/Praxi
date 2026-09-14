@@ -1673,6 +1673,7 @@ try { if (localStorage.getItem('praxi_theme') !== 'light') document.documentElem
      deux. Les versions étaient déjà figées ; l'attribut `integrity` vérifie en
      plus que l'octet reçu est bien celui attendu, et `crossorigin` est requis
      pour que le navigateur applique ce contrôle. -->
+<script src="/transcription.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"
         integrity="sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e"
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -6556,190 +6557,167 @@ async function readPdf(file) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  DICTÉE VOCALE (Web Speech API)
+//  DICTÉE VOCALE — lifecycle et secours audio dans transcription.js
 // ═══════════════════════════════════════════════════════════════════════
-// La dictée est un outil secondaire : la saisie manuelle reste active en
-// permanence, y compris pendant l'écoute. Trois garanties de fiabilité :
-//  1. le texte est reconstruit depuis la liste complète des résultats
-//     (élimine les doublons observés sur Chrome Android / tablette) ;
-//  2. l'écoute redémarre seule après les coupures silencieuses du navigateur
-//     (arrêt automatique après quelques secondes sans parole) ;
-//  3. toute erreur affiche un message clair sous le champ concerné, avec
-//     bascule immédiate en saisie manuelle — jamais de blocage silencieux.
 const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
 let activeRec = null;
 
 document.querySelectorAll('[data-mic]').forEach(btn => {
+  btn.setAttribute('aria-pressed', 'false');
   btn.addEventListener('click', () => toggleMic(btn));
 });
 
 function micStatusEl(btn) {
   const wrap = btn.closest('.with-mic');
   if (!wrap) return null;
-  let el = wrap.parentElement.querySelector('.mic-status');
-  if (!el) {
-    el = document.createElement('div');
+  if (!btn._micStatus) {
+    const el = document.createElement('div');
     el.className = 'mic-status';
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
     wrap.insertAdjacentElement('afterend', el);
+    btn._micStatus = el;
   }
-  return el;
-}
-function micShowListening(btn) {
-  const el = micStatusEl(btn);
-  if (!el) return;
-  el.className = 'mic-status listening show';
-  el.innerHTML = '<span class="mic-dot"></span><span class="mic-status-body">Arkiba vous écoute — parlez naturellement.' +
-    '<span class="mic-status-hint">Le texte s\'ajoute au fur et à mesure. Vous pouvez continuer à taper à tout moment. Cliquez à nouveau sur le micro pour arrêter.</span></span>';
+  return btn._micStatus;
 }
 function micShowError(btn, message, hint) {
   const el = micStatusEl(btn);
   if (!el) return;
   el.className = 'mic-status error show';
-  el.innerHTML = '<svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>' +
-    '<span class="mic-status-body">' + escapeHtml(message) +
-    '<span class="mic-status-hint">' + escapeHtml(hint || 'Votre texte est conservé — continuez simplement à taper dans le champ ci-dessus.') + '</span></span>';
-  setTimeout(() => { if (el.classList.contains('error')) el.classList.remove('show'); }, 9000);
+  el.textContent = '';
+  const body = document.createElement('span');
+  body.className = 'mic-status-body';
+  body.textContent = '⚠ ' + message;
+  const help = document.createElement('span');
+  help.className = 'mic-status-hint';
+  help.textContent = hint || 'Votre texte est conservé. Vous pouvez continuer à taper.';
+  body.appendChild(help); el.appendChild(body);
+  // A recording failure stays visible until the next explicit user action.
 }
-// N'efface que le bandeau d'écoute : un message d'erreur doit rester lisible
-// après l'arrêt de la reconnaissance, sinon la panne redevient silencieuse.
-function micHideStatus(btn) {
+function micDuration(ms) {
+  const seconds = Math.floor(ms / 1000);
+  return String(Math.floor(seconds / 60)).padStart(2, '0') + ':' + String(seconds % 60).padStart(2, '0');
+}
+function micRender(state, snapshot) {
+  const { btn } = state;
+  if (!snapshot.running && snapshot.audio.bytes) micArchive(state, snapshot);
+  if (btn._micLastSession !== state) return;
   const el = micStatusEl(btn);
-  if (el && !el.classList.contains('error')) el.classList.remove('show');
+  if (!el) return;
+  const active = snapshot.phase === 'listening';
+  btn.classList.toggle('listening', active);
+  btn.setAttribute('aria-pressed', String(snapshot.running));
+  btn.title = snapshot.running ? 'Arrêter la transcription' : 'Démarrer la transcription';
+  const labels = {
+    idle: 'Transcription prête', starting: 'Ouverture du micro…',
+    listening: 'Transcription active', reconnecting: '⚠ Reconnexion à la transcription…',
+    offline: '⚠ Connexion perdue — reprise automatique au retour du réseau',
+    stopped: 'Transcription arrêtée', error: '⚠ Transcription interrompue'
+  };
+  const errors = {
+    'not-allowed': 'Autorisez le micro dans les réglages du navigateur puis cliquez sur le micro pour reprendre.',
+    'service-not-allowed': 'Le service de dictée est bloqué par le navigateur. Vérifiez ses autorisations.',
+    'audio-capture': 'Le micro est indisponible. Vérifiez son branchement puis cliquez sur le micro pour reprendre.',
+    'language-not-supported': 'Le navigateur ne prend pas en charge la dictée en français.'
+  };
+  const audioOk = snapshot.audio.status === 'recording';
+  const audioPending = snapshot.audio.status === 'starting';
+  const warning = ['error', 'offline', 'reconnecting'].includes(snapshot.phase) || snapshot.pageHidden || snapshot.audio.nearLimit || (snapshot.running && !audioOk && !audioPending);
+  el.className = 'mic-status show ' + (warning ? 'error' : active ? 'listening' : '');
+  let hint = errors[snapshot.reason] || 'Vous pouvez continuer à taper. Cliquez sur le micro pour arrêter.';
+  if (audioOk) hint += ' Audio de secours capturé dans cet onglet uniquement.';
+  else if (audioPending && snapshot.running) hint += ' Préparation du secours audio…';
+  else if (snapshot.running) hint += snapshot.audio.status === 'full'
+    ? ' ⚠ Secours audio plein (64 Mo) : les nouvelles paroles ne sont plus enregistrées en secours.'
+    : ' ⚠ Secours audio indisponible : les paroles pendant une coupure risquent d’être perdues.';
+  if (snapshot.audio.nearLimit && audioOk) hint += ' ⚠ La mémoire audio est presque pleine : téléchargez puis supprimez les anciens secours audio.';
+  if (snapshot.phase === 'reconnecting' || snapshot.phase === 'offline') {
+    hint += ' Les paroles pendant la coupure ne sont pas transcrites automatiquement.';
+  }
+  if (snapshot.outageMs > 0 && active) hint += ' Coupures cumulées : ' + Math.ceil(snapshot.outageMs / 1000) + ' s. Vérifiez ces passages.';
+  if (snapshot.unconfirmedBoundaries) hint += ' Une fin de phrase provisoire a été conservée : relisez-la.';
+  if (snapshot.pageHidden && snapshot.running) hint += ' ⚠ Gardez cet onglet ouvert au premier plan et l’appareil éveillé.';
+  if (!snapshot.running) hint += snapshot.audio.bytes ? ' L’audio de secours reste disponible ci-dessous jusqu’à sa suppression ou la fermeture de l’onglet.' : ' Votre texte est conservé.';
+  // Only the clock changes each second; avoid repeatedly announcing the whole
+  // status through the live region, or stealing keyboard focus from notes.
+  const signature = [snapshot.phase, hint].join('|');
+  if (state.statusSignature !== signature) {
+    el.textContent = '';
+    const body = document.createElement('span'); body.className = 'mic-status-body';
+    const label = document.createElement('span'); label.textContent = labels[snapshot.phase] + ' · ';
+    const timer = document.createElement('span'); timer.dataset.micElapsed = ''; timer.setAttribute('aria-live', 'off');
+    const help = document.createElement('span'); help.className = 'mic-status-hint'; help.textContent = hint;
+    body.append(label, timer, help); el.appendChild(body);
+    state.statusSignature = signature;
+  }
+  const timer = el.querySelector('[data-mic-elapsed]');
+  if (timer) timer.textContent = micDuration(snapshot.elapsedMs);
 }
-
+function micArchive(state, snapshot) {
+  if (state.discarded) return;
+  if (!state.archive) {
+    const archive = document.createElement('div'); archive.className = 'mic-status show';
+    archive.dataset.micArchive = state.btn.dataset.mic;
+    const body = document.createElement('span'); body.className = 'mic-status-body';
+    const caption = document.createElement('span'); caption.dataset.audioCaption = '';
+    const hint = document.createElement('span'); hint.className = 'mic-status-hint';
+    hint.textContent = 'Audio conservé uniquement dans cet onglet. Les coupures de dictée ne sont pas retranscrites automatiquement.';
+    const download = document.createElement('button'); download.type = 'button'; download.className = 'btn btn-sm';
+    download.textContent = 'Télécharger le secours audio';
+    download.addEventListener('click', () => {
+      const blob = state.session.audioBlob(); if (!blob) return;
+      const url = URL.createObjectURL(blob), link = document.createElement('a');
+      link.href = url;
+      link.download = 'arkiba-audio-secours-' + new Date().toISOString().replace(/[:.]/g, '-') + (blob.type.includes('mp4') ? '.m4a' : blob.type.includes('ogg') ? '.ogg' : '.webm');
+      link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+    const discard = document.createElement('button'); discard.type = 'button'; discard.className = 'btn btn-sm';
+    discard.textContent = 'Supprimer le secours audio';
+    discard.addEventListener('click', () => {
+      state.discarded = true; state.session.discardAudio(); archive.remove();
+    });
+    body.append(caption, hint, download, discard); archive.appendChild(body);
+    micStatusEl(state.btn).insertAdjacentElement('afterend', archive); state.archive = archive;
+  }
+  state.archive.querySelector('[data-audio-caption]').textContent = 'Audio de secours · ' + micDuration(snapshot.elapsedMs) + ' · ' + (snapshot.audio.bytes / 1024 / 1024).toFixed(1) + ' Mo' + (snapshot.audio.discontinuities ? ' · enregistrement incomplet' : '');
+}
 function stopMic() {
-  if (!activeRec) return;
-  activeRec.manualStop = true;
-  try { activeRec.rec.stop(); } catch (_) {}
+  if (activeRec) activeRec.session.stop();
 }
-
 function toggleMic(btn) {
-  if (!SpeechRec) {
-    micShowError(btn,
-      'La dictée vocale n\'est pas disponible sur ce navigateur.',
-      'Utilisez Chrome, Edge ou Safari — ou tapez vos notes dans le champ ci-dessus, tout fonctionne sans le micro.');
+  if (!SpeechRec || !window.ArkibaTranscription) {
+    micShowError(btn, 'La dictée vocale n’est pas disponible sur ce navigateur.', 'Utilisez un navigateur compatible ou continuez à taper vos notes.');
     return;
   }
   if (activeRec && activeRec.btn === btn) { stopMic(); return; }
   if (activeRec) stopMic();
-
   const target = document.getElementById(btn.dataset.mic);
-  const state = {
-    btn, target,
-    rec: new SpeechRec(),
-    baseText: target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value,
-    sessionFinal: '',
-    ignoreUntil: 0,        // résultats déjà intégrés (repris si l'utilisateur tape)
-    manualStop: false,
-    programmatic: false,   // distingue nos écritures des frappes de l'utilisateur
-    restarts: 0
-  };
-  const rec = state.rec;
-  rec.lang = 'fr-FR';
-  rec.continuous = true;
-  rec.interimResults = true;
-
-  const setValue = v => {
-    state.programmatic = true;
-    target.value = v;
-    target.dispatchEvent(new Event('input', { bubbles: true })); // autosave du texte dicté
-    state.programmatic = false;
-  };
-
-  // Si le médecin tape pendant la dictée, on repart de son texte : la saisie
-  // manuelle a toujours priorité, rien n'est écrasé.
-  const onUserType = () => {
-    if (state.programmatic) return;
-    state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
-    state.sessionFinal = '';
-    state.ignoreUntil = state.resultCount || 0;
-  };
+  if (!target) { micShowError(btn, 'Le champ de notes est indisponible.'); return; }
+  const state = { btn, target, programmatic: false };
+  const transcript = ArkibaTranscription.createTranscript({
+    read: () => target.value,
+    write: value => {
+      state.programmatic = true;
+      try { target.value = value; target.dispatchEvent(new Event('input', { bubbles: true })); }
+      finally { state.programmatic = false; }
+    }
+  });
+  const onUserType = () => { if (!state.programmatic) transcript.edited(); };
   target.addEventListener('input', onUserType);
-
-  rec.onresult = e => {
-    let finalT = '', interim = '';
-    for (let i = state.ignoreUntil; i < e.results.length; i++) {
-      const r = e.results[i];
-      if (r.isFinal) finalT += r[0].transcript;
-      else           interim += r[0].transcript;
+  state.session = ArkibaTranscription.createSession({
+    Recognition: SpeechRec,
+    onResult: event => transcript.result(event),
+    onBoundary: () => transcript.boundary(),
+    onState: snapshot => micRender(state, snapshot),
+    onStop: () => {
+      target.removeEventListener('input', onUserType);
+      if (activeRec === state) activeRec = null;
     }
-    state.resultCount = e.results.length;
-    state.sessionFinal = finalT;
-    setValue(state.baseText + finalT + interim);
-  };
-
-  rec.onerror = e => {
-    switch (e.error) {
-      case 'not-allowed':
-      case 'service-not-allowed':
-        state.manualStop = true;
-        micShowError(btn,
-          'Arkiba n\'a pas l\'autorisation d\'utiliser le micro.',
-          'Autorisez le micro dans les réglages du navigateur (icône cadenas dans la barre d\'adresse), ou tapez vos notes : rien n\'est perdu.');
-        break;
-      case 'audio-capture':
-        state.manualStop = true;
-        micShowError(btn,
-          'Aucun micro n\'a été détecté sur cet appareil.',
-          'Vérifiez le branchement du micro, ou tapez vos notes dans le champ ci-dessus.');
-        break;
-      case 'network':
-        state.manualStop = true;
-        micShowError(btn,
-          'Le service de reconnaissance vocale est momentanément injoignable.',
-          'Vérifiez la connexion internet et réessayez, ou tapez vos notes : le champ reste actif.');
-        break;
-      // 'no-speech' et 'aborted' : silences normaux, l'écoute redémarre seule.
-    }
-  };
-
-  rec.onend = () => {
-    // Consolide ce qui a été dicté avant un éventuel redémarrage.
-    if (state.sessionFinal) {
-      state.baseText = state.baseText + state.sessionFinal;
-      if (!/\s$/.test(state.baseText)) state.baseText += ' ';
-      state.sessionFinal = '';
-    }
-    setValue(state.baseText.replace(/\s$/, ''));
-    state.ignoreUntil = 0;
-    state.resultCount = 0;
-
-    // Le navigateur coupe l'écoute après quelques secondes de silence :
-    // on la relance tant que le médecin n'a pas arrêté lui-même.
-    if (!state.manualStop && activeRec === state && state.restarts < 60) {
-      state.restarts += 1;
-      state.baseText = target.value && !/\s$/.test(target.value) ? target.value + ' ' : target.value;
-      setTimeout(() => {
-        if (activeRec !== state || state.manualStop) return;
-        try { rec.start(); }
-        catch (_) {
-          micCleanup(state);
-          micShowError(btn, 'La dictée s\'est interrompue.', 'Cliquez sur le micro pour reprendre — le texte déjà dicté est conservé.');
-        }
-      }, 200);
-      return;
-    }
-    micCleanup(state);
-  };
-
-  function micCleanup(s) {
-    s.btn.classList.remove('listening');
-    s.target.removeEventListener('input', onUserType);
-    micHideStatus(s.btn);
-    if (activeRec === s) activeRec = null;
-  }
-
-  try {
-    rec.start();
-  } catch (_) {
-    micShowError(btn, 'Impossible de démarrer la dictée.', 'Réessayez dans un instant, ou tapez vos notes dans le champ ci-dessus.');
-    return;
-  }
-  btn.classList.add('listening');
-  micShowListening(btn);
+  });
+  btn._micLastSession = state;
   activeRec = state;
+  state.session.start();
 }
-
 // ═══════════════════════════════════════════════════════════════════════
 //  PROFIL — formulaire
 // ═══════════════════════════════════════════════════════════════════════

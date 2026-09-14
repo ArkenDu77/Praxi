@@ -1,0 +1,24 @@
+{
+  "test": "real-browser-clicks",
+  "status": "PASS",
+  "browser": "152.0.4191.66",
+  "assertions": 14,
+  "transcriptionProvider": "synthetic Web Speech API",
+  "capture": "real MediaRecorder with Chromium synthetic microphone",
+  "actualAudioBytesBeforeStop": 2167,
+  "noPatientData": true,
+  "noUpstreamRequests": true,
+  "scenarios": [
+    "start by click",
+    "type while dictating",
+    "interim preservation",
+    "forced network error without end",
+    "automatic recovery",
+    "stop by click",
+    "backup download",
+    "archive survives restart",
+    "permission failure persists over 9 seconds",
+    "backup explicit discard"
+  ],
+  "pageErrors": []
+}
