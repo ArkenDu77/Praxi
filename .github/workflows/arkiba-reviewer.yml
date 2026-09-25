@@ -1,0 +1,56 @@
+name: Arkiba Reviewer
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request to review"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+jobs:
+  reviewer:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != null &&
+       contains(github.event.comment.body, 'REVIEW_READY'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Arkiba Independent Reviewer
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_REVIEWER_OAUTH_TOKEN }}
+          prompt: |
+            You are CLAUDE-2, Arkiba Independent Reviewer.
+
+            Read CLAUDE.md and .ai-session/agents/REVIEWER.md first.
+            Read the PR/task spec, acceptance criteria, diff, Builder handoff and CI evidence.
+
+            Do not modify product code.
+            Independently test the Builder's claims and try to break the implementation.
+            Pay special attention to authorization, cross-tenant access, patient identity, external writes,
+            retries/idempotency, regressions, E2E behavior and mocks disguised as completion.
+
+            Post a concise review report to the PR.
+            The final line must be exactly:
+            VERDICT: APPROVED
+            or
+            VERDICT: REJECTED
+
+            On REJECTED, include reproducible failures so Builder can act automatically on the review.
+
+            Never expose real patient data or secrets.
+          claude_args: |
+            --max-turns 80
