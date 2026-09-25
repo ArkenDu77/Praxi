@@ -1,0 +1,12 @@
+version: 1
+phase: M000
+source_of_truth: true
+tasks:
+  - id: M000
+    title: Arkiba full baseline audit
+    priority: P0
+    status: READY
+    owner: ASTRA
+    builder: CLAUDE-1
+    reviewer: CLAUDE-2
+    mutation_policy: AUDIT_ONLY
