@@ -1,0 +1,23 @@
+{
+  "id": "M000",
+  "title": "Arkiba full baseline audit",
+  "priority": "P0",
+  "status": "READY",
+  "owner": "ASTRA",
+  "builder": "CLAUDE-1",
+  "reviewer": "CLAUDE-2",
+  "objective": "Establish a complete evidence-based baseline of the current Arkiba system before product behavior is changed.",
+  "mutation_policy": "AUDIT_ONLY",
+  "required_outputs": [
+    "current architecture map",
+    "subsystem inventory",
+    "mock/fake integration inventory",
+    "security and tenant-isolation findings",
+    "latency/observability findings",
+    "test and CI gaps",
+    "UX/responsive findings",
+    "external blockers",
+    "KEEP_REFACTOR_REPLACE_DELETE_BUILD classification",
+    "P0_P1_P2 backlog with measurable acceptance criteria"
+  ]
+}
